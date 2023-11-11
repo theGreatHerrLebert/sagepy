@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "sagepy"
+version = "0.1.0"
+description = ""
+authors = ["theGreatHerrLebert <davidteschner@googlemail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+sagepy_connector = ">=0.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
