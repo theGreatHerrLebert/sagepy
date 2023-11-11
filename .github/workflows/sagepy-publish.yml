@@ -27,7 +27,7 @@ jobs:
 
     - name: Build and Publish package
       env:
-        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
+        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.SAGEPY_PYPI_API_TOKEN }}
       run: |
         poetry config http-basic.pypi __token__ $POETRY_PYPI_TOKEN_PYPI
         poetry build
