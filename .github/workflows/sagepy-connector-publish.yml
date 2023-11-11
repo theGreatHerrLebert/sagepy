@@ -1,0 +1,39 @@
+name: Build and Publish Rust Binding
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+
+    - name: Install Maturin
+      run: |
+        python -m pip install --upgrade pip
+        pip install maturin
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    - name: Build and Publish
+      env:
+        MATURIN_PYPI_TOKEN: ${{ secrets.SAGEPY_CONNECTOR_API_TOKEN }}
+      run: |
+        maturin publish --token $MATURIN_PYPI_TOKEN
