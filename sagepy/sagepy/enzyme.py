@@ -1,7 +1,7 @@
 from typing import Union
 
 import numpy as np
-import pysage_connector
+import sagepy_connector
 psc = sagepy_connector.py_enzyme
 
 
