@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 
 import pandas as pd
 
@@ -37,6 +37,9 @@ class PeptideIx:
 
     def __repr__(self) -> str:
         return f"PeptideIx({self.idx})"
+
+    def get_py_ptr(self):
+        return self.__peptide_ix_ptr
 
 
 class Theoretical:
@@ -310,6 +313,15 @@ class IndexedDatabase:
 
     def get_py_ptr(self):
         return self.__indexed_database_ptr
+
+    def __getitem__(self, item: Union[int, PeptideIx]) -> Peptide:
+        if isinstance(item, int):
+            pep_ix = PeptideIx(item)
+            return Peptide.from_py_peptide(self.__indexed_database_ptr[pep_ix.get_py_ptr()])
+        elif isinstance(item, PeptideIx):
+            return Peptide.from_py_peptide(self.__indexed_database_ptr[item.get_py_ptr()])
+        else:
+            raise ValueError(f"Invalid item type: {type(item)}")
 
     def query(self, precursor_mass: float, precursor_tolerance: Tolerance, fragment_tolerance: Tolerance):
         return IndexedQuery.from_py_indexed_query(self.__indexed_database_ptr.query(precursor_mass,

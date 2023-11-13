@@ -136,6 +136,12 @@ impl PyIndexedDatabase {
         })
     }
 
+    pub fn __getitem__(&self, index: PyPeptideIx) -> PyPeptide {
+        PyPeptide {
+            inner: self.inner[index.inner].clone(),
+        }
+    }
+
     #[getter]
     pub fn peptides(&self) -> Vec<PyPeptide> {
         self.inner
