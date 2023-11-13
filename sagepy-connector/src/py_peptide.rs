@@ -103,6 +103,11 @@ impl PyPeptide {
         self.inner.proteins.iter().map(|s| s.to_string()).collect()
     }
 
+    #[getter]
+    pub fn semi_enzymatic(&self) -> bool {
+        self.inner.semi_enzymatic
+    }
+
     pub fn reverse(&self) -> PyPeptide {
         PyPeptide {
             inner: self.inner.reverse(),
