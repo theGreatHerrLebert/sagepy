@@ -1,6 +1,6 @@
 import sagepy_connector
 
-from sagepy.peptide import Peptide
+from sagepy.core.peptide import Peptide
 
 psc = sagepy_connector.py_ion_series
 

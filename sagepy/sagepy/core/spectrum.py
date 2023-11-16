@@ -5,7 +5,7 @@ from typing import List
 import sagepy_connector
 from numpy.typing import NDArray
 
-from sagepy.mass import Tolerance
+from sagepy.core.mass import Tolerance
 psc = sagepy_connector.py_spectrum
 
 

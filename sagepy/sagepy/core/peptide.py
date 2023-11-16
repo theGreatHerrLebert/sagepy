@@ -2,7 +2,7 @@ from typing import List, Optional
 
 import sagepy_connector
 
-from sagepy.enzyme import Position, Digest
+from sagepy.core.enzyme import Position, Digest
 
 psc = sagepy_connector.py_peptide
 

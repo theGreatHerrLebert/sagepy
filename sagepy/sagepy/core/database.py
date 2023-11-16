@@ -4,14 +4,14 @@ from typing import List, Dict, Tuple, Union
 
 import pandas as pd
 
-from sagepy.mass import Tolerance
-from sagepy.peptide import Peptide
+from sagepy.core.mass import Tolerance
+from sagepy.core.peptide import Peptide
 
-from sagepy.enzyme import EnzymeParameters
+from sagepy.core.enzyme import EnzymeParameters
 import sagepy_connector
 
-from sagepy.ion_series import IonType
-from sagepy.modification import ModificationSpecificity
+from sagepy.core.ion_series import IonType
+from sagepy.core.modification import ModificationSpecificity
 
 psc = sagepy_connector.py_database
 

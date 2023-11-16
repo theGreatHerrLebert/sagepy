@@ -1,5 +1,5 @@
 from .enzyme import EnzymeParameters, Digest
-import pysage_connector
+import sagepy_connector
 psc = sagepy_connector.py_fasta
 
 

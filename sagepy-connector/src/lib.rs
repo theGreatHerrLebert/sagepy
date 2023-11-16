@@ -9,6 +9,9 @@ mod py_modification;
 mod py_peptide;
 mod py_scoring;
 mod py_spectrum;
+mod py_fdr;
+mod py_lfq;
+mod py_tmt;
 
 use py_enzyme::enzyme;
 use py_fasta::fasta;
@@ -18,6 +21,9 @@ use py_modification::modification;
 use py_peptide::peptide;
 use py_scoring::scoring;
 use py_spectrum::spectrum;
+use py_fdr::fdr;
+use py_lfq::lfq;
+use py_tmt::tmt;
 
 #[pymodule]
 fn sagepy_connector(py: Python, m: &PyModule) -> PyResult<()> {
@@ -65,6 +71,21 @@ fn sagepy_connector(py: Python, m: &PyModule) -> PyResult<()> {
     let py_scoring_submodule = PyModule::new(py, "py_scoring")?;
     scoring(py, &py_scoring_submodule)?;
     m.add_submodule(py_scoring_submodule)?;
+
+    // py_fdr submodule //
+    let py_fdr_submodule = PyModule::new(py, "py_fdr")?;
+    fdr(py, &py_fdr_submodule)?;
+    m.add_submodule(py_fdr_submodule)?;
+
+    // py_lfq submodule //
+    let py_lfq_submodule = PyModule::new(py, "py_lfq")?;
+    lfq(py, &py_lfq_submodule)?;
+    m.add_submodule(py_lfq_submodule)?;
+
+    // py_tmt submodule //
+    let py_tmt_submodule = PyModule::new(py, "py_tmt")?;
+    tmt(py, &py_tmt_submodule)?;
+    m.add_submodule(py_tmt_submodule)?;
 
     Ok(())
 }
