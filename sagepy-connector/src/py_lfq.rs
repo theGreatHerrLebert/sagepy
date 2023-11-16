@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use sage_core::lfq::{IntegrationStrategy, LfqSettings, PeakScoringStrategy, PrecursorId, PrecursorRange};
+use sage_core::lfq::{FeatureMap, IntegrationStrategy, LfqSettings, PeakScoringStrategy, PrecursorId, PrecursorRange};
 use sage_core::lfq::PrecursorId::{Charged, Combined};
 use crate::py_database::PyPeptideIx;
 
@@ -86,6 +86,7 @@ impl PyPrecursorId {
 }
 
 #[pyclass]
+#[derive(Clone)]
 pub struct PyLfqSettings {
     pub inner: LfqSettings,
 }
@@ -142,6 +143,7 @@ impl PyLfqSettings {
 }
 
 #[pyclass]
+#[derive(Clone)]
 pub struct PyPrecursorRange {
     pub inner: PrecursorRange,
 }
@@ -216,11 +218,109 @@ impl PyPrecursorRange {
     }
 }
 
+#[pyclass]
+pub struct PyFeatureMap {
+    pub inner: FeatureMap,
+}
+
+#[pymethods]
+impl PyFeatureMap {
+    #[new]
+    pub fn new(ranges: Vec<PyPrecursorRange>, min_rts: Vec<f32>, bin_size: usize, settings: PyLfqSettings) -> Self {
+        PyFeatureMap {
+            inner: FeatureMap {
+                ranges: ranges.into_iter().map(|r| r.inner).collect(),
+                min_rts,
+                bin_size,
+                settings: settings.inner,
+            }
+        }
+    }
+
+    #[getter]
+    pub fn ranges(&self) -> Vec<PyPrecursorRange> {
+        self.inner.ranges.iter().map(|r| PyPrecursorRange { inner: r.clone() }).collect()
+    }
+
+    #[getter]
+    pub fn min_rts(&self) -> Vec<f32> {
+        self.inner.min_rts.clone()
+    }
+
+    #[getter]
+    pub fn bin_size(&self) -> usize {
+        self.inner.bin_size
+    }
+
+    #[getter]
+    pub fn settings(&self) -> PyLfqSettings {
+        PyLfqSettings {
+            inner: self.inner.settings.clone()
+        }
+    }
+}
+
+#[pyclass]
+struct PyQuery {
+    ranges: Vec<PyPrecursorRange>,
+    page_lo: usize,
+    page_hi: usize,
+    bin_size: usize,
+    min_rt: f32,
+    max_rt: f32,
+}
+
+#[pymethods]
+impl PyQuery {
+    #[new]
+    pub fn new(ranges: Vec<PyPrecursorRange>, page_lo: usize, page_hi: usize, bin_size: usize, min_rt: f32, max_rt: f32) -> Self {
+        PyQuery {
+            ranges,
+            page_lo,
+            page_hi,
+            bin_size,
+            min_rt,
+            max_rt,
+        }
+    }
+
+    #[getter]
+    pub fn ranges(&self) -> Vec<PyPrecursorRange> {
+        self.ranges.clone()
+    }
+
+    #[getter]
+    pub fn page_lo(&self) -> usize {
+        self.page_lo
+    }
+
+    #[getter]
+    pub fn page_hi(&self) -> usize {
+        self.page_hi
+    }
+
+    #[getter]
+    pub fn bin_size(&self) -> usize {
+        self.bin_size
+    }
+
+    #[getter]
+    pub fn min_rt(&self) -> f32 {
+        self.min_rt
+    }
+
+    #[getter]
+    pub fn max_rt(&self) -> f32 {
+        self.max_rt
+    }
+}
+
 #[pymodule]
 pub fn lfq(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPeakScoringStrategy>()?;
     m.add_class::<PyIntegrationStrategy>()?;
     m.add_class::<PyPrecursorId>()?;
     m.add_class::<PyLfqSettings>()?;
+    m.add_class::<PyPrecursorRange>()?;
     Ok(())
 }
