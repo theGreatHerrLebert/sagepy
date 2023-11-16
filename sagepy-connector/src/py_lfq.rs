@@ -258,6 +258,10 @@ impl PyFeatureMap {
             inner: self.inner.settings.clone()
         }
     }
+
+    pub fn get_num_ranges(&self) -> usize {
+        self.inner.ranges.len()
+    }
 }
 
 #[pyclass]
@@ -312,6 +316,10 @@ impl PyQuery {
     #[getter]
     pub fn max_rt(&self) -> f32 {
         self.max_rt
+    }
+
+    pub fn get_num_ranges(&self) -> usize {
+        self.ranges.len()
     }
 }
 
