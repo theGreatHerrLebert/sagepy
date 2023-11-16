@@ -322,5 +322,7 @@ pub fn lfq(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPrecursorId>()?;
     m.add_class::<PyLfqSettings>()?;
     m.add_class::<PyPrecursorRange>()?;
+    m.add_class::<PyFeatureMap>()?;
+    m.add_class::<PyQuery>()?;
     Ok(())
 }
