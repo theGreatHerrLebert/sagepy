@@ -215,7 +215,9 @@ class FeatureMap:
 class Query:
     def __init__(self, ranges: List[PrecursorRange], page_lo: int,
                  page_hi: int, bin_size: int, min_rt: float, max_rt: float):
-        self.__query_ptr = psc.PyQuery(ranges, page_lo, page_hi, bin_size, min_rt, max_rt)
+        self.__query_ptr = psc.PyQuery([
+            r.get_py_ptr() for r in ranges
+        ], page_lo, page_hi, bin_size, min_rt, max_rt)
 
     @classmethod
     def from_py_query(cls, query: psc.PyQuery):
