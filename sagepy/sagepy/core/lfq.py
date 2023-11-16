@@ -28,7 +28,7 @@ class PeakScoringStrategy:
         return self.__peak_scoring_strategy_ptr.strategy
 
     def __repr__(self):
-        return f"PeakScoringStrategy({self.__peak_scoring_strategy_ptr.strategy()})"
+        return f"PeakScoringStrategy({self.__peak_scoring_strategy_ptr.strategy})"
 
     def get_py_ptr(self):
         return self.__peak_scoring_strategy_ptr
@@ -53,7 +53,7 @@ class IntegrationStrategy:
         return self.__integration_strategy_ptr.strategy
 
     def __repr__(self):
-        return f"IntegrationStrategy({self.__integration_strategy_ptr.strategy()})"
+        return f"IntegrationStrategy({self.__integration_strategy_ptr.strategy})"
 
     def get_py_ptr(self):
         return self.__integration_strategy_ptr
@@ -70,14 +70,15 @@ class PrecursorId:
         return instance
 
     @classmethod
-    def from_charged(cls, peptide_id: PeptideIx, charge: int) -> 'PeptideIx':
-        return PeptideIx.from_py_peptide_ix(psc.PyPrecursorId.from_charged(peptide_id.get_py_ptr(), charge))
+    def from_charged(cls, peptide_id: PeptideIx, charge: int) -> 'PrecursorId':
+        return cls.from_py_precursor_id(psc.PyPrecursorId.from_charged(peptide_id.get_py_ptr(), charge))
 
     def get_ptr(self):
         return self.__precursor_id_ptr
 
 
 class LfqSettings:
+    # TODO: check if tolerance should be of type Tolerance instead of float
     def __init__(self, peak_scoring_strategy: PeakScoringStrategy, integration_strategy: IntegrationStrategy,
                  spectral_angle: float, ppm_tolerance: float, combine_charge_states: bool):
         self.__lfq_settings_ptr = psc.PyLfqSettings(peak_scoring_strategy.get_py_ptr(),

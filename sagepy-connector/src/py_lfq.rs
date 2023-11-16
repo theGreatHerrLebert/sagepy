@@ -113,14 +113,14 @@ impl PyLfqSettings {
     }
 
     #[getter]
-    pub fn peak_scoring(&self) -> PyPeakScoringStrategy {
+    pub fn peak_scoring_strategy(&self) -> PyPeakScoringStrategy {
         PyPeakScoringStrategy {
             inner: self.inner.peak_scoring.clone(),
         }
     }
 
     #[getter]
-    pub fn integration(&self) -> PyIntegrationStrategy {
+    pub fn integration_strategy(&self) -> PyIntegrationStrategy {
         PyIntegrationStrategy {
             inner: self.inner.integration.clone(),
         }
