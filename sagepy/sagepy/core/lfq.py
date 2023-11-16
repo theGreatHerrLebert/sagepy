@@ -115,8 +115,10 @@ class LfqSettings:
         return self.__lfq_settings_ptr.combine_charge_states
 
     def __repr__(self):
-        return (f"LfqSettings({self.peak_scoring_strategy}, {self.integration_strategy}, "
-                f"{self.spectral_angle}, {self.ppm_tolerance}, {self.combine_charge_states})")
+        return (f"LfqSettings(peak_scoring_strategy: {self.peak_scoring_strategy}, "
+                f"integration_strategy: {self.integration_strategy}, "
+                f"spectral_angle: {self.spectral_angle}, ppm_tolerance: {self.ppm_tolerance}, "
+                f"combine_charge_states: {self.combine_charge_states})")
 
 
 class PrecursorRange:
@@ -167,13 +169,16 @@ class PrecursorRange:
         return self.__precursor_range_ptr.decoy
 
     def __repr__(self):
-        return (f"PrecursorRange({self.rt}, {self.mass_lo}, {self.mass_hi}, {self.charge}, "
-                f"{self.isotope}, {self.peptide}, {self.file_id}, {self.decoy})")
+        return (f"PrecursorRange(rt: {self.rt}, mass_lo: {self.mass_lo}, mass_hi: {self.mass_hi}, "
+                f"charge: {self.charge}, isotope: {self.isotope}, peptide: {self.peptide}, "
+                f"file_id: {self.file_id}, decoy: {self.decoy})")
 
 
 class FeatureMap:
     def __init__(self, ranges: List[PrecursorRange], min_rts: List[float], bin_size: int, settings: LfqSettings):
-        self.__feature_map_ptr = psc.PyFeatureMap(ranges, min_rts, bin_size, settings.get_py_ptr())
+        self.__feature_map_ptr = psc.PyFeatureMap([
+            r.get_py_ptr() for r in ranges
+        ], min_rts, bin_size, settings.get_py_ptr())
 
     @classmethod
     def from_py_feature_map(cls, feature_map: psc.PyFeatureMap):
