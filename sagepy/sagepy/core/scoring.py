@@ -128,23 +128,30 @@ class Scorer:
                                                     [spec.get_py_ptr() for spec in spectrum_collection], num_threads)
         return [[Feature.from_py_feature(f) for f in score] for score in scores]
 
+    def score_collection_top_hit(self, db: IndexedDatabase, spectrum_collection: List[ProcessedSpectrum],
+                                 num_threads: int = 4) -> List['Feature']:
+        scores = self.score_collection(db, spectrum_collection, num_threads)
+        return [feature[0] for feature in scores]
+
     def _score_chimera_fast(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
-        return [Feature.from_py_feature(f) for f in self.__scorer_ptr.score_chimera_fast(db.get_py_ptr(), spectrum.get_py_ptr())]
+        return [Feature.from_py_feature(f) for f in
+                self.__scorer_ptr.score_chimera_fast(db.get_py_ptr(), spectrum.get_py_ptr())]
 
     def _score_standard(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
-        return [Feature.from_py_feature(f) for f in self.__scorer_ptr.score_standard(db.get_py_ptr(), spectrum.get_py_ptr())]
+        return [Feature.from_py_feature(f) for f in
+                self.__scorer_ptr.score_standard(db.get_py_ptr(), spectrum.get_py_ptr())]
 
 
 class Feature:
     def __init__(self, peptide_idx: PeptideIx, peptide_len: int, spec_id: str, file_id: int,
                  rank: int, label: int, expmass: float, calcmass: float, charge: int, rt: float,
-                    aligned_rt: float, predicted_rt: float, delta_rt_model: float, delta_mass: float,
-                    isotope_error: float, average_ppm: float, hyperscore: float, delta_next: float,
-                    delta_best: float, matched_peaks: int, longest_b: int, longest_y: int,
-                    longest_y_pct: float, missed_cleavages: int, matched_intensity_pct: float,
-                    scored_candidates: int, poisson: float, discriminant_score: float,
-                    posterior_error: float, spectrum_q: float, peptide_q: float, protein_q: float,
-                    ms2_intensity: float, ms1_intensity: float):
+                 aligned_rt: float, predicted_rt: float, delta_rt_model: float, delta_mass: float,
+                 isotope_error: float, average_ppm: float, hyperscore: float, delta_next: float,
+                 delta_best: float, matched_peaks: int, longest_b: int, longest_y: int,
+                 longest_y_pct: float, missed_cleavages: int, matched_intensity_pct: float,
+                 scored_candidates: int, poisson: float, discriminant_score: float,
+                 posterior_error: float, spectrum_q: float, peptide_q: float, protein_q: float,
+                 ms2_intensity: float, ms1_intensity: float):
         """Feature class
 
         Args:
