@@ -122,15 +122,15 @@ class Scorer:
     def score(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
         return [Feature.from_py_feature(f) for f in self.__scorer_ptr.score(db.get_py_ptr(), spectrum.get_py_ptr())]
 
-    def score_collection(self, db: IndexedDatabase,
-                         spectrum_collection: List[ProcessedSpectrum], num_threads: int = 4) -> List[List['Feature']]:
+    def score_collection_top_n(self, db: IndexedDatabase,
+                               spectrum_collection: List[ProcessedSpectrum], num_threads: int = 4) -> List[List['Feature']]:
         scores = self.__scorer_ptr.score_collection(db.get_py_ptr(),
-                                                    [spec.get_py_ptr() for spec in spectrum_collection], num_threads)
+                                                          [spec.get_py_ptr() for spec in spectrum_collection], num_threads)
         return [[Feature.from_py_feature(f) for f in score] for score in scores]
 
-    def score_collection_top_hit(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
+    def score_collection(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
                                  num_threads: int = 4) -> List['Feature']:
-        scores = self.score_collection(db, spectrum_collection, num_threads)
+        scores = self.score_collection_top_n(db, spectrum_collection, num_threads)
 
         result = []
 
