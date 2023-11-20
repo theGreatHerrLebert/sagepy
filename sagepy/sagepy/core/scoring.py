@@ -131,7 +131,16 @@ class Scorer:
     def score_collection_top_hit(self, db: IndexedDatabase, spectrum_collection: List[ProcessedSpectrum],
                                  num_threads: int = 4) -> List['Feature']:
         scores = self.score_collection(db, spectrum_collection, num_threads)
-        return [feature[0] for feature in scores]
+        
+        result = []
+
+        for score in scores:
+            if len(score) > 0:
+                result.append(score[0])
+            else:
+                result.append(None)
+
+        return result
 
     def _score_chimera_fast(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
         return [Feature.from_py_feature(f) for f in
