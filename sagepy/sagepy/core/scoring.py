@@ -371,3 +371,6 @@ class Feature:
                 f"protein q: {self.protein_q}, "
                 f"ms2 intensity: {self.ms2_intensity}, "
                 f"ms1 intensity: {self.ms1_intensity})")
+
+    def get_py_ptr(self):
+        return self.__feature_ptr
