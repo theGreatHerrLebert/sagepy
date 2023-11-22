@@ -35,7 +35,7 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Change to pysage-connector directory
+      - name: Change to sagepy-connector directory
         run: cd sagepy/sagepy-connector
 
       - name: Build and Publish
