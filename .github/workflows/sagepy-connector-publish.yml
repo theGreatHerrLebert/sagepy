@@ -43,4 +43,4 @@ jobs:
           MATURIN_PYPI_TOKEN: ${{ secrets.SAGEPY_CONNECTOR_PYPI_API_TOKEN }}
         run: |
           cd sagepy-connector
-          maturin publish -- --token $MATURIN_PYPI_TOKEN
+          maturin publish --token $MATURIN_PYPI_TOKEN
