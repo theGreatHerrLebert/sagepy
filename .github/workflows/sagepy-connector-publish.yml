@@ -36,11 +36,11 @@ jobs:
           override: true
 
       - name: Change to sagepy-connector directory
-        run: cd sagepy/sagepy-connector
+        run: cd sagepy-connector
 
       - name: Build and Publish
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.SAGEPY_CONNECTOR_PYPI_API_TOKEN }}
         run: |
-          cd sagepy/sagepy-connector
+          cd sagepy-connector
           maturin publish -- --token $MATURIN_PYPI_TOKEN

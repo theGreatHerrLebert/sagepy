@@ -28,13 +28,13 @@ jobs:
           pip install poetry
 
       - name: Change to sagepy directory
-        run: cd sagepy/sagepy
+        run: cd sagepy
 
       - name: Build and Publish package
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.SAGEPY_PYPI_API_TOKEN }}
         run: |
-          cd sagepy/sagepy
+          cd sagepy
           poetry config http-basic.pypi __token__ $POETRY_PYPI_TOKEN_PYPI
           poetry build
           poetry publish
