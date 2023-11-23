@@ -1,5 +1,7 @@
 import numpy as np
 
+from sagepy.core import Peptide
+
 
 def mass_to_mod(mass: float) -> str:
     """ Convert a mass to a UNIMOD modification annotation.
@@ -24,4 +26,3 @@ def mass_to_mod(mass: float) -> str:
         return mod_dict[maybe_key]
     except KeyError:
         raise KeyError(f"Rounded mass not in dict: {maybe_key}")
-

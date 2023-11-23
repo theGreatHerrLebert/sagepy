@@ -9,7 +9,7 @@ name = "sagepy_connector"
 crate-type = ["cdylib"]
 
 [dependencies]
-sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git" }
+sage-core = { git = "https://github.com/lazear/sage.git" }
 pyo3 = { version = "0.20.0", features = ["extension-module"] }
 numpy = "0.20.0"
 rayon = "1.8.0"

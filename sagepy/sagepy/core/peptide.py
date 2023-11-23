@@ -3,6 +3,7 @@ from typing import List, Optional
 import sagepy_connector
 
 from sagepy.core.enzyme import Position, Digest
+from sagepy.utility import mass_to_mod
 
 psc = sagepy_connector.py_peptide
 
@@ -98,3 +99,30 @@ class Peptide:
                f"missed_cleavages: {self.missed_cleavages}, position: {self.position}, " \
                f"proteins: {self.proteins}, semi_enzymatic: {self.semi_enzymatic}, n_term: {self.n_term}, " \
                f"c_term: {self.c_term})"
+
+    def to_unimod_sequence(self) -> str:
+        """ Get Peptide sequence with UNIMOD modification annotations.
+
+        Returns:
+            str: Peptide sequence with UNIMOD modification annotations.
+        """
+
+        mods = self.modifications
+        sequence = self.sequence
+
+        seq = ''
+
+        for i, (s, m) in enumerate(zip(sequence, mods)):
+            if m != 0:
+                # TODO: check if this is the correct way to handle N- and C-terminal mods
+                if i == 0:
+                    if mass_to_mod(m) == '[UNIMOD:1]':
+                        seq += f'{mass_to_mod(m)}{s}'
+                    else:
+                        seq += f'{s}{mass_to_mod(m)}'
+                else:
+                    seq += f'{s}{mass_to_mod(m)}'
+            else:
+                seq += s
+
+        return seq
