@@ -1,7 +1,5 @@
 import numpy as np
 
-from sagepy.core import Peptide
-
 
 def mass_to_mod(mass: float) -> str:
     """ Convert a mass to a UNIMOD modification annotation.
