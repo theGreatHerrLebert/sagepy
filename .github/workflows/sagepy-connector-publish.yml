@@ -28,14 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg install sqlite3:x64-windows
-        shell: cmd
-
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
