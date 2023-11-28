@@ -67,7 +67,7 @@ class Theoretical:
         return self.__theoretical_ptr.fragment_mz
 
     def __repr__(self) -> str:
-        return f"Theoretical({self.idx}, {self.fragment_mz})"
+        return f"Theoretical(idx={self.idx}, fragment_mz={self.fragment_mz})"
 
     def get_py_ptr(self):
         return self.__theoretical_ptr
@@ -379,8 +379,16 @@ class IndexedDatabase:
         """
         return [Theoretical.from_py_theoretical(f) for f in self.__indexed_database_ptr.fragments]
 
-    def get_fragments(self, idx: PeptideIx) -> List[Theoretical]:
-        return [Theoretical.from_py_theoretical(f) for f in self.__indexed_database_ptr.fragments_by_id(idx.get_py_ptr())]
+    @property
+    def fragment_indices(self):
+        return self.__indexed_database_ptr.fragment_indices
+
+    @property
+    def fragment_mzs(self):
+        return self.__indexed_database_ptr.fragment_mzs
+
+    def fragment_dict(self):
+        return self.__indexed_database_ptr.fragment_dict()
 
     @property
     def num_fragments(self) -> int:

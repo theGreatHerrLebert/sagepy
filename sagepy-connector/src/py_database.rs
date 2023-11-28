@@ -199,6 +199,50 @@ impl PyIndexedDatabase {
     }
 
     #[getter]
+    pub fn fragment_indices(&self, py: Python) -> Py<PyArray1<u32>> {
+        let data: Vec<_> = self.inner
+            .fragments
+            .iter()
+            .map(|f| f.peptide_index.0)
+            .collect();
+        data.into_pyarray(py).to_owned()
+    }
+
+    #[getter]
+    pub fn fragment_mzs(&self, py: Python) -> Py<PyArray1<f32>> {
+        let data: Vec<_> = self.inner
+            .fragments
+            .iter()
+            .map(|f| f.fragment_mz)
+            .collect();
+        data.into_pyarray(py).to_owned()
+    }
+
+    pub fn fragment_dict(&self) -> HashMap<u32, Vec<f32>> {
+
+        let indices: Vec<_> = self.inner
+            .fragments
+            .iter()
+            .map(|f| f.peptide_index.0)
+            .collect();
+
+        let values: Vec<_> = self.inner
+            .fragments
+            .iter()
+            .map(|f| f.fragment_mz)
+            .collect();
+
+        let mut fragment_dict: HashMap<u32, Vec<f32>> = HashMap::new();
+
+        for (i, v) in indices.iter().zip(values.iter()) {
+            fragment_dict.entry(*i).or_insert(Vec::new()).push(*v);
+        }
+
+        fragment_dict
+    }
+
+
+    #[getter]
     pub fn num_fragments(&self) -> usize {
         self.inner.fragments.len()
     }
@@ -239,15 +283,6 @@ impl PyIndexedDatabase {
     #[getter]
     pub fn decoy_tag(&self) -> String {
         self.inner.decoy_tag.clone()
-    }
-
-    pub fn fragments_by_id(&self, index: PyPeptideIx) -> Vec<PyTheoretical> {
-        self.inner
-            .fragments
-            .iter()
-            .filter(|t| t.peptide_index == index.inner)
-            .map(|f| PyTheoretical { inner: f.clone() })
-            .collect()
     }
 
 }
