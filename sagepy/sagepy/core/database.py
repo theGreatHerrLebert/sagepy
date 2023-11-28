@@ -379,6 +379,9 @@ class IndexedDatabase:
         """
         return [Theoretical.from_py_theoretical(f) for f in self.__indexed_database_ptr.fragments]
 
+    def get_fragments(self, idx: PeptideIx) -> List[Theoretical]:
+        return [Theoretical.from_py_theoretical(f) for f in self.__indexed_database_ptr.fragments_by_id(idx.get_py_ptr())]
+
     @property
     def num_fragments(self) -> int:
         """Number of fragments in the database

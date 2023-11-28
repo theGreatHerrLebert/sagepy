@@ -240,6 +240,16 @@ impl PyIndexedDatabase {
     pub fn decoy_tag(&self) -> String {
         self.inner.decoy_tag.clone()
     }
+
+    pub fn fragments_by_id(&self, index: PyPeptideIx) -> Vec<PyTheoretical> {
+        self.inner
+            .fragments
+            .iter()
+            .filter(|t| t.peptide_index == index.inner)
+            .map(|f| PyTheoretical { inner: f.clone() })
+            .collect()
+    }
+
 }
 
 #[pyclass]
