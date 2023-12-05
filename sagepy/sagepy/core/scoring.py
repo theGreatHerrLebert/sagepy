@@ -31,7 +31,7 @@ class Fragments:
 
     @property
     def ion_types(self) -> List[IonType]:
-        return [IonType.from_py_kind(x) for x in self.__fragments_ptr.ion_types]
+        return [IonType.from_py_kind(x) for x in self.__fragments_ptr.kinds]
 
     @property
     def fragment_ordinals(self) -> List[int]:
