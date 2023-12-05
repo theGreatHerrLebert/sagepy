@@ -5,7 +5,68 @@ use rayon::ThreadPoolBuilder;
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
 use crate::py_spectrum::PyProcessedSpectrum;
-use sage_core::scoring::{Feature, Scorer};
+use sage_core::scoring::{Feature, Scorer, Fragments};
+use crate::py_ion_series::PyKind;
+
+#[pyclass]
+#[derive(Clone)]
+pub struct PyFragments {
+    pub inner: Fragments,
+}
+
+#[pymethods]
+impl PyFragments {
+    #[new]
+    pub fn new(
+        charges: Vec<i32>,
+        kinds: Vec<PyKind>,
+        fragment_ordinals: Vec<i32>,
+        intensities: Vec<f32>,
+        mz_calculated: Vec<f32>,
+        mz_experimental: Vec<f32>,
+    ) -> Self {
+        PyFragments {
+            inner: Fragments {
+                charges,
+                kinds: kinds.into_iter().map(|k| k.inner).collect(),
+                fragment_ordinals,
+                intensities,
+                mz_calculated,
+                mz_experimental,
+            },
+        }
+    }
+
+    #[getter]
+    pub fn charges(&self) -> Vec<i32> {
+        self.inner.charges.clone()
+    }
+
+    #[getter]
+    pub fn kinds(&self) -> Vec<PyKind> {
+        self.inner.kinds.iter().map(|k| PyKind { inner: *k }).collect()
+    }
+
+    #[getter]
+    pub fn fragment_ordinals(&self) -> Vec<i32> {
+        self.inner.fragment_ordinals.clone()
+    }
+
+    #[getter]
+    pub fn intensities(&self) -> Vec<f32> {
+        self.inner.intensities.clone()
+    }
+
+    #[getter]
+    pub fn mz_calculated(&self) -> Vec<f32> {
+        self.inner.mz_calculated.clone()
+    }
+
+    #[getter]
+    pub fn mz_experimental(&self) -> Vec<f32> {
+        self.inner.mz_experimental.clone()
+    }
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -18,6 +79,7 @@ impl PyFeature {
     #[new]
     pub fn new(
         peptide_idx: PyPeptideIx,
+        psm_id: usize,
         peptide_len: usize,
         spec_id: String,
         file_id: usize,
@@ -50,11 +112,12 @@ impl PyFeature {
         peptide_q: f32,
         protein_q: f32,
         ms2_intensity: f32,
-        ms1_intensity: f32,
+        fragments: Option<PyFragments>
     ) -> Self {
         PyFeature {
             inner: Feature {
                 peptide_idx: peptide_idx.inner,
+                psm_id,
                 peptide_len,
                 spec_id,
                 file_id,
@@ -87,7 +150,7 @@ impl PyFeature {
                 peptide_q,
                 protein_q,
                 ms2_intensity,
-                ms1_intensity,
+                fragments: fragments.map(|f| f.inner),
             },
         }
     }
@@ -258,11 +321,6 @@ impl PyFeature {
     pub fn ms2_intensity(&self) -> f32 {
         self.inner.ms2_intensity
     }
-
-    #[getter]
-    pub fn ms1_intensity(&self) -> f32 {
-        self.inner.ms1_intensity
-    }
 }
 
 #[pyclass]
@@ -280,6 +338,7 @@ pub struct PyScorer {
     pub chimera: bool,
     pub report_psms: usize,
     pub wide_window: bool,
+    pub annotate_matches: bool,
 }
 
 #[pymethods]
@@ -298,6 +357,7 @@ impl PyScorer {
         chimera: bool,
         report_psms: usize,
         wide_window: bool,
+        annotate_matches: bool,
         max_fragment_charge: Option<u8>,
     ) -> Self {
         PyScorer {
@@ -314,6 +374,7 @@ impl PyScorer {
             chimera,
             report_psms,
             wide_window,
+            annotate_matches,
         }
     }
 
@@ -333,6 +394,7 @@ impl PyScorer {
             chimera: self.chimera,
             report_psms: self.report_psms,
             wide_window: self.wide_window,
+            annotate_matches: self.annotate_matches,
         };
         let features = scorer.score(&spectrum.inner);
         features
@@ -362,6 +424,7 @@ impl PyScorer {
             chimera: self.chimera,
             report_psms: self.report_psms,
             wide_window: self.wide_window,
+            annotate_matches: self.annotate_matches,
         };
         // Configure the global thread pool to the desired number of threads
         let pool = ThreadPoolBuilder::new()
@@ -405,6 +468,7 @@ impl PyScorer {
             chimera: self.chimera,
             report_psms: self.report_psms,
             wide_window: self.wide_window,
+            annotate_matches: self.annotate_matches,
         };
         let features = scorer.score_chimera_fast(&query.inner);
         features
@@ -433,6 +497,7 @@ impl PyScorer {
             chimera: self.chimera,
             report_psms: self.report_psms,
             wide_window: self.wide_window,
+            annotate_matches: self.annotate_matches,
         };
         let features = scorer.score_standard(&query.inner);
         features

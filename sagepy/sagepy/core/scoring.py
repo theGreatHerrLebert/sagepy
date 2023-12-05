@@ -6,9 +6,55 @@ import sagepy_connector
 from .spectrum import ProcessedSpectrum
 
 psc = sagepy_connector.py_scoring
-
+from .ion_series import IonType
 from .mass import Tolerance
 from .database import PeptideIx, IndexedDatabase
+
+
+class Fragments:
+    def __int__(self, charges: List[int], ion_types: List[IonType], fragment_ordinals: List[int],
+                intensities: List[float], mz_calculated: List[float], mz_experimental: List[float]):
+        kinds = [x.get_py_ptr() for x in ion_types]
+
+        self.__fragments_ptr = psc.PyFragments(charges, kinds, fragment_ordinals,
+                                               intensities, mz_calculated, mz_experimental)
+
+    @classmethod
+    def from_py_fragments(cls, fragments: psc.PyFragments):
+        instance = cls.__new__(cls)
+        instance.__fragments_ptr = fragments
+        return instance
+
+    @property
+    def charges(self) -> List[int]:
+        return self.__fragments_ptr.charges
+
+    @property
+    def ion_types(self) -> List[IonType]:
+        return [IonType.from_py_kind(x) for x in self.__fragments_ptr.ion_types]
+
+    @property
+    def fragment_ordinals(self) -> List[int]:
+        return self.__fragments_ptr.fragment_ordinals
+
+    @property
+    def intensities(self) -> List[float]:
+        return self.__fragments_ptr.intensities
+
+    @property
+    def mz_calculated(self) -> List[float]:
+        return self.__fragments_ptr.mz_calculated
+
+    @property
+    def mz_experimental(self) -> List[float]:
+        return self.__fragments_ptr.mz_experimental
+
+    def __repr__(self):
+        return (f"Fragments({self.charges}, {self.ion_types}, {self.fragment_ordinals}, {self.intensities}, "
+                f"{self.mz_calculated}, {self.mz_experimental})")
+
+    def get_py_ptr(self):
+        return self.__fragments_ptr
 
 
 class Scorer:
@@ -27,6 +73,7 @@ class Scorer:
             chimera: bool = False,
             report_psms: int = 1,
             wide_window: bool = False,
+            annotate_matches: bool = False,
             max_fragment_charge: Optional[int] = 1):
         """Scorer class
 
@@ -50,7 +97,7 @@ class Scorer:
                                          min_matched_peaks,
                                          min_isotope_err, max_isotope_err, min_precursor_charge,
                                          max_precursor_charge, min_fragment_mass, max_fragment_mass,
-                                         chimera, report_psms, wide_window, max_fragment_charge)
+                                         chimera, report_psms, wide_window, max_fragment_charge, annotate_matches)
 
     @classmethod
     def from_py_scorer(cls, scorer: psc.PyScorer):
@@ -123,13 +170,14 @@ class Scorer:
         return [Feature.from_py_feature(f) for f in self.__scorer_ptr.score(db.get_py_ptr(), spectrum.get_py_ptr())]
 
     def score_collection_top_n(self, db: IndexedDatabase,
-                               spectrum_collection: List[ProcessedSpectrum], num_threads: int = 4) -> List[List['Feature']]:
+                               spectrum_collection: List[ProcessedSpectrum], num_threads: int = 4) -> List[
+        List['Feature']]:
         scores = self.__scorer_ptr.score_collection(db.get_py_ptr(),
-                                                          [spec.get_py_ptr() for spec in spectrum_collection], num_threads)
+                                                    [spec.get_py_ptr() for spec in spectrum_collection], num_threads)
         return [[Feature.from_py_feature(f) for f in score] for score in scores]
 
     def score_collection(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
-                                 num_threads: int = 4) -> List['Feature']:
+                         num_threads: int = 4) -> List['Feature']:
         scores = self.score_collection_top_n(db, spectrum_collection, num_threads)
 
         result = []
@@ -152,7 +200,7 @@ class Scorer:
 
 
 class Feature:
-    def __init__(self, peptide_idx: PeptideIx, peptide_len: int, spec_id: str, file_id: int,
+    def __init__(self, peptide_idx: PeptideIx, psm_id: int, peptide_len: int, spec_id: str, file_id: int,
                  rank: int, label: int, expmass: float, calcmass: float, charge: int, rt: float,
                  aligned_rt: float, predicted_rt: float, delta_rt_model: float, delta_mass: float,
                  isotope_error: float, average_ppm: float, hyperscore: float, delta_next: float,
@@ -160,7 +208,7 @@ class Feature:
                  longest_y_pct: float, missed_cleavages: int, matched_intensity_pct: float,
                  scored_candidates: int, poisson: float, discriminant_score: float,
                  posterior_error: float, spectrum_q: float, peptide_q: float, protein_q: float,
-                 ms2_intensity: float, ms1_intensity: float):
+                 ms2_intensity: float, fragments: Optional[Fragments] = None):
         """Feature class
 
         Args:
@@ -200,14 +248,15 @@ class Feature:
             ms1_intensity (float): The MS1 intensity
         """
 
-        self.__feature_ptr = psc.PyFeature(peptide_idx, peptide_len, spec_id, file_id, rank, label,
+        self.__feature_ptr = psc.PyFeature(peptide_idx, psm_id, peptide_len, spec_id, file_id, rank, label,
                                            expmass, calcmass, charge, rt, aligned_rt, predicted_rt,
                                            delta_rt_model, delta_mass, isotope_error, average_ppm,
                                            hyperscore, delta_next, delta_best, matched_peaks,
                                            longest_b, longest_y, longest_y_pct, missed_cleavages,
                                            matched_intensity_pct, scored_candidates, poisson,
                                            discriminant_score, posterior_error, spectrum_q,
-                                           peptide_q, protein_q, ms2_intensity, ms1_intensity)
+                                           peptide_q, protein_q, ms2_intensity,
+                                           fragments.get_py_ptr() if fragments is not None else None)
 
     @classmethod
     def from_py_feature(cls, feature: psc.PyFeature):
