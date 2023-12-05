@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "sagepy"
-version = "0.2.5"
+version = "0.2.6"
 description = ""
 authors = ["theGreatHerrLebert <davidteschner@googlemail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.10"
-sagepy-connector = ">=0.2.4"
+sagepy-connector = ">=0.2.6"
 numpy = ">=1.21.2"
 pandas = ">=1.3.3"
 
