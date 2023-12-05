@@ -574,6 +574,7 @@ impl PyScorer {
 
 #[pymodule]
 pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<PyFragments>()?;
     m.add_class::<PyFeature>()?;
     m.add_class::<PyScorer>()?;
     Ok(())
