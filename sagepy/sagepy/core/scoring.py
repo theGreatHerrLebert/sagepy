@@ -50,8 +50,12 @@ class Fragments:
         return self.__fragments_ptr.mz_experimental
 
     def __repr__(self):
-        return (f"Fragments({self.charges}, {self.ion_types}, {self.fragment_ordinals}, {self.intensities}, "
-                f"{self.mz_calculated}, {self.mz_experimental})")
+        return (f"Fragments(charges: {self.charges}, "
+                f"ion_types: {self.ion_types}, "
+                f"fragment_ordinals: {self.fragment_ordinals}, "
+                f"intensities: {self.intensities}, "
+                f"mz_calculated: {self.mz_calculated}, "
+                f"mz_experimental: {self.mz_experimental})")
 
     def get_py_ptr(self):
         return self.__fragments_ptr
