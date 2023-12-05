@@ -97,7 +97,7 @@ class Scorer:
                                          min_matched_peaks,
                                          min_isotope_err, max_isotope_err, min_precursor_charge,
                                          max_precursor_charge, min_fragment_mass, max_fragment_mass,
-                                         chimera, report_psms, wide_window, max_fragment_charge, annotate_matches)
+                                         chimera, report_psms, wide_window, annotate_matches, max_fragment_charge)
 
     @classmethod
     def from_py_scorer(cls, scorer: psc.PyScorer):
