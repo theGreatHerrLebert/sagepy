@@ -163,6 +163,11 @@ impl PyFeature {
     }
 
     #[getter]
+    pub fn psm_id(&self) -> usize {
+        self.inner.psm_id
+    }
+
+    #[getter]
     pub fn peptide_len(&self) -> usize {
         self.inner.peptide_len
     }
@@ -320,6 +325,11 @@ impl PyFeature {
     #[getter]
     pub fn ms2_intensity(&self) -> f32 {
         self.inner.ms2_intensity
+    }
+
+    #[getter]
+    pub fn fragments(&self) -> Option<PyFragments> {
+        self.inner.fragments.as_ref().map(|f| PyFragments { inner: f.clone() })
     }
 }
 

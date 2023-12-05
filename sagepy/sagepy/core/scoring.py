@@ -213,6 +213,7 @@ class Feature:
 
         Args:
             peptide_idx (PeptideIx): The peptide index
+            psm_id (int): The PSM id
             peptide_len (int): The peptide length
             spec_id (str): The spectrum id
             file_id (int): The file id
@@ -245,7 +246,6 @@ class Feature:
             peptide_q (float): The peptide q
             protein_q (float): The protein q
             ms2_intensity (float): The MS2 intensity
-            ms1_intensity (float): The MS1 intensity
         """
 
         self.__feature_ptr = psc.PyFeature(peptide_idx, psm_id, peptide_len, spec_id, file_id, rank, label,
@@ -275,6 +275,10 @@ class Feature:
     @property
     def spec_id(self) -> str:
         return self.__feature_ptr.spec_id
+
+    @property
+    def psm_id(self) -> int:
+        return self.__feature_ptr.psm_id
 
     @property
     def file_id(self) -> int:
@@ -397,12 +401,16 @@ class Feature:
         return self.__feature_ptr.ms2_intensity
 
     @property
-    def ms1_intensity(self) -> float:
-        return self.__feature_ptr.ms1_intensity
+    def fragments(self) -> Optional[Fragments]:
+        if self.__feature_ptr.fragments is None:
+            return None
+        else:
+            return Fragments.from_py_fragments(self.__feature_ptr.fragments)
 
     def __repr__(self):
         return (f"Feature("
                 f"idx: {self.peptide_idx}, "
+                f"psm_id: {self.psm_id}, "
                 f"peptide_len: {self.peptide_len}, "
                 f"spec_id: {self.spec_id}, "
                 f"file_id: {self.file_id}, "
@@ -434,8 +442,8 @@ class Feature:
                 f"spectrum q: {self.spectrum_q}, "
                 f"peptide q: {self.peptide_q}, "
                 f"protein q: {self.protein_q}, "
-                f"ms2 intensity: {self.ms2_intensity}, "
-                f"ms1 intensity: {self.ms1_intensity})")
+                f"ms2 intensity: {self.ms2_intensity}), "
+                f"fragments: {self.fragments})")
 
     def get_py_ptr(self):
         return self.__feature_ptr
