@@ -390,9 +390,6 @@ class IndexedDatabase:
     def fragment_dict(self):
         return self.__indexed_database_ptr.fragment_dict()
 
-    def fragment_ions_by_peptide_index(self):
-        return self.__indexed_database_ptr.fragment_ions_by_peptide_index()
-
     @property
     def num_fragments(self) -> int:
         """Number of fragments in the database
