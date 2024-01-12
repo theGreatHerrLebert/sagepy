@@ -218,6 +218,7 @@ impl PyIndexedDatabase {
         data.into_pyarray(py).to_owned()
     }
 
+    // TODO: Check if this is correct, likely not
     pub fn fragment_dict(&self) -> HashMap<u32, Vec<f32>> {
 
         let indices: Vec<_> = self.inner
@@ -236,6 +237,16 @@ impl PyIndexedDatabase {
 
         for (i, v) in indices.iter().zip(values.iter()) {
             fragment_dict.entry(*i).or_insert(Vec::new()).push(*v);
+        }
+
+        fragment_dict
+    }
+
+    pub fn fragment_ions_by_peptide_index(&self) -> HashMap<u32, Vec<f32>> {
+        let mut fragment_dict: HashMap<u32, Vec<f32>> = HashMap::new();
+
+        for fragment in &self.inner.fragments {
+            fragment_dict.entry(fragment.peptide_index.0).or_insert(Vec::new()).push(fragment.fragment_mz);
         }
 
         fragment_dict
