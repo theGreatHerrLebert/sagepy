@@ -205,14 +205,21 @@ class Scorer:
 
 class Feature:
     def __init__(self, peptide_idx: PeptideIx, psm_id: int, peptide_len: int, spec_id: str, file_id: int,
-                 rank: int, label: int, expmass: float, calcmass: float, charge: int, rt: float,
-                 aligned_rt: float, predicted_rt: float, delta_rt_model: float, delta_mass: float,
+                 rank: int, label: int, expmass: float, calcmass: float, charge: int, delta_mass: float,
                  isotope_error: float, average_ppm: float, hyperscore: float, delta_next: float,
                  delta_best: float, matched_peaks: int, longest_b: int, longest_y: int,
                  longest_y_pct: float, missed_cleavages: int, matched_intensity_pct: float,
                  scored_candidates: int, poisson: float, discriminant_score: float,
                  posterior_error: float, spectrum_q: float, peptide_q: float, protein_q: float,
-                 ms2_intensity: float, fragments: Optional[Fragments] = None):
+                 ms2_intensity: float,
+                 fragments: Optional[float] = None,
+                 rt: Optional[float] = None,
+                 aligned_rt: Optional[float] = None,
+                 predicted_rt: Optional[float] = None,
+                 delta_rt_model: Optional[float] = None,
+                 ims: Optional[float] = None,
+                 predicted_ims: Optional[float] = None,
+                 delta_ims_model: Optional[float] = None,):
         """Feature class
 
         Args:
@@ -253,14 +260,20 @@ class Feature:
         """
 
         self.__feature_ptr = psc.PyFeature(peptide_idx, psm_id, peptide_len, spec_id, file_id, rank, label,
-                                           expmass, calcmass, charge, rt, aligned_rt, predicted_rt,
-                                           delta_rt_model, delta_mass, isotope_error, average_ppm,
+                                           expmass, calcmass, charge, delta_mass, isotope_error, average_ppm,
                                            hyperscore, delta_next, delta_best, matched_peaks,
                                            longest_b, longest_y, longest_y_pct, missed_cleavages,
                                            matched_intensity_pct, scored_candidates, poisson,
                                            discriminant_score, posterior_error, spectrum_q,
                                            peptide_q, protein_q, ms2_intensity,
-                                           fragments.get_py_ptr() if fragments is not None else None)
+                                           fragments.get_py_ptr() if fragments is not None else None,
+                                           rt,
+                                           aligned_rt,
+                                           predicted_rt,
+                                           delta_rt_model,
+                                           ims,
+                                           predicted_ims,
+                                           delta_ims_model,)
 
     @classmethod
     def from_py_feature(cls, feature: psc.PyFeature):

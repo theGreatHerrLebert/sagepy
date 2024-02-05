@@ -363,6 +363,7 @@ impl PyPrecursor {
         charge: Option<u8>,
         spectrum_ref: Option<String>,
         isolation_window: Option<PyTolerance>,
+        inverse_ion_mobility: Option<f32>,
     ) -> Self {
         PyPrecursor {
             inner: Precursor {
@@ -371,6 +372,7 @@ impl PyPrecursor {
                 charge,
                 spectrum_ref,
                 isolation_window: isolation_window.map(|t| t.inner),
+                inverse_ion_mobility,
             },
         }
     }

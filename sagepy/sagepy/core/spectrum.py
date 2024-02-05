@@ -82,7 +82,8 @@ class Deisotoped:
 
 
 class Precursor:
-    def __init__(self, mz: float, intensity: float = None, charge: int = None, spectrum_ref: str = None, isolation_window: Tolerance = None):
+    def __init__(self, mz: float, intensity: float = None, charge: int = None,
+                 spectrum_ref: str = None, isolation_window: Tolerance = None, inverse_ion_mobility: float = None):
         """Precursor class
 
         Args:
@@ -91,6 +92,7 @@ class Precursor:
             charge (int, optional): The charge of the precursor. Defaults to None.
             spectrum_ref (str, optional): The spectrum reference of the precursor. Defaults to None.
             isolation_window (Tolerance, optional): The isolation window of the precursor. Defaults to None.
+            inverse_ion_mobility (float, optional): The inverse ion mobility of the precursor. Defaults to None.
         """
         if isolation_window is not None:
             self.__precursor_ptr = psc.PyPrecursor(mz, intensity, charge, spectrum_ref, isolation_window.get_py_ptr())
