@@ -95,9 +95,10 @@ class Precursor:
             inverse_ion_mobility (float, optional): The inverse ion mobility of the precursor. Defaults to None.
         """
         if isolation_window is not None:
-            self.__precursor_ptr = psc.PyPrecursor(mz, intensity, charge, spectrum_ref, isolation_window.get_py_ptr())
+            self.__precursor_ptr = psc.PyPrecursor(mz, intensity, charge,
+                                                   spectrum_ref, isolation_window.get_py_ptr(), inverse_ion_mobility)
         else:
-            self.__precursor_ptr = psc.PyPrecursor(mz, intensity, charge, spectrum_ref, None)
+            self.__precursor_ptr = psc.PyPrecursor(mz, intensity, charge, spectrum_ref, None, inverse_ion_mobility)
 
     @classmethod
     def from_py_precursor(cls, precursor: psc.PyPrecursor):
@@ -128,6 +129,10 @@ class Precursor:
             return Tolerance.from_py_tolerance(is_window_ptr)
         else:
             return None
+
+    @property
+    def inverse_ion_mobility(self):
+        return self.__precursor_ptr.inverse_ion_mobility
 
     def get_py_ptr(self):
         return self.__precursor_ptr

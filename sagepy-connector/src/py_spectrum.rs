@@ -404,6 +404,11 @@ impl PyPrecursor {
             .clone()
             .map(|t| PyTolerance { inner: t })
     }
+
+    #[getter]
+    pub fn inverse_ion_mobility(&self) -> Option<f32> {
+        self.inner.inverse_ion_mobility
+    }
 }
 
 #[pymodule]

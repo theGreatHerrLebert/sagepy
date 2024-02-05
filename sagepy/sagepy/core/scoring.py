@@ -424,6 +424,18 @@ class Feature:
         else:
             return Fragments.from_py_fragments(self.__feature_ptr.fragments)
 
+    @property
+    def ims(self) -> Optional[float]:
+        return self.__feature_ptr.ims
+
+    @property
+    def predicted_ims(self) -> Optional[float]:
+        return self.__feature_ptr.predicted_ims
+
+    @property
+    def delta_ims_model(self) -> Optional[float]:
+        return self.__feature_ptr.delta_ims_model
+
     def __repr__(self):
         return (f"Feature("
                 f"idx: {self.peptide_idx}, "

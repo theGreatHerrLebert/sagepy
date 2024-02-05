@@ -337,6 +337,21 @@ impl PyFeature {
     pub fn fragments(&self) -> Option<PyFragments> {
         self.inner.fragments.as_ref().map(|f| PyFragments { inner: f.clone() })
     }
+
+    #[getter]
+    pub fn ims(&self) -> f32 {
+        self.inner.ims
+    }
+
+    #[getter]
+    pub fn predicted_ims(&self) -> f32 {
+        self.inner.predicted_ims
+    }
+
+    #[getter]
+    pub fn delta_ims_model(&self) -> f32 {
+        self.inner.delta_ims_model
+    }
 }
 
 #[pyclass]
