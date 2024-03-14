@@ -350,6 +350,11 @@ impl PyEnzymeBuilder {
     pub fn c_terminal(&self) -> Option<bool> {
         self.inner.c_terminal
     }
+
+    #[getter]
+    pub fn semi_enzymatic(&self) -> Option<bool> {
+        self.inner.semi_enzymatic
+    }
 }
 
 #[pyclass]
