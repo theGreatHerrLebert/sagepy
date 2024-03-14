@@ -117,6 +117,11 @@ impl PyDigest {
         format!("{:?}", self.inner.position)
     }
 
+    #[getter]
+    fn semi_enzymatic(&self) -> bool {
+        self.inner.semi_enzymatic
+    }
+
     fn reverse(&self) -> PyResult<PyDigest> {
         Ok(PyDigest {
             inner: self.inner.reverse(),
