@@ -76,6 +76,11 @@ impl PyPsmDataset {
     pub fn size(&self) -> usize {
         self.inner.psm_map.len()
     }
+
+    #[getter]
+    pub fn keys(&self) -> Vec<String> {
+        self.inner.psm_map.keys().cloned().collect()
+    }
 }
 
 #[pymodule]

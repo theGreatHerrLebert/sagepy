@@ -49,6 +49,10 @@ class PsmDataset:
     def size(self):
         return self.__py_ptr.size
 
+    @property
+    def keys(self):
+        return self.__py_ptr.keys
+
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPsmDataset):
         instance = cls.__new__(cls)
