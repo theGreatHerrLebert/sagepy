@@ -57,7 +57,7 @@ pub struct PyPsmDataset {
 impl PyPsmDataset {
     #[new]
     fn new(spec_ids: Vec<String>, matches: Vec<Vec<PyPeptideSpectrumMatch>>) -> Self {
-        let mut psm_map = std::collections::HashMap::new();
+        let mut psm_map = std::collections::BTreeMap::new();
         let inner_matches: Vec<Vec<_>> = matches.into_iter().map(|m| m.iter().map(|m| m.inner.clone()).collect()).collect();
         for (spec_id, matches) in spec_ids.into_iter().zip(inner_matches.into_iter()) {
             psm_map.insert(spec_id, matches);

@@ -519,7 +519,7 @@ impl PyScorer {
                 .collect()
         });
 
-        let mut psm_map = std::collections::HashMap::new();
+        let mut psm_map = std::collections::BTreeMap::new();
 
         for (spectrum, features) in spectra.iter().zip(result.into_iter()) {
             let mut psms = Vec::new();
