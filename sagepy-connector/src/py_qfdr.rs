@@ -71,6 +71,11 @@ impl PyPsmDataset {
     pub fn get_spec_psms(&self, spec_id: String) -> PyResult<Vec<PyPeptideSpectrumMatch>> {
         Ok(self.inner.psm_map.get(&spec_id).unwrap().iter().map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() }).collect())
     }
+
+    #[getter]
+    pub fn size(&self) -> usize {
+        self.inner.psm_map.len()
+    }
 }
 
 #[pymodule]

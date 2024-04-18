@@ -45,6 +45,10 @@ class PsmDataset:
     def __init__(self, spec_ids: List[str], matches: List[List[PeptideSpectrumMatch]]):
         self.__py_ptr = psc.PyPsmDataset(spec_ids, matches)
 
+    @property
+    def size(self):
+        return self.__py_ptr.size
+
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPsmDataset):
         instance = cls.__new__(cls)
