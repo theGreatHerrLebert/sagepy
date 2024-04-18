@@ -75,6 +75,7 @@ impl PyPsmDataset {
 
 #[pymodule]
 pub fn qfdr(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<PyPeptideSpectrumMatch>()?;
     m.add_class::<PyPsmDataset>()?;
     Ok(())
 }
