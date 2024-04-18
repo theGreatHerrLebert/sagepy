@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap};
 
 #[derive(Clone, Debug)]
 pub struct PeptideSpectrumMatch {
@@ -10,5 +10,5 @@ pub struct PeptideSpectrumMatch {
 }
 
 pub struct PsmDataset {
-    pub psm_map: HashMap<String, Vec<PeptideSpectrumMatch>>,
+    pub psm_map: BTreeMap<String, Vec<PeptideSpectrumMatch>>,
 }
