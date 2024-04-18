@@ -1,12 +1,16 @@
+use std::ops::Index;
 use pyo3::prelude::*;
+use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset};
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
-use crate::py_spectrum::PyProcessedSpectrum;
+use crate::py_spectrum::{PyProcessedSpectrum, spectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
+use crate::py_peptide::peptide;
+use crate::py_qfdr::{PyPeptideSpectrumMatch, PyPsmDataset};
 
 #[pyclass]
 #[derive(Clone)]
@@ -477,6 +481,70 @@ impl PyScorer {
         });
 
         result
+    }
+
+    pub fn score_collection_to_psm_dataset(
+        &self,
+        db: &PyIndexedDatabase,
+        spectra: Vec<PyProcessedSpectrum>,
+        num_threads: usize,
+    ) -> PyPsmDataset {
+        let scorer = Scorer {
+            db: &db.inner,
+            precursor_tol: self.precursor_tolerance.inner.clone(),
+            fragment_tol: self.fragment_tolerance.inner.clone(),
+            min_matched_peaks: self.min_matched_peaks,
+            min_isotope_err: self.min_isotope_err,
+            max_isotope_err: self.max_isotope_err,
+            min_precursor_charge: self.min_precursor_charge,
+            max_precursor_charge: self.max_precursor_charge,
+            max_fragment_charge: self.max_fragment_charge,
+            min_fragment_mass: self.min_fragment_mass,
+            max_fragment_mass: self.max_fragment_mass,
+            chimera: self.chimera,
+            report_psms: self.report_psms,
+            wide_window: self.wide_window,
+            annotate_matches: self.annotate_matches,
+        };
+
+        let pool = ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build()
+            .unwrap();
+
+        let result: Vec<Vec<Feature>> = pool.install(|| {
+            spectra
+                .par_iter()
+                .map(|spectrum| scorer.score(&spectrum.inner))
+                .collect()
+        });
+
+        let mut psm_map = std::collections::HashMap::new();
+
+        for (spectrum, features) in spectra.iter().zip(result.into_iter()) {
+            let mut psms = Vec::new();
+            for feature in features {
+                let peptide = &db.inner[feature.peptide_idx];
+                let decoy = peptide.decoy;
+                let score = feature.hyperscore;
+                let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
+                let psm = PeptideSpectrumMatch {
+                    spec_id: spectrum.inner.id.clone(),
+                    peptide_id: feature.peptide_idx.0,
+                    proteins,
+                    decoy,
+                    score,
+                };
+                psms.push(psm);
+            }
+            psm_map.insert(spectrum.inner.id.clone(), psms);
+        }
+
+        PyPsmDataset {
+            inner: PsmDataset {
+                psm_map,
+            },
+        }
     }
 
     pub fn score_chimera_fast(

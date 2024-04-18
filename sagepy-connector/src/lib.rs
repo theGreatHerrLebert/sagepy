@@ -12,6 +12,7 @@ mod py_spectrum;
 mod py_fdr;
 mod py_lfq;
 mod py_tmt;
+mod py_qfdr;
 
 use py_enzyme::enzyme;
 use py_fasta::fasta;
@@ -86,6 +87,11 @@ fn sagepy_connector(py: Python, m: &PyModule) -> PyResult<()> {
     let py_tmt_submodule = PyModule::new(py, "py_tmt")?;
     tmt(py, &py_tmt_submodule)?;
     m.add_submodule(py_tmt_submodule)?;
+
+    // py_qfdr submodule //
+    let py_qfdr_submodule = PyModule::new(py, "py_qfdr")?;
+    py_qfdr::qfdr(py, &py_qfdr_submodule)?;
+    m.add_submodule(py_qfdr_submodule)?;
 
     Ok(())
 }

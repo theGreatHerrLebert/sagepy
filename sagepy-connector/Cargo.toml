@@ -9,10 +9,11 @@ crate-type = ["cdylib"]
 
 [dependencies]
 sage-core = { git = "https://github.com/lazear/sage.git" }
-pyo3 = { version = "0.20.0", features = ["extension-module"] }
-numpy = "0.20.0"
-rayon = "1.8.0"
+qfdrust = {path  = "../qfdrust"}
+pyo3 = { version = "0.21.2", features = ["extension-module"] }
+numpy = "0.21.0"
+rayon = "1.10.0"
 
-regex = "1.10.2"
-serde = { version = "1.0.190", features = ["derive"] }
-log = "0.4.20"
+regex = "1.10.4"
+serde = { version = "1.0.198", features = ["derive"] }
+log = "0.4.21"
