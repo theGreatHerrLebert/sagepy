@@ -1,12 +1,12 @@
-from typing import List
+from typing import List, Union
 
 import sagepy_connector
 psc = sagepy_connector.py_qfdr
 
 
 class PeptideSpectrumMatch:
-    def __init__(self, spec_id: str, peptide_id: int, proteins: List[str], decoy: bool, score: float):
-        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, proteins, decoy, score)
+    def __init__(self, spec_id: str, peptide_id: int, proteins: List[str], decoy: bool, score: float, features: Union[None, List[float]] = None):
+        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, proteins, decoy, score, features)
 
     @property
     def spec_id(self) -> str:
@@ -27,6 +27,10 @@ class PeptideSpectrumMatch:
     @property
     def score(self) -> float:
         return self.__py_ptr.score
+
+    @property
+    def features(self) -> Union[None, List[float]]:
+        return self.__py_ptr.features
 
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
