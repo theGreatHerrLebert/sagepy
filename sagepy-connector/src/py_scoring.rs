@@ -526,7 +526,7 @@ impl PyScorer {
                 let peptide = &db.inner[feature.peptide_idx];
                 let decoy = peptide.decoy;
                 let score = feature.hyperscore;
-                let charge = feature.charge;
+                let features = vec![(feature.charge.to_string(), feature.charge as f64)];
 
                 let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
                 let psm = PeptideSpectrumMatch {
@@ -535,6 +535,7 @@ impl PyScorer {
                     proteins,
                     decoy,
                     score,
+                    features: Some(features),
                 };
                 psms.push(psm);
             }

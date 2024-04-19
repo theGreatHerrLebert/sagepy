@@ -10,7 +10,7 @@ pub struct PyPeptideSpectrumMatch {
 #[pymethods]
 impl PyPeptideSpectrumMatch {
     #[new]
-    fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>, decoy: bool, score: f64) -> Self {
+    fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>, decoy: bool, score: f64, features: Option<Vec<(String, f64)>>) -> Self {
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch {
                 spec_id,
@@ -18,6 +18,7 @@ impl PyPeptideSpectrumMatch {
                 proteins,
                 decoy,
                 score,
+                features
             },
         }
     }
@@ -45,6 +46,11 @@ impl PyPeptideSpectrumMatch {
     #[getter]
     fn score(&self) -> f64 {
         self.inner.score
+    }
+
+    #[getter]
+    fn features(&self) -> Option<Vec<(String, f64)>> {
+        self.inner.features.clone()
     }
 }
 
