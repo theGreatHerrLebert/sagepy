@@ -42,7 +42,8 @@ class PeptideSpectrumMatch:
         return self.__py_ptr
 
     def __repr__(self):
-        return f"PeptideSpectrumMatch({self.spec_id}, {self.peptide_id}, {self.proteins}, {self.decoy}, {self.score})"
+        return (f"PeptideSpectrumMatch(spec_id: {self.spec_id}, peptide_id: {self.peptide_id}, "
+                f"proteins: {self.proteins}, decoy: {self.decoy}, score: {self.score}, features: {self.features})")
 
 
 class PsmDataset:
@@ -70,4 +71,4 @@ class PsmDataset:
         return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.get_spec_psms(spec_id)]
 
     def __repr__(self):
-        return f"PsmDataset({self.__py_ptr})"
+        return f"PsmDataset(scored spectra: {self.size})"
