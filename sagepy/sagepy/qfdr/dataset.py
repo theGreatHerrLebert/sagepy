@@ -83,5 +83,11 @@ class PsmDataset:
     def get_spec_psms(self, spec_id: str) -> List[PeptideSpectrumMatch]:
         return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.get_spec_psms(spec_id)]
 
+    def inverted_index(self):
+        inverted_index = {}
+        for ((peptide_id, decoy), psm) in self.__py_ptr.inverted_index().items():
+            inverted_index[(peptide_id, decoy)] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in psm]
+        return inverted_index
+
     def __repr__(self):
         return f"PsmDataset(scored spectra: {self.size})"
