@@ -1,6 +1,24 @@
 use std::collections::BTreeMap;
 use pyo3::prelude::*;
-use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset};
+use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset, TDCMethod};
+
+#[pyclass]
+pub struct PyTDCMethod {
+    pub inner: TDCMethod,
+}
+
+#[pymethods]
+impl PyTDCMethod {
+    #[new]
+    fn new(method: &str) -> Self {
+        PyTDCMethod {
+            inner: TDCMethod::from_str(method),
+        }
+    }
+    pub fn to_str(&self) -> &str {
+        self.inner.to_str()
+    }
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -117,5 +135,6 @@ impl PyPsmDataset {
 pub fn qfdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPeptideSpectrumMatch>()?;
     m.add_class::<PyPsmDataset>()?;
+    m.add_class::<PyTDCMethod>()?;
     Ok(())
 }

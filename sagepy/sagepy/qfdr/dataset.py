@@ -4,6 +4,25 @@ import sagepy_connector
 psc = sagepy_connector.py_qfdr
 
 
+class TDCMethod:
+    def __init__(self, method: int):
+        self.methods = {"psm", "peptide_psm_only", "peptide_peptide_only", "peptide_psm_and_peptide"}
+        assert method in self.methods, f"Invalid method: {method}, allowed values are: {self.methods}"
+        self.__py_ptr = psc.PyTDCMethod(method)
+
+    @classmethod
+    def from_py_ptr(cls, py_ptr: psc.PyTDCMethod):
+        instance = cls.__new__(cls)
+        instance.__py_ptr = py_ptr
+        return instance
+
+    def get_py_ptr(self) -> psc.PyTDCMethod:
+        return self.__py_ptr
+
+    def __repr__(self):
+        return f"TDCMethod({self.__py_ptr.to_str()})"
+
+
 class PeptideSpectrumMatch:
     def __init__(self, spec_id: str, peptide_id: int,
                  proteins: List[str], decoy: bool, score: float,

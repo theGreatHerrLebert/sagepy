@@ -1,5 +1,43 @@
 use std::collections::{BTreeMap};
 
+pub enum TDCMethod {
+    PsmLevel,
+    PeptideLevelPsmOnly,
+    PeptideLevelPeptideOnly,
+    PeptideLevelPsmAndPeptide,
+}
+
+impl TDCMethod {
+    pub fn from_str(s: &str) -> TDCMethod {
+        match s {
+            "psm" => TDCMethod::PsmLevel,
+            "peptide_psm_only" => TDCMethod::PeptideLevelPsmOnly,
+            "peptide_peptide_only" => TDCMethod::PeptideLevelPeptideOnly,
+            "peptide_psm_and_peptide" => TDCMethod::PeptideLevelPsmAndPeptide,
+            _ => panic!("Invalid TDC method"),
+        }
+    }
+
+    pub fn from_int(i: u32) -> TDCMethod {
+        match i {
+            0 => TDCMethod::PsmLevel,
+            1 => TDCMethod::PeptideLevelPsmOnly,
+            2 => TDCMethod::PeptideLevelPeptideOnly,
+            3 => TDCMethod::PeptideLevelPsmAndPeptide,
+            _ => panic!("Invalid TDC method"),
+        }
+    }
+
+    pub fn to_str(&self) -> &str {
+        match self {
+            TDCMethod::PsmLevel => "PsmLevel",
+            TDCMethod::PeptideLevelPsmOnly => "PeptideLevelPsmOnly",
+            TDCMethod::PeptideLevelPeptideOnly => "PeptideLevelPeptideOnly",
+            TDCMethod::PeptideLevelPsmAndPeptide => "PeptideLevelPsmAndPeptide",
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct PeptideSpectrumMatch {
     pub spec_id: String,
@@ -18,9 +56,9 @@ pub struct PsmDataset {
 
 impl PsmDataset {
     pub fn new(mut map: BTreeMap<String, Vec<PeptideSpectrumMatch>>) -> PsmDataset {
-
+        // score should be descending
         for (_, psms) in &mut map {
-            psms.sort_by(|a, b| a.score.partial_cmp(&b.score).unwrap());
+            psms.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
         }
 
         map.retain(|_, v| !v.is_empty());
@@ -43,4 +81,33 @@ impl PsmDataset {
 
         inverted_index
     }
+
+    pub fn assign_confidence(&self, method: TDCMethod, threshold: f64, eval_fdr: f64) -> Vec<f64> {
+        match method {
+            TDCMethod::PsmLevel => assign_confidence_psm_level(&self, threshold, eval_fdr),
+            TDCMethod::PeptideLevelPsmOnly => assign_confidence_peptide_level_psm_only(&self, threshold, eval_fdr),
+            TDCMethod::PeptideLevelPeptideOnly => assign_confidence_peptide_level_peptide_only(&self, threshold, eval_fdr),
+            TDCMethod::PeptideLevelPsmAndPeptide => assign_confidence_peptide_level_psm_and_peptide(&self, threshold, eval_fdr),
+        }
+    }
+}
+
+fn assign_confidence_psm_level(psm_dataset: &PsmDataset, threshold: f64, eval_fdr: f64) -> Vec<f64> {
+    assert!(threshold >= 0.0 && threshold <= 1.0, "Threshold should be between 0 and 1");
+    todo!("Implement this function")
+}
+
+fn assign_confidence_peptide_level_psm_only(psm_dataset: &PsmDataset, threshold: f64, eval_fdr: f64) -> Vec<f64> {
+    assert!(threshold >= 0.0 && threshold <= 1.0, "Threshold should be between 0 and 1");
+    todo!("Implement this function")
+}
+
+fn assign_confidence_peptide_level_peptide_only(psm_dataset: &PsmDataset, threshold: f64, eval_fdr: f64) -> Vec<f64> {
+    assert!(threshold >= 0.0 && threshold <= 1.0, "Threshold should be between 0 and 1");
+    todo!("Implement this function")
+}
+
+fn assign_confidence_peptide_level_psm_and_peptide(psm_dataset: &PsmDataset, threshold: f64, eval_fdr: f64) -> Vec<f64> {
+    assert!(threshold >= 0.0 && threshold <= 1.0, "Threshold should be between 0 and 1");
+    todo!("Implement this function")
 }
