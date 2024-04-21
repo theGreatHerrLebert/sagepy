@@ -546,9 +546,7 @@ impl PyScorer {
         }
 
         PyPsmDataset {
-            inner: PsmDataset {
-                psm_map,
-            },
+            inner: PsmDataset::new(psm_map),
         }
     }
 
