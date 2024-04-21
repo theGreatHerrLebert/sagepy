@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset};
 
@@ -10,7 +11,7 @@ pub struct PyPeptideSpectrumMatch {
 #[pymethods]
 impl PyPeptideSpectrumMatch {
     #[new]
-    fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>, decoy: bool, score: f64, features: Option<Vec<(String, f64)>>) -> Self {
+    fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>, decoy: bool, score: f64, intensity: f64, features: Option<Vec<(String, f64)>>) -> Self {
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch {
                 spec_id,
@@ -18,6 +19,7 @@ impl PyPeptideSpectrumMatch {
                 proteins,
                 decoy,
                 score,
+                intensity,
                 features
             },
         }
@@ -46,6 +48,11 @@ impl PyPeptideSpectrumMatch {
     #[getter]
     fn score(&self) -> f64 {
         self.inner.score
+    }
+
+    #[getter]
+    fn intensity(&self) -> f64 {
+        self.inner.intensity
     }
 
     #[getter]
@@ -80,12 +87,23 @@ impl PyPsmDataset {
 
     #[getter]
     pub fn size(&self) -> usize {
-        self.inner.psm_map.len()
+        self.inner.size()
     }
 
     #[getter]
     pub fn keys(&self) -> Vec<String> {
         self.inner.psm_map.keys().cloned().collect()
+    }
+
+    pub fn inverted_index(&self) -> BTreeMap<(u32, bool), Vec<PyPeptideSpectrumMatch>> {
+        let mut inverted_index: BTreeMap<(u32, bool), Vec<PyPeptideSpectrumMatch>> = BTreeMap::new();
+        for (_, psms) in &self.inner.psm_map {
+            for psm in psms {
+                inverted_index.entry((psm.peptide_id, psm.decoy)).or_insert(Vec::new()).push(PyPeptideSpectrumMatch { inner: psm.clone() });
+            }
+        }
+
+        inverted_index
     }
 }
 

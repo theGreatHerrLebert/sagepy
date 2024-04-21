@@ -6,7 +6,7 @@ use rayon::ThreadPoolBuilder;
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
-use crate::py_spectrum::{PyProcessedSpectrum};
+use crate::py_spectrum::{PyProcessedSpectrum, spectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
 use crate::py_qfdr::{PyPsmDataset};
@@ -526,6 +526,7 @@ impl PyScorer {
                 let peptide = &db.inner[feature.peptide_idx];
                 let decoy = peptide.decoy;
                 let score = feature.hyperscore;
+                let intensity: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap()).sum();
                 let features = vec![("charge".to_string(), feature.charge as f64)];
 
                 let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
@@ -535,6 +536,7 @@ impl PyScorer {
                     proteins,
                     decoy,
                     score,
+                    intensity: intensity as f64,
                     features: Some(features),
                 };
                 psms.push(psm);

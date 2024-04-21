@@ -1,12 +1,12 @@
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import sagepy_connector
 psc = sagepy_connector.py_qfdr
 
 
 class PeptideSpectrumMatch:
-    def __init__(self, spec_id: str, peptide_id: int, proteins: List[str], decoy: bool, score: float, features: Union[None, List[float]] = None):
-        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, proteins, decoy, score, features)
+    def __init__(self, spec_id: str, peptide_id: int, proteins: List[str], decoy: bool, score: float, intensity: float, features: Union[None, List[Tuple[str, float]]] = None):
+        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, proteins, decoy, score, intensity, features)
 
     @property
     def spec_id(self) -> str:
@@ -29,7 +29,11 @@ class PeptideSpectrumMatch:
         return self.__py_ptr.score
 
     @property
-    def features(self) -> Union[None, List[float]]:
+    def intensity(self) -> float:
+        return self.__py_ptr.intensity
+
+    @property
+    def features(self) -> Union[None, List[Tuple[str, float]]]:
         return self.__py_ptr.features
 
     @classmethod
@@ -43,7 +47,8 @@ class PeptideSpectrumMatch:
 
     def __repr__(self):
         return (f"PeptideSpectrumMatch(spec_id: {self.spec_id}, peptide_id: {self.peptide_id}, "
-                f"proteins: {self.proteins}, decoy: {self.decoy}, score: {self.score}, features: {self.features})")
+                f"proteins: {self.proteins}, decoy: {self.decoy}, intensity: {self.intensity},"
+                f"score: {self.score}, features: {self.features})")
 
 
 class PsmDataset:
