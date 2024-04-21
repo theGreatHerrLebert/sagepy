@@ -94,7 +94,7 @@ pub struct PyPsmDataset {
 impl PyPsmDataset {
     #[new]
     fn new(spec_ids: Vec<String>, matches: Vec<Vec<PyPeptideSpectrumMatch>>) -> Self {
-        let mut psm_map = std::collections::BTreeMap::new();
+        let mut psm_map = BTreeMap::new();
         let inner_matches: Vec<Vec<_>> = matches.into_iter().map(|m| m.iter().map(|m| m.inner.clone()).collect()).collect();
         for (spec_id, matches) in spec_ids.into_iter().zip(inner_matches.into_iter()) {
             psm_map.insert(spec_id, matches);
@@ -116,18 +116,27 @@ impl PyPsmDataset {
 
     #[getter]
     pub fn keys(&self) -> Vec<String> {
-        self.inner.psm_map.keys().cloned().collect()
+        self.inner.get_spectra_ids()
+    }
+    pub fn get_best_match(&self, spec_id: &str) -> Option<PyPeptideSpectrumMatch> {
+        let maybe_match = self.inner.get_best_match(spec_id);
+        match maybe_match {
+            Some(maybe_match) => Some(PyPeptideSpectrumMatch {
+                inner: maybe_match.clone()
+            }),
+            None => None
+        }
     }
 
-    pub fn inverted_index(&self) -> BTreeMap<(u32, bool), Vec<PyPeptideSpectrumMatch>> {
-        let mut inverted_index: BTreeMap<(u32, bool), Vec<PyPeptideSpectrumMatch>> = BTreeMap::new();
-        for (_, psms) in &self.inner.psm_map {
-            for psm in psms {
-                inverted_index.entry((psm.peptide_id, psm.decoy)).or_insert(Vec::new()).push(PyPeptideSpectrumMatch { inner: psm.clone() });
+    pub fn get_best_matches(&self, spec_ids: Vec<String>, num_threads: usize) -> Vec<Option<PyPeptideSpectrumMatch>> {
+        self.inner.get_best_matches(spec_ids, num_threads).into_iter().map(|maybe_match| {
+            match maybe_match {
+                Some(maybe_match) => Some(PyPeptideSpectrumMatch {
+                    inner: maybe_match.clone()
+                }),
+                None => None
             }
-        }
-
-        inverted_index
+        }).collect()
     }
 }
 

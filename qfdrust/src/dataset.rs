@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap};
+use rayon::prelude::*;
 
 pub enum TDCMethod {
     PsmLevel,
@@ -67,21 +68,53 @@ impl PsmDataset {
             psm_map: map,
         }
     }
+    pub fn get_spectra_ids(&self) -> Vec<String> {
+        self.psm_map.keys().cloned().collect()
+    }
+
+    pub fn get_best_target_psm(&self, spec_id: &str) -> Option<&PeptideSpectrumMatch> {
+        self.psm_map.get(spec_id).and_then(|psms| psms.iter().find(|psm| !psm.decoy))
+    }
+
+    pub fn get_best_decoy_psm(&self, spec_id: &str) -> Option<&PeptideSpectrumMatch> {
+        self.psm_map.get(spec_id).and_then(|psms| psms.iter().find(|psm| psm.decoy))
+    }
+
+    pub fn get_best_match(&self, spec_id: &str) -> Option<&PeptideSpectrumMatch> {
+        let best_target = self.get_best_target_psm(spec_id);
+        let best_decoy = self.get_best_decoy_psm(spec_id);
+        // randomly return target or decoy if both are present and have the same score, otherwise return the best one
+        match (best_target, best_decoy) {
+            (Some(target), Some(decoy)) => {
+                if target.score == decoy.score {
+                    if rand::random() {
+                        Some(target)
+                    } else {
+                        Some(decoy)
+                    }
+                } else {
+                    Some(target)
+                }
+            },
+            (Some(target), None) => Some(target),
+            (None, Some(decoy)) => Some(decoy),
+            (None, None) => None,
+        }
+    }
+
+    pub fn get_best_matches(&self, spec_ids: Vec<String>, num_threads: usize) -> Vec<Option<&PeptideSpectrumMatch>> {
+        let thread_pool = rayon::ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+        let result = thread_pool.install(|| {
+            spec_ids.into_par_iter().map(|spec_id| self.get_best_match(spec_id.as_str())).collect()
+        });
+
+        result
+    }
+
     pub fn size(&self) -> usize {
         self.psm_map.len()
     }
-    pub fn inverted_index(&self) -> BTreeMap<(u32, bool), Vec<&PeptideSpectrumMatch>> {
-        let mut inverted_index: BTreeMap<(u32, bool), Vec<&PeptideSpectrumMatch>> = BTreeMap::new();
-
-        for (_, psms) in &self.psm_map {
-            for psm in psms {
-                inverted_index.entry((psm.peptide_id, psm.decoy)).or_insert(Vec::new()).push(psm);
-            }
-        }
-
-        inverted_index
-    }
-
     pub fn assign_confidence(&self, method: TDCMethod, threshold: f64, eval_fdr: f64) -> Vec<f64> {
         match method {
             TDCMethod::PsmLevel => assign_confidence_psm_level(&self, threshold, eval_fdr),
