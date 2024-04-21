@@ -18,9 +18,13 @@ pub struct PsmDataset {
 
 impl PsmDataset {
     pub fn new(mut map: BTreeMap<String, Vec<PeptideSpectrumMatch>>) -> PsmDataset {
+
         for (_, psms) in &mut map {
             psms.sort_by(|a, b| a.score.partial_cmp(&b.score).unwrap());
         }
+
+        map.retain(|_, v| !v.is_empty());
+
         PsmDataset {
             psm_map: map,
         }
