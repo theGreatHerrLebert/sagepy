@@ -11,7 +11,7 @@ pub struct PyPeptideSpectrumMatch {
 #[pymethods]
 impl PyPeptideSpectrumMatch {
     #[new]
-    fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>, decoy: bool, score: f64, intensity: f64, features: Option<Vec<(String, f64)>>) -> Self {
+    fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>, decoy: bool, score: f64, intensity_ms1: Option<f64>, intensity_ms2: Option<f64>, features: Option<Vec<(String, f64)>>) -> Self {
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch {
                 spec_id,
@@ -19,7 +19,8 @@ impl PyPeptideSpectrumMatch {
                 proteins,
                 decoy,
                 score,
-                intensity,
+                intensity_ms1,
+                intensity_ms2,
                 features
             },
         }
@@ -51,8 +52,13 @@ impl PyPeptideSpectrumMatch {
     }
 
     #[getter]
-    fn intensity(&self) -> f64 {
-        self.inner.intensity
+    fn intensity_ms1(&self) -> Option<f64> {
+        self.inner.intensity_ms1
+    }
+
+    #[getter]
+    fn intensity_ms2(&self) -> Option<f64> {
+        self.inner.intensity_ms2
     }
 
     #[getter]

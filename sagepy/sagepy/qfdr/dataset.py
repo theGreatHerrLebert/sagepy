@@ -5,8 +5,11 @@ psc = sagepy_connector.py_qfdr
 
 
 class PeptideSpectrumMatch:
-    def __init__(self, spec_id: str, peptide_id: int, proteins: List[str], decoy: bool, score: float, intensity: float, features: Union[None, List[Tuple[str, float]]] = None):
-        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, proteins, decoy, score, intensity, features)
+    def __init__(self, spec_id: str, peptide_id: int,
+                 proteins: List[str], decoy: bool, score: float,
+                 intensity_ms1: Union[None, float],
+                 intensity_ms2: Union[None, float] = None, features: Union[None, List[Tuple[str, float]]] = None):
+        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, proteins, decoy, score, intensity_ms1, intensity_ms2, features)
 
     @property
     def spec_id(self) -> str:
@@ -29,7 +32,11 @@ class PeptideSpectrumMatch:
         return self.__py_ptr.score
 
     @property
-    def intensity(self) -> float:
+    def intensity_ms1(self) -> Union[None, float]:
+        return self.__py_ptr.intensity
+
+    @property
+    def intensity_ms2(self) -> Union[None, float]:
         return self.__py_ptr.intensity
 
     @property

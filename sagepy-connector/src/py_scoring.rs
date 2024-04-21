@@ -526,7 +526,7 @@ impl PyScorer {
                 let peptide = &db.inner[feature.peptide_idx];
                 let decoy = peptide.decoy;
                 let score = feature.hyperscore;
-                let intensity: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap()).sum();
+                let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap()).sum();
                 let features = vec![("charge".to_string(), feature.charge as f64)];
 
                 let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
@@ -536,7 +536,8 @@ impl PyScorer {
                     proteins,
                     decoy,
                     score,
-                    intensity: intensity as f64,
+                    intensity_ms1: Some(intensity_ms1 as f64),
+                    intensity_ms2: Some(feature.ms2_intensity as f64),
                     features: Some(features),
                 };
                 psms.push(psm);

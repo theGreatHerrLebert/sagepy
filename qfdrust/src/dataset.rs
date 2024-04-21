@@ -7,7 +7,8 @@ pub struct PeptideSpectrumMatch {
     pub proteins: Vec<String>,
     pub decoy: bool,
     pub score: f64,
-    pub intensity: f64,
+    pub intensity_ms1: Option<f64>,
+    pub intensity_ms2: Option<f64>,
     pub features: Option<Vec<(String, f64)>>,
 }
 
