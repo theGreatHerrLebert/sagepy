@@ -33,11 +33,11 @@ class PeptideSpectrumMatch:
 
     @property
     def intensity_ms1(self) -> Union[None, float]:
-        return self.__py_ptr.intensity
+        return self.__py_ptr.intensity_ms1
 
     @property
     def intensity_ms2(self) -> Union[None, float]:
-        return self.__py_ptr.intensity
+        return self.__py_ptr.intensity_ms1
 
     @property
     def features(self) -> Union[None, List[Tuple[str, float]]]:
