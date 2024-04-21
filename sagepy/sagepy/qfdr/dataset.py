@@ -54,7 +54,8 @@ class PeptideSpectrumMatch:
 
     def __repr__(self):
         return (f"PeptideSpectrumMatch(spec_id: {self.spec_id}, peptide_id: {self.peptide_id}, "
-                f"proteins: {self.proteins}, decoy: {self.decoy}, intensity: {self.intensity},"
+                f"proteins: {self.proteins}, decoy: {self.decoy}, "
+                f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
                 f"score: {self.score}, features: {self.features})")
 
 
