@@ -108,6 +108,18 @@ class PsmDataset:
     def get_py_ptr(self) -> psc.PyPsmDataset:
         return self.__py_ptr
 
+    def best_target_psm(self, spec_id: str) -> Union[None, PeptideSpectrumMatch]:
+        psm = self.__py_ptr.best_target_psm(spec_id)
+        if psm is None:
+            return None
+        return PeptideSpectrumMatch.from_py_ptr(psm)
+
+    def best_decoy_psm(self, spec_id: str) -> Union[None, PeptideSpectrumMatch]:
+        psm = self.__py_ptr.best_decoy_psm(spec_id)
+        if psm is None:
+            return None
+        return PeptideSpectrumMatch.from_py_ptr(psm)
+
     def target_decoy_competition(self, method: TDCMethod) -> List[PeptideSpectrumMatch]:
         return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.tdc(method.get_py_ptr())]
 

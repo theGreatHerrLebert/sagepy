@@ -81,9 +81,9 @@ impl PsmDataset {
     pub fn get_candidates(&self, method: TDCMethod) -> Vec<&PeptideSpectrumMatch> {
         match method {
             TDCMethod::PsmLevel => get_candidates_psm(&self),
-            TDCMethod::PeptideLevelPsmOnly => todo!("Implement this function"),
-            TDCMethod::PeptideLevelPeptideOnly => todo!("Implement this function"),
-            TDCMethod::PeptideLevelPsmPeptide => todo!("Implement this function"),
+            TDCMethod::PeptideLevelPsmOnly => get_candidates_peptide_psm_only(&self),
+            TDCMethod::PeptideLevelPeptideOnly => get_candidates_peptide_peptide_only(&self),
+            TDCMethod::PeptideLevelPsmPeptide => get_candidates_peptide_psm_peptide(&self),
         }
     }
 
@@ -94,6 +94,34 @@ impl PsmDataset {
             TDCMethod::PeptideLevelPeptideOnly => tdc_peptide_peptide_only(&self),
             TDCMethod::PeptideLevelPsmPeptide => tdc_peptide_psm_peptide(&self),
         }
+    }
+    pub fn get_best_target_psm(&self, spec_id: &str) -> Option<&PeptideSpectrumMatch> {
+        self.psm_map.get(spec_id).unwrap().iter().find(|psm| !psm.decoy)
+    }
+    pub fn get_best_decoy_psm(&self, spec_id: &str) -> Option<&PeptideSpectrumMatch> {
+        self.psm_map.get(spec_id).unwrap().iter().find(|psm| psm.decoy)
+    }
+
+    pub fn get_best_target_psms(&self) -> Vec<&PeptideSpectrumMatch> {
+        let maybe_matches: Vec<_> = self.get_spectra_ids().iter().map(|spec_id| self.get_best_target_psm(spec_id)).collect();
+        maybe_matches.iter().filter_map(|m| *m).collect()
+    }
+
+    pub fn get_best_decoy_psms(&self) -> Vec<&PeptideSpectrumMatch> {
+        let maybe_matches: Vec<_> = self.get_spectra_ids().iter().map(|spec_id| self.get_best_decoy_psm(spec_id)).collect();
+        maybe_matches.iter().filter_map(|m| *m).collect()
+    }
+
+    pub fn inverted_index(&self) -> BTreeMap<(u32, bool), Vec<&PeptideSpectrumMatch>> {
+        let mut peptide_map: BTreeMap<(u32, bool), Vec<&PeptideSpectrumMatch>> = BTreeMap::new();
+        for psms in self.psm_map.values() {
+            for psm in psms {
+                let key = (psm.peptide_id, psm.decoy);
+                let entry = peptide_map.entry(key).or_insert(Vec::new());
+                entry.push(psm);
+            }
+        }
+        peptide_map
     }
 }
 
@@ -155,6 +183,87 @@ fn get_candidates_psm(ds: &PsmDataset) -> Vec<&PeptideSpectrumMatch> {
     restult
 }
 
+fn get_candidates_peptide_psm_only(ds: &PsmDataset) -> Vec<&PeptideSpectrumMatch> {
+
+    let candidates = get_candidates_psm(ds);
+    let mut peptide_map: BTreeMap<(u32, bool), &PeptideSpectrumMatch> = BTreeMap::new();
+
+    // for each peptide, select the best target and decoy match
+    for psm in candidates {
+        let key = (psm.peptide_id, psm.decoy);
+        let entry = peptide_map.entry(key);
+        let best_psm = entry.or_insert(psm);
+        if psm.score > best_psm.score || (psm.score == best_psm.score && rand::random()) {
+            *best_psm = psm;
+        }
+    }
+
+    let mut result: Vec<&PeptideSpectrumMatch> = Vec::new();
+
+    for (_, psm) in peptide_map {
+        result.push(psm);
+    }
+
+    result
+}
+
+fn get_candidates_peptide_peptide_only(ds: &PsmDataset) -> Vec<&PeptideSpectrumMatch> {
+
+    let best_targets = ds.get_best_target_psms();
+    let best_decoys = ds.get_best_decoy_psms();
+
+    let mut peptide_map: BTreeMap<u32, (Option<&PeptideSpectrumMatch>, Option<&PeptideSpectrumMatch>)> = BTreeMap::new();
+
+    for psm in best_targets.iter().chain(best_decoys.iter()) {
+        let key = psm.peptide_id;
+        let entry = peptide_map.entry(key);
+        let (best_target, best_decoy) = entry.or_insert((None, None));
+        if psm.decoy {
+            if best_decoy.is_none() || psm.score > best_decoy.unwrap().score {
+                *best_decoy = Some(psm);
+            }
+        } else {
+            if best_target.is_none() || psm.score > best_target.unwrap().score {
+                *best_target = Some(psm);
+            }
+        }
+    }
+
+    let mut result: Vec<&PeptideSpectrumMatch> = Vec::new();
+
+    for (_, (best_target, best_decoy)) in peptide_map {
+        match (best_target, best_decoy) {
+            (Some(target), Some(decoy)) => {
+                if target.score > decoy.score {
+                    result.push(target);
+                }
+                if target.score == decoy.score {
+                    if rand::random() {
+                        result.push(target);
+                    } else {
+                        result.push(decoy);
+                    }
+                }
+                else {
+                    result.push(decoy);
+                }
+            },
+            (Some(target), None) => {
+                result.push(target);
+            },
+            (None, Some(decoy)) => {
+                result.push(decoy);
+            },
+            _ => {},
+        }
+    }
+    result
+}
+
+fn get_candidates_peptide_psm_peptide(_ds: &PsmDataset) -> Vec<&PeptideSpectrumMatch> {
+    todo!("Implement this function")
+}
+
 /// Perform target-decoy competition at the PSM level
 ///
 /// # Arguments
@@ -169,7 +278,7 @@ fn tdc_psm(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
     let candidates = get_candidates_psm(ds);
     let scores: Vec<f64> = candidates.iter().map(|psm| psm.score).collect();
     let targets: Vec<bool> = candidates.iter().map(|psm| !psm.decoy).collect();
-    let q_values = utility::target_decoy_competition(&scores, &targets, true);
+    let q_values: Vec<f64> = utility::target_decoy_competition(&scores, &targets, true);
 
     candidates.iter().zip(q_values.iter()).map(|(psm, q)| {
         PeptideSpectrumMatch {
@@ -188,24 +297,13 @@ fn tdc_psm(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
 
 fn tdc_peptide_psm_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
 
-    let candidates = get_candidates_psm(ds);
-    let mut peptide_map: BTreeMap<(u32, bool), &PeptideSpectrumMatch> = BTreeMap::new();
+    let candidates = get_candidates_peptide_psm_only(ds);
 
-    // for each peptide, select the best target and decoy match
-    for psm in candidates {
-        let key = (psm.peptide_id, psm.decoy);
-        let entry = peptide_map.entry(key);
-        let best_psm = entry.or_insert(psm);
-        if psm.score > best_psm.score || (psm.score == best_psm.score && rand::random()) {
-            *best_psm = psm;
-        }
-    }
+    let scores: Vec<f64> = candidates.iter().map(|psm| psm.score).collect();
+    let targets: Vec<bool> = candidates.iter().map(|psm| !psm.decoy).collect();
+    let q_values: Vec<f64> = utility::target_decoy_competition(&scores, &targets, true);
 
-    let scores: Vec<f64> = peptide_map.values().map(|psm| psm.score).collect();
-    let targets: Vec<bool> = peptide_map.values().map(|psm| !psm.decoy).collect();
-    let q_values = utility::target_decoy_competition(&scores, &targets, true);
-
-    peptide_map.values().zip(q_values.iter()).map(|(psm, q)| {
+    candidates.iter().zip(q_values.iter()).map(|(psm, q)| {
         PeptideSpectrumMatch {
             spec_id: psm.spec_id.clone(),
             peptide_id: psm.peptide_id,
@@ -220,8 +318,25 @@ fn tdc_peptide_psm_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
     }).collect()
 }
 
-fn tdc_peptide_peptide_only(_ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
-    todo!("Implement this function")
+fn tdc_peptide_peptide_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
+    let candidates = get_candidates_peptide_peptide_only(ds);
+    let scores: Vec<f64> = candidates.iter().map(|psm| psm.score).collect();
+    let targets: Vec<bool> = candidates.iter().map(|psm| !psm.decoy).collect();
+    let q_values: Vec<f64> = utility::target_decoy_competition(&scores, &targets, true);
+
+    candidates.iter().zip(q_values.iter()).map(|(psm, q)| {
+        PeptideSpectrumMatch {
+            spec_id: psm.spec_id.clone(),
+            peptide_id: psm.peptide_id,
+            proteins: psm.proteins.clone(),
+            decoy: psm.decoy,
+            score: psm.score,
+            intensity_ms1: psm.intensity_ms1,
+            intensity_ms2: psm.intensity_ms2,
+            features: psm.features.clone(),
+            q_value: Some(*q),
+        }
+    }).collect()
 }
 
 fn tdc_peptide_psm_peptide(_ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {

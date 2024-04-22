@@ -130,6 +130,14 @@ impl PyPsmDataset {
         self.inner.get_spectra_ids()
     }
 
+    pub fn best_target_ptm(&self, spec_id: String) -> Option<PyPeptideSpectrumMatch> {
+        self.inner.get_best_target_psm(&spec_id).map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() })
+    }
+
+    pub fn best_decoy_ptm(&self, spec_id: String) -> Option<PyPeptideSpectrumMatch> {
+        self.inner.get_best_decoy_psm(&spec_id).map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() })
+    }
+
     pub fn tdc(&self, method: PyTDCMethod) -> Vec<PyPeptideSpectrumMatch> {
         self.inner.tdc(method.inner).iter().map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() }).collect()
     }
