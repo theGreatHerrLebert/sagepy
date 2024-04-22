@@ -126,23 +126,20 @@ class PsmDataset:
 
     def target_decoy_competition_pandas(self, method: TDCMethod) -> pd.DataFrame:
         matches = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.tdc(method.get_py_ptr())]
-        row_dict = {}
+
+        row_list = []
 
         for match in matches:
-            row_dict['spec_id'] = match.spec_id
-            row_dict['peptide_id'] = match.peptide_id
-            row_dict['proteins'] = match.proteins
-            row_dict['decoy'] = match.decoy
-            row_dict['score'] = match.score
-            row_dict['intensity_ms1'] = match.intensity_ms1
-            row_dict['intensity_ms2'] = match.intensity_ms2
+            row_dict = {'spec_id': match.spec_id, 'peptide_id': match.peptide_id, 'proteins': match.proteins,
+                        'decoy': match.decoy, 'score': match.score, 'intensity_ms1': match.intensity_ms1,
+                        'intensity_ms2': match.intensity_ms2, 'q_value': match.q_value}
 
             for name, value in match.features:
                 row_dict[name] = value
 
-            row_dict['q_value'] = match.q_value
+            row_list.append(row_dict)
 
-        return pd.DataFrame(row_dict)
+        return pd.DataFrame(row_list)
 
     def __repr__(self):
         return f"PsmDataset(scored spectra: {self.size})"
