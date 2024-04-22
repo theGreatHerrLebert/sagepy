@@ -1,8 +1,10 @@
 use std::collections::BTreeMap;
 use pyo3::prelude::*;
+use pyo3::types::PyTuple;
 use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset, TDCMethod};
 
 #[pyclass]
+#[derive(Clone)]
 pub struct PyTDCMethod {
     pub inner: TDCMethod,
 }
@@ -29,7 +31,10 @@ pub struct PyPeptideSpectrumMatch {
 #[pymethods]
 impl PyPeptideSpectrumMatch {
     #[new]
-    fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>, decoy: bool, score: f64, intensity_ms1: Option<f64>, intensity_ms2: Option<f64>, features: Option<Vec<(String, f64)>>) -> Self {
+    fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>,
+           decoy: bool, score: f64, intensity_ms1: Option<f64>,
+           intensity_ms2: Option<f64>, features: Option<Vec<(String, f64)>>,
+           q_value: Option<f64>, confidence: Option<f64>) -> Self {
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch {
                 spec_id,
@@ -39,7 +44,9 @@ impl PyPeptideSpectrumMatch {
                 score,
                 intensity_ms1,
                 intensity_ms2,
-                features
+                features,
+                q_value,
+                confidence,
             },
         }
     }
@@ -118,25 +125,9 @@ impl PyPsmDataset {
     pub fn keys(&self) -> Vec<String> {
         self.inner.get_spectra_ids()
     }
-    pub fn get_best_match(&self, spec_id: &str) -> Option<PyPeptideSpectrumMatch> {
-        let maybe_match = self.inner.get_best_match(spec_id);
-        match maybe_match {
-            Some(maybe_match) => Some(PyPeptideSpectrumMatch {
-                inner: maybe_match.clone()
-            }),
-            None => None
-        }
-    }
 
-    pub fn get_best_matches(&self, spec_ids: Vec<String>, num_threads: usize) -> Vec<Option<PyPeptideSpectrumMatch>> {
-        self.inner.get_best_matches(spec_ids, num_threads).into_iter().map(|maybe_match| {
-            match maybe_match {
-                Some(maybe_match) => Some(PyPeptideSpectrumMatch {
-                    inner: maybe_match.clone()
-                }),
-                None => None
-            }
-        }).collect()
+    pub fn tdc(&self, method: PyTDCMethod) -> Vec<PyPeptideSpectrumMatch> {
+        self.inner.tdc(method.inner).iter().map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() }).collect()
     }
 }
 

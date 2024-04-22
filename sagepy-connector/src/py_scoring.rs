@@ -539,6 +539,8 @@ impl PyScorer {
                     intensity_ms1: Some(intensity_ms1 as f64),
                     intensity_ms2: Some(feature.ms2_intensity as f64),
                     features: Some(features),
+                    q_value: None,
+                    confidence: None,
                 };
                 psms.push(psm);
             }
