@@ -1,5 +1,72 @@
+use std::collections::HashMap;
 use rand::distributions::{Uniform, Distribution};
 
+/// Convert a mass to a Unimod string
+///
+/// # Arguments
+///
+/// * `mass` - A float representing the mass
+///
+/// # Returns
+///
+/// * `String` - A string representing the Unimod modification
+///
+fn mass_to_unimod(mass: f32) -> String {
+
+    let maybe_key = mass.round() as u32;
+    let mut map = HashMap::new();
+
+    map.insert(42, "[UNIMOD:1]");
+    map.insert(57, "[UNIMOD:4]");
+    map.insert(80, "[UNIMOD:21]");
+    map.insert(16, "[UNIMOD:35]");
+    map.insert(119, "[UNIMOD:312]");
+
+    match map.get(&maybe_key) {
+        Some(&unimod) => unimod.to_string(),
+        None => panic!("Rounded mass not in dict: {}", maybe_key),
+    }
+}
+
+/// Convert a Sage sequence and modifications to a Unimod sequence
+///
+/// # Arguments
+///
+/// * `sequence` - A string representing the amino acid sequence
+/// * `modifications` - A vector of floats representing the modifications
+///
+/// # Returns
+///
+/// * `String` - A string representing the Unimod sequence
+///
+pub fn sage_sequence_to_unimod_sequence(sequence: String, modifications: &Vec<f32>) -> String {
+
+    assert_eq!(sequence.len(), modifications.len(), "Sequence and modifications must be the same length");
+
+    // go over each char and check if modification is present (not 0.0), if so, use mass_to_unimod to get unimod
+    let mut unimod_sequence = String::new();
+
+    for (idx, aa) in sequence.chars().enumerate() {
+        unimod_sequence.push(aa);
+        if modifications[idx] != 0.0 {
+            unimod_sequence.push_str(&mass_to_unimod(modifications[idx]));
+        }
+    }
+    unimod_sequence
+}
+
+/// Use target-decoy competition to calculate q-values
+///
+/// # Arguments
+///
+/// * `scores` - A vector of floats representing the scores
+/// * `target` - A vector of booleans representing the target/decoy status
+/// * `desc` - A boolean representing the sort order of the scores
+///
+/// # Returns
+///
+/// * `Vec<f64>` - A vector of floats representing the q-values
+///
 pub fn target_decoy_competition(scores: &Vec<f64>, target: &Vec<bool>, desc: bool) -> Vec<f64> {
     assert_eq!(scores.len(), target.len(), "Scores and target must be the same length");
 
@@ -52,6 +119,17 @@ pub fn target_decoy_competition(scores: &Vec<f64>, target: &Vec<bool>, desc: boo
     final_q_vals
 }
 
+/// Convert FDR to q-values
+///
+/// # Arguments
+///
+/// * `scores` - A vector of floats representing the scores
+/// * `fdr` - A vector of floats representing the FDR
+///
+/// # Returns
+///
+/// * `Vec<f64>` - A vector of floats representing the q-values
+///
 fn fdr_to_q_value(scores: &[f64], fdr: &[f64]) -> Vec<f64> {
     assert_eq!(scores.len(), fdr.len(), "Scores and FDR must be of the same length");
 

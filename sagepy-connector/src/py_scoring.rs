@@ -1,6 +1,7 @@
 use std::ops::Index;
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset};
+use qfdrust::utility::sage_sequence_to_unimod_sequence;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 
@@ -9,6 +10,7 @@ use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
+use crate::py_peptide::peptide;
 use crate::py_qfdr::{PyPsmDataset};
 
 #[pyclass]
@@ -527,12 +529,17 @@ impl PyScorer {
                 let decoy = peptide.decoy;
                 let score = feature.hyperscore;
                 let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap()).sum();
-                let features = vec![("charge".to_string(), feature.charge as f64)];
+                let features = vec![
+                    ("charge".to_string(), feature.charge as f64),
+                    ("exp_mass".to_string(), feature.expmass as f64),
+                    ("calc_mass".to_string(), feature.calcmass as f64),
+                    ("delta_mass".to_string(), feature.delta_mass as f64)];
 
                 let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
                 let psm = PeptideSpectrumMatch {
                     spec_id: spectrum.inner.id.clone(),
                     peptide_id: feature.peptide_idx.0,
+                    sequence: sage_sequence_to_unimod_sequence(std::str::from_utf8(&peptide.sequence).unwrap().to_string(), &peptide.modifications),
                     proteins,
                     decoy,
                     score,

@@ -26,12 +26,13 @@ class TDCMethod:
 
 class PeptideSpectrumMatch:
     def __init__(self, spec_id: str, peptide_id: int,
+                 sequence: str,
                  proteins: List[str], decoy: bool, score: float,
                  intensity_ms1: Union[None, float],
                  intensity_ms2: Union[None, float] = None, features: Union[None, List[Tuple[str, float]]] = None,
                  q_value: Union[None, float] = None,
                  ):
-        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, proteins,
+        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, sequence, proteins,
                                                    decoy, score, intensity_ms1, intensity_ms2,
                                                    features, q_value)
 
@@ -42,6 +43,10 @@ class PeptideSpectrumMatch:
     @property
     def peptide_id(self) -> int:
         return self.__py_ptr.peptide_id
+
+    @property
+    def sequence(self):
+        return self.__py_ptr.sequence
 
     @property
     def proteins(self) -> List[str]:
@@ -130,7 +135,8 @@ class PsmDataset:
         row_list = []
 
         for match in matches:
-            row_dict = {'spec_id': match.spec_id, 'peptide_id': match.peptide_id, 'proteins': match.proteins,
+            row_dict = {'spec_id': match.spec_id, 'peptide_id': match.peptide_id, 'sequence': match.sequence,
+                        'proteins': match.proteins,
                         'decoy': match.decoy, 'score': match.score, 'intensity_ms1': match.intensity_ms1,
                         'intensity_ms2': match.intensity_ms2, 'q_value': match.q_value}
 

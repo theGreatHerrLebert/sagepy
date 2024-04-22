@@ -44,6 +44,7 @@ impl TDCMethod {
 pub struct PeptideSpectrumMatch {
     pub spec_id: String,
     pub peptide_id: u32,
+    pub sequence: String,
     pub proteins: Vec<String>,
     pub decoy: bool,
     pub score: f64,
@@ -370,6 +371,7 @@ fn tdc_psm(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
         PeptideSpectrumMatch {
             spec_id: psm.spec_id.clone(),
             peptide_id: psm.peptide_id,
+            sequence: psm.sequence.clone(),
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             score: psm.score,
@@ -393,6 +395,7 @@ fn tdc_peptide_psm_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
         PeptideSpectrumMatch {
             spec_id: psm.spec_id.clone(),
             peptide_id: psm.peptide_id,
+            sequence: psm.sequence.clone(),
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             score: psm.score,
@@ -414,6 +417,7 @@ fn tdc_peptide_peptide_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
         PeptideSpectrumMatch {
             spec_id: psm.spec_id.clone(),
             peptide_id: psm.peptide_id,
+            sequence: psm.sequence.clone(),
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             score: psm.score,
@@ -435,6 +439,7 @@ fn tdc_peptide_psm_peptide(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
         PeptideSpectrumMatch {
             spec_id: psm.spec_id.clone(),
             peptide_id: psm.peptide_id,
+            sequence: psm.sequence.clone(),
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             score: psm.score,

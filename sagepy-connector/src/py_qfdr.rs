@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 use pyo3::prelude::*;
-use pyo3::types::PyTuple;
 use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset, TDCMethod};
 
 #[pyclass]
@@ -31,7 +30,9 @@ pub struct PyPeptideSpectrumMatch {
 #[pymethods]
 impl PyPeptideSpectrumMatch {
     #[new]
-    fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>,
+    fn new(spec_id: String, peptide_id: u32,
+           sequence: String,
+           proteins: Vec<String>,
            decoy: bool, score: f64, intensity_ms1: Option<f64>,
            intensity_ms2: Option<f64>, features: Option<Vec<(String, f64)>>,
            q_value: Option<f64>) -> Self {
@@ -39,6 +40,7 @@ impl PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch {
                 spec_id,
                 peptide_id,
+                sequence,
                 proteins,
                 decoy,
                 score,
@@ -58,6 +60,11 @@ impl PyPeptideSpectrumMatch {
     #[getter]
     fn peptide_id(&self) -> u32 {
         self.inner.peptide_id
+    }
+
+    #[getter]
+    fn sequence(&self) -> String {
+        self.inner.sequence.clone()
     }
 
     #[getter]
