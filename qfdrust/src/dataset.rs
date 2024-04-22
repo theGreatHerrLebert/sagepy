@@ -15,7 +15,7 @@ impl TDCMethod {
             "psm" => TDCMethod::PsmLevel,
             "peptide_psm_only" => TDCMethod::PeptideLevelPsmOnly,
             "peptide_peptide_only" => TDCMethod::PeptideLevelPeptideOnly,
-            "peptide_psm_and_peptide" => TDCMethod::PeptideLevelPsmPeptide,
+            "peptide_psm_peptide" => TDCMethod::PeptideLevelPsmPeptide,
             _ => panic!("Invalid TDC method"),
         }
     }
