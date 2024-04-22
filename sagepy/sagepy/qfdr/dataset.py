@@ -28,11 +28,11 @@ class PeptideSpectrumMatch:
                  proteins: List[str], decoy: bool, score: float,
                  intensity_ms1: Union[None, float],
                  intensity_ms2: Union[None, float] = None, features: Union[None, List[Tuple[str, float]]] = None,
-                 q_value: Union[None, float] = None, confidence: Union[None, float] = None,
+                 q_value: Union[None, float] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, proteins,
                                                    decoy, score, intensity_ms1, intensity_ms2,
-                                                   features, q_value, confidence)
+                                                   features, q_value)
 
     @property
     def spec_id(self) -> str:
@@ -70,10 +70,6 @@ class PeptideSpectrumMatch:
     def q_value(self) -> Union[None, float]:
         return self.__py_ptr.q_value
 
-    @property
-    def confidence(self) -> Union[None, float]:
-        return self.__py_ptr.confidence
-
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
         instance = cls.__new__(cls)
@@ -88,7 +84,7 @@ class PeptideSpectrumMatch:
                 f"proteins: {self.proteins}, decoy: {self.decoy}, "
                 f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
                 f"score: {self.score}, features: {self.features}, "
-                f"q_value: {self.q_value}, confidence: {self.confidence})")
+                f"q_value: {self.q_value})")
 
 
 class PsmDataset:

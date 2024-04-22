@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap};
-use rayon::prelude::*;
 use crate::utility;
 
 #[derive(Clone, Debug)]
@@ -7,7 +6,7 @@ pub enum TDCMethod {
     PsmLevel,
     PeptideLevelPsmOnly,
     PeptideLevelPeptideOnly,
-    PeptideLevelPsmAndPeptide,
+    PeptideLevelPsmPeptide,
 }
 
 impl TDCMethod {
@@ -16,7 +15,7 @@ impl TDCMethod {
             "psm" => TDCMethod::PsmLevel,
             "peptide_psm_only" => TDCMethod::PeptideLevelPsmOnly,
             "peptide_peptide_only" => TDCMethod::PeptideLevelPeptideOnly,
-            "peptide_psm_and_peptide" => TDCMethod::PeptideLevelPsmAndPeptide,
+            "peptide_psm_and_peptide" => TDCMethod::PeptideLevelPsmPeptide,
             _ => panic!("Invalid TDC method"),
         }
     }
@@ -26,7 +25,7 @@ impl TDCMethod {
             0 => TDCMethod::PsmLevel,
             1 => TDCMethod::PeptideLevelPsmOnly,
             2 => TDCMethod::PeptideLevelPeptideOnly,
-            3 => TDCMethod::PeptideLevelPsmAndPeptide,
+            3 => TDCMethod::PeptideLevelPsmPeptide,
             _ => panic!("Invalid TDC method"),
         }
     }
@@ -36,7 +35,7 @@ impl TDCMethod {
             TDCMethod::PsmLevel => "PsmLevel",
             TDCMethod::PeptideLevelPsmOnly => "PeptideLevelPsmOnly",
             TDCMethod::PeptideLevelPeptideOnly => "PeptideLevelPeptideOnly",
-            TDCMethod::PeptideLevelPsmAndPeptide => "PeptideLevelPsmAndPeptide",
+            TDCMethod::PeptideLevelPsmPeptide => "PeptideLevelPsmAndPeptide",
         }
     }
 }
@@ -52,7 +51,6 @@ pub struct PeptideSpectrumMatch {
     pub intensity_ms2: Option<f64>,
     pub features: Option<Vec<(String, f64)>>,
     pub q_value: Option<f64>,
-    pub confidence: Option<f64>,
 }
 
 pub struct PsmDataset {
@@ -79,21 +77,22 @@ impl PsmDataset {
     pub fn size(&self) -> usize {
         self.psm_map.len()
     }
-    pub fn tdc(&self, method: TDCMethod) -> Vec<PeptideSpectrumMatch> {
+
+    pub fn get_candidates(&self, method: TDCMethod) -> Vec<&PeptideSpectrumMatch> {
         match method {
-            TDCMethod::PsmLevel => tdc_psm_level(&self),
-            TDCMethod::PeptideLevelPsmOnly => tdc_peptide_only(&self),
-            TDCMethod::PeptideLevelPeptideOnly => tdc_peptide_only(&self),
-            TDCMethod::PeptideLevelPsmAndPeptide => tdc_psm_and_peptide(&self),
+            TDCMethod::PsmLevel => get_candidates_psm(&self),
+            TDCMethod::PeptideLevelPsmOnly => todo!("Implement this function"),
+            TDCMethod::PeptideLevelPeptideOnly => todo!("Implement this function"),
+            TDCMethod::PeptideLevelPsmPeptide => todo!("Implement this function"),
         }
     }
 
-    pub fn assign_confidence(&self, method: TDCMethod, threshold: f64, eval_fdr: f64) -> Vec<f64> {
+    pub fn tdc(&self, method: TDCMethod) -> Vec<PeptideSpectrumMatch> {
         match method {
-            TDCMethod::PsmLevel => assign_confidence_psm_level(&self, threshold, eval_fdr),
-            TDCMethod::PeptideLevelPsmOnly => assign_confidence_peptide_level_psm_only(&self, threshold, eval_fdr),
-            TDCMethod::PeptideLevelPeptideOnly => assign_confidence_peptide_level_peptide_only(&self, threshold, eval_fdr),
-            TDCMethod::PeptideLevelPsmAndPeptide => assign_confidence_peptide_level_psm_and_peptide(&self, threshold, eval_fdr),
+            TDCMethod::PsmLevel => tdc_psm(&self),
+            TDCMethod::PeptideLevelPsmOnly => tdc_peptide_psm_only(&self),
+            TDCMethod::PeptideLevelPeptideOnly => tdc_peptide_peptide_only(&self),
+            TDCMethod::PeptideLevelPsmPeptide => tdc_peptide_psm_peptide(&self),
         }
     }
 }
@@ -108,7 +107,7 @@ impl PsmDataset {
 ///
 /// A vector of PeptideSpectrumMatch
 ///
-fn get_candidates_psm_only(ds: &PsmDataset) -> Vec<&PeptideSpectrumMatch> {
+fn get_candidates_psm(ds: &PsmDataset) -> Vec<&PeptideSpectrumMatch> {
 
     let mut restult: Vec<&PeptideSpectrumMatch> = Vec::new();
 
@@ -166,8 +165,8 @@ fn get_candidates_psm_only(ds: &PsmDataset) -> Vec<&PeptideSpectrumMatch> {
 ///
 /// A tuple containing the selected PeptideSpectrumMatch and the q-values, caution,
 /// random selection of target or decoy at the same score make this function non-deterministic,
-fn tdc_psm_level(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
-    let candidates = get_candidates_psm_only(ds);
+fn tdc_psm(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
+    let candidates = get_candidates_psm(ds);
     let scores: Vec<f64> = candidates.iter().map(|psm| psm.score).collect();
     let targets: Vec<bool> = candidates.iter().map(|psm| !psm.decoy).collect();
     let q_values = utility::target_decoy_competition(&scores, &targets, true);
@@ -183,36 +182,48 @@ fn tdc_psm_level(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             intensity_ms2: psm.intensity_ms2,
             features: psm.features.clone(),
             q_value: Some(*q),
-            confidence: None,
         }
     }).collect()
 }
 
-fn tdc_peptide_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
+fn tdc_peptide_psm_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
+
+    let candidates = get_candidates_psm(ds);
+    let mut peptide_map: BTreeMap<(u32, bool), &PeptideSpectrumMatch> = BTreeMap::new();
+
+    // for each peptide, select the best target and decoy match
+    for psm in candidates {
+        let key = (psm.peptide_id, psm.decoy);
+        let entry = peptide_map.entry(key);
+        let best_psm = entry.or_insert(psm);
+        if psm.score > best_psm.score || (psm.score == best_psm.score && rand::random()) {
+            *best_psm = psm;
+        }
+    }
+
+    let scores: Vec<f64> = peptide_map.values().map(|psm| psm.score).collect();
+    let targets: Vec<bool> = peptide_map.values().map(|psm| !psm.decoy).collect();
+    let q_values = utility::target_decoy_competition(&scores, &targets, true);
+
+    peptide_map.values().zip(q_values.iter()).map(|(psm, q)| {
+        PeptideSpectrumMatch {
+            spec_id: psm.spec_id.clone(),
+            peptide_id: psm.peptide_id,
+            proteins: psm.proteins.clone(),
+            decoy: psm.decoy,
+            score: psm.score,
+            intensity_ms1: psm.intensity_ms1,
+            intensity_ms2: psm.intensity_ms2,
+            features: psm.features.clone(),
+            q_value: Some(*q),
+        }
+    }).collect()
+}
+
+fn tdc_peptide_peptide_only(_ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
     todo!("Implement this function")
 }
 
-fn tdc_psm_and_peptide(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
-    todo!("Implement this function")
-}
-
-
-fn assign_confidence_psm_level(psm_dataset: &PsmDataset, threshold: f64, eval_fdr: f64) -> Vec<f64> {
-    assert!(threshold >= 0.0 && threshold <= 1.0, "Threshold should be between 0 and 1");
-    todo!("Implement this function")
-}
-
-fn assign_confidence_peptide_level_psm_only(psm_dataset: &PsmDataset, threshold: f64, eval_fdr: f64) -> Vec<f64> {
-    assert!(threshold >= 0.0 && threshold <= 1.0, "Threshold should be between 0 and 1");
-    todo!("Implement this function")
-}
-
-fn assign_confidence_peptide_level_peptide_only(psm_dataset: &PsmDataset, threshold: f64, eval_fdr: f64) -> Vec<f64> {
-    assert!(threshold >= 0.0 && threshold <= 1.0, "Threshold should be between 0 and 1");
-    todo!("Implement this function")
-}
-
-fn assign_confidence_peptide_level_psm_and_peptide(psm_dataset: &PsmDataset, threshold: f64, eval_fdr: f64) -> Vec<f64> {
-    assert!(threshold >= 0.0 && threshold <= 1.0, "Threshold should be between 0 and 1");
+fn tdc_peptide_psm_peptide(_ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
     todo!("Implement this function")
 }

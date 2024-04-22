@@ -34,7 +34,7 @@ impl PyPeptideSpectrumMatch {
     fn new(spec_id: String, peptide_id: u32, proteins: Vec<String>,
            decoy: bool, score: f64, intensity_ms1: Option<f64>,
            intensity_ms2: Option<f64>, features: Option<Vec<(String, f64)>>,
-           q_value: Option<f64>, confidence: Option<f64>) -> Self {
+           q_value: Option<f64>) -> Self {
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch {
                 spec_id,
@@ -46,7 +46,6 @@ impl PyPeptideSpectrumMatch {
                 intensity_ms2,
                 features,
                 q_value,
-                confidence,
             },
         }
     }
@@ -94,11 +93,6 @@ impl PyPeptideSpectrumMatch {
     #[getter]
     fn q_value(&self) -> Option<f64> {
         self.inner.q_value
-    }
-
-    #[getter]
-    fn confidence(&self) -> Option<f64> {
-        self.inner.confidence
     }
 }
 
