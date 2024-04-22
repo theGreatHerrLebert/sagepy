@@ -90,6 +90,16 @@ impl PyPeptideSpectrumMatch {
     fn features(&self) -> Option<Vec<(String, f64)>> {
         self.inner.features.clone()
     }
+
+    #[getter]
+    fn q_value(&self) -> Option<f64> {
+        self.inner.q_value
+    }
+
+    #[getter]
+    fn confidence(&self) -> Option<f64> {
+        self.inner.confidence
+    }
 }
 
 #[pyclass]
