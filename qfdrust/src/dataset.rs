@@ -88,12 +88,18 @@ impl PsmDataset {
     }
 
     pub fn tdc(&self, method: TDCMethod) -> Vec<PeptideSpectrumMatch> {
-        match method {
+
+        let mut result = match method {
             TDCMethod::PsmLevel => tdc_psm(&self),
             TDCMethod::PeptideLevelPsmOnly => tdc_peptide_psm_only(&self),
             TDCMethod::PeptideLevelPeptideOnly => tdc_peptide_peptide_only(&self),
             TDCMethod::PeptideLevelPsmPeptide => tdc_peptide_psm_peptide(&self),
-        }
+        };
+
+       // sort by q value ascending
+        result.sort_by(|a, b| a.q_value.partial_cmp(&b.q_value).unwrap());
+
+        result
     }
     pub fn get_best_target_psm(&self, spec_id: &str) -> Option<&PeptideSpectrumMatch> {
         self.psm_map.get(spec_id).unwrap().iter().find(|psm| !psm.decoy)
