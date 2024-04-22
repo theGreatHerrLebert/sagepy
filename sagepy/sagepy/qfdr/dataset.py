@@ -1,3 +1,4 @@
+import pandas as pd
 from typing import List, Union, Tuple
 
 import sagepy_connector
@@ -122,6 +123,26 @@ class PsmDataset:
 
     def target_decoy_competition(self, method: TDCMethod) -> List[PeptideSpectrumMatch]:
         return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.tdc(method.get_py_ptr())]
+
+    def target_decoy_competition_pandas(self, method: TDCMethod) -> pd.DataFrame:
+        matches = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.tdc(method.get_py_ptr())]
+        row_dict = {}
+
+        for match in matches:
+            row_dict['spec_id'] = match.spec_id
+            row_dict['peptide_id'] = match.peptide_id
+            row_dict['proteins'] = match.proteins
+            row_dict['decoy'] = match.decoy
+            row_dict['score'] = match.score
+            row_dict['intensity_ms1'] = match.intensity_ms1
+            row_dict['intensity_ms2'] = match.intensity_ms2
+
+            for name, value in match.features:
+                row_dict[name] = value
+
+            row_dict['q_value'] = match.q_value
+
+        return pd.DataFrame(row_dict)
 
     def __repr__(self):
         return f"PsmDataset(scored spectra: {self.size})"
