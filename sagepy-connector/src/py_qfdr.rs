@@ -36,6 +36,9 @@ impl PyPeptideSpectrumMatch {
         proteins: Vec<String>,
         decoy: bool,
         hyper_score: f64,
+        mono_mz_calculated: Option<f32>,
+        mono_mass_calculated: Option<f32>,
+        mono_mass_observed: Option<f32>,
         sequence: Option<String>,
         charge: Option<u8>,
         retention_time_observed: Option<f32>,
@@ -45,6 +48,7 @@ impl PyPeptideSpectrumMatch {
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
         q_value: Option<f64>,
+        re_score: Option<f64>,
     ) -> Self {
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch::new(
@@ -53,6 +57,9 @@ impl PyPeptideSpectrumMatch {
                 proteins,
                 decoy,
                 hyper_score,
+                mono_mz_calculated,
+                mono_mass_calculated,
+                mono_mass_observed,
                 sequence,
                 charge,
                 retention_time_observed,
@@ -62,6 +69,7 @@ impl PyPeptideSpectrumMatch {
                 intensity_ms1,
                 intensity_ms2,
                 q_value,
+                re_score,
             ),
         }
     }
@@ -91,6 +99,36 @@ impl PyPeptideSpectrumMatch {
         self.inner.hyper_score
     }
 
+    #[setter]
+    pub fn set_hyper_score(&mut self, hyper_score: f64) {
+        self.inner.hyper_score = hyper_score;
+    }
+
+    #[getter]
+    pub fn re_score(&self) -> Option<f64> {
+        self.inner.re_score
+    }
+
+    #[setter]
+    pub fn set_re_score(&mut self, re_score: f64) {
+        self.inner.re_score = Some(re_score);
+    }
+
+    #[getter]
+    pub fn mono_mz_calculated(&self) -> Option<f32> {
+        self.inner.mono_mz_calculated
+    }
+
+    #[getter]
+    pub fn mono_mass_calculated(&self) -> Option<f32> {
+        self.inner.mono_mass_calculated
+    }
+
+    #[getter]
+    pub fn mono_mass_observed(&self) -> Option<f32> {
+        self.inner.mono_mass_observed
+    }
+
     #[getter]
     pub fn peptide_sequence(&self) -> Option<String> {
         match self.inner.peptide_sequence {
@@ -114,6 +152,11 @@ impl PyPeptideSpectrumMatch {
         self.inner.retention_time_predicted
     }
 
+    #[setter]
+    pub fn set_retention_time_predicted(&mut self, retention_time_predicted: f32) {
+        self.inner.retention_time_predicted = Some(retention_time_predicted);
+    }
+
     #[getter]
     pub fn inverse_mobility_observed(&self) -> Option<f32> {
         self.inner.inverse_mobility_observed
@@ -122,6 +165,11 @@ impl PyPeptideSpectrumMatch {
     #[getter]
     pub fn inverse_mobility_predicted(&self) -> Option<f32> {
         self.inner.inverse_mobility_predicted
+    }
+
+    #[setter]
+    pub fn set_inverse_mobility_predicted(&mut self, inverse_mobility_predicted: f32) {
+        self.inner.inverse_mobility_predicted = Some(inverse_mobility_predicted);
     }
 
     #[getter]
@@ -137,6 +185,11 @@ impl PyPeptideSpectrumMatch {
     #[getter]
     pub fn q_value(&self) -> Option<f64> {
         self.inner.q_value
+    }
+
+    #[setter]
+    pub fn set_q_value(&mut self, q_value: f64) {
+        self.inner.q_value = Some(q_value);
     }
 }
 

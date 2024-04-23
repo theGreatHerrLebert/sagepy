@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap};
+use mscore::chemistry::formulas::calculate_mz;
 use mscore::data::peptide::{FragmentType, PeptideProductIonSeriesCollection, PeptideSequence};
 use crate::utility;
 
@@ -9,6 +10,9 @@ pub struct PeptideSpectrumMatch {
     pub proteins: Vec<String>,
     pub decoy: bool,
     pub hyper_score: f64,
+    pub mono_mz_calculated: Option<f32>,
+    pub mono_mass_observed: Option<f32>,
+    pub mono_mass_calculated: Option<f32>,
     pub peptide_sequence: Option<PeptideSequence>,
     pub charge: Option<u8>,
     pub retention_time_observed: Option<f32>,
@@ -18,6 +22,8 @@ pub struct PeptideSpectrumMatch {
     pub intensity_ms1: Option<f32>,
     pub intensity_ms2: Option<f32>,
     pub q_value: Option<f64>,
+    pub re_score: Option<f64>,
+    pub peptide_product_ion_series_collection: Option<PeptideProductIonSeriesCollection>,
 }
 
 impl PeptideSpectrumMatch {
@@ -27,6 +33,8 @@ impl PeptideSpectrumMatch {
         proteins: Vec<String>,
         decoy: bool,
         hyper_score: f64,
+        mono_mass_observed: Option<f32>,
+        mono_mass_calculated: Option<f32>,
         sequence: Option<String>,
         charge: Option<u8>,
         retention_time_observed: Option<f32>,
@@ -35,12 +43,18 @@ impl PeptideSpectrumMatch {
         inverse_mobility_predicted: Option<f32>,
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
-        q_value: Option<f64>
+        q_value: Option<f64>,
+        re_score: Option<f64>,
     ) -> PeptideSpectrumMatch {
 
         let peptide_sequence = match &sequence {
             Some(seq) => Some(PeptideSequence::new(seq.clone(), Some(peptide_idx as i32))),
             None => None,
+        };
+
+        let mono_mz_calculated = match (peptide_sequence.clone(), charge) {
+            (Some(seq), Some(ch)) => Some(calculate_mz(seq.mono_isotopic_mass(), ch as i32) as f32),
+            (_, _) => None,
         };
 
         PeptideSpectrumMatch {
@@ -49,6 +63,9 @@ impl PeptideSpectrumMatch {
             proteins,
             decoy,
             hyper_score,
+            mono_mz_calculated,
+            mono_mass_observed,
+            mono_mass_calculated,
             peptide_sequence,
             charge,
             retention_time_observed,
@@ -58,6 +75,8 @@ impl PeptideSpectrumMatch {
             intensity_ms1,
             intensity_ms2,
             q_value,
+            re_score,
+            peptide_product_ion_series_collection: None,
         }
     }
     pub fn associate_with_prosit_predicted_intensities(&self, flat_intensities: Vec<f64>) -> Option<PeptideProductIonSeriesCollection> {
@@ -427,6 +446,9 @@ fn tdc_psm(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             hyper_score: psm.hyper_score,
+            mono_mz_calculated: psm.mono_mz_calculated,
+            mono_mass_calculated: psm.mono_mass_calculated,
+            mono_mass_observed: psm.mono_mass_observed,
             charge: psm.charge,
             peptide_sequence: psm.peptide_sequence.clone(),
             retention_time_observed: psm.retention_time_observed,
@@ -436,6 +458,8 @@ fn tdc_psm(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             intensity_ms1: psm.intensity_ms1,
             intensity_ms2: psm.intensity_ms2,
             q_value: Some(*q),
+            re_score: None,
+            peptide_product_ion_series_collection: None,
         }
     }).collect()
 }
@@ -455,6 +479,9 @@ fn tdc_peptide_psm_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
                 proteins: psm.proteins.clone(),
                 decoy: psm.decoy,
                 hyper_score: psm.hyper_score,
+                mono_mz_calculated: psm.mono_mz_calculated,
+                mono_mass_calculated: psm.mono_mass_calculated,
+                mono_mass_observed: psm.mono_mass_observed,
                 charge: psm.charge,
                 peptide_sequence: psm.peptide_sequence.clone(),
                 retention_time_observed: psm.retention_time_observed,
@@ -464,6 +491,8 @@ fn tdc_peptide_psm_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
                 intensity_ms1: psm.intensity_ms1,
                 intensity_ms2: psm.intensity_ms2,
                 q_value: Some(*q),
+                re_score: None,
+                peptide_product_ion_series_collection: None,
         }
     }).collect()
 }
@@ -481,6 +510,9 @@ fn tdc_peptide_peptide_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             hyper_score: psm.hyper_score,
+            mono_mz_calculated: psm.mono_mz_calculated,
+            mono_mass_calculated: psm.mono_mass_calculated,
+            mono_mass_observed: psm.mono_mass_observed,
             charge: psm.charge,
             peptide_sequence: psm.peptide_sequence.clone(),
             retention_time_observed: psm.retention_time_observed,
@@ -490,6 +522,8 @@ fn tdc_peptide_peptide_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             intensity_ms1: psm.intensity_ms1,
             intensity_ms2: psm.intensity_ms2,
             q_value: Some(*q),
+            re_score: None,
+            peptide_product_ion_series_collection: None,
         }
     }).collect()
 }
@@ -507,6 +541,9 @@ fn tdc_peptide_psm_peptide(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             hyper_score: psm.hyper_score,
+            mono_mz_calculated: psm.mono_mz_calculated,
+            mono_mass_calculated: psm.mono_mass_calculated,
+            mono_mass_observed: psm.mono_mass_observed,
             charge: psm.charge,
             peptide_sequence: psm.peptide_sequence.clone(),
             retention_time_observed: psm.retention_time_observed,
@@ -516,6 +553,8 @@ fn tdc_peptide_psm_peptide(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             intensity_ms1: psm.intensity_ms1,
             intensity_ms2: psm.intensity_ms2,
             q_value: Some(*q),
+            re_score: None,
+            peptide_product_ion_series_collection: None,
         }
     }).collect()
 }
