@@ -168,14 +168,20 @@ class PsmDataset:
 
         for match in matches:
             row_dict = {'spec_idx': match.spec_idx, 'peptide_idx': match.peptide_idx, 'proteins': match.proteins,
-                        'decoy': match.decoy, 'hyper_score': match.hyper_score, 'charge': match.charge,
-                        'peptide_sequence': match.peptide_sequence, 'retention_time_observed': match.retention_time_observed,
+                        'decoy': match.decoy,
+                        'hyper_score': match.hyper_score,
+                        'mono_mz_calculated': match.mono_mz_calculated,
+                        'mono_mass_observed': match.mono_mass_observed,
+                        'mono_mass_calculated': match.mono_mass_calculated,
+                        'charge': match.charge,
+                        'peptide_sequence': match.peptide_sequence,
+                        'retention_time_observed': match.retention_time_observed,
                         'retention_time_predicted': match.retention_time_predicted,
                         'inverse_mobility_observed': match.inverse_mobility_observed,
                         'inverse_mobility_predicted': match.inverse_mobility_predicted,
-                        'intensity_ms1': match.intensity_ms1, 'intensity_ms2': match.intensity_ms2, 'q_value': match.q_value}
+                        'intensity_ms1': match.intensity_ms1, 'intensity_ms2': match.intensity_ms2,
+                        'q_value': match.q_value}
             row_list.append(row_dict)
-
         return pd.DataFrame(row_list)
 
     def __repr__(self):
