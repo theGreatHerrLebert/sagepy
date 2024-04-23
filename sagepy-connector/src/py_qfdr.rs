@@ -44,7 +44,7 @@ impl PyPeptideSpectrumMatch {
         inverse_mobility_predicted: Option<f32>,
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
-        q_value: Option<f64>
+        q_value: Option<f64>,
     ) -> Self {
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch::new(
@@ -92,7 +92,7 @@ impl PyPeptideSpectrumMatch {
     }
 
     #[getter]
-    pub fn sequence(&self) -> Option<String> {
+    pub fn peptide_sequence(&self) -> Option<String> {
         match self.inner.peptide_sequence {
             Some(ref seq) => Some(seq.sequence.clone()),
             None => None,
