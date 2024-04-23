@@ -519,50 +519,6 @@ impl PyScorer {
                 .collect()
         });
 
-        /*
-        let mut psm_map = std::collections::BTreeMap::new();
-
-        for (spectrum, features) in spectra.iter().zip(result.into_iter()) {
-
-            let mut psms = Vec::new();
-
-            for feature in features {
-
-                let peptide = &db.inner[feature.peptide_idx];
-                let decoy = peptide.decoy;
-                let score = feature.hyperscore;
-                let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap()).sum();
-                let intensity_ms2: f32 = feature.ms2_intensity;
-                let charge = feature.charge;
-                let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
-                let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
-
-                let psm = PeptideSpectrumMatch::new(
-                    spectrum.inner.id.clone(),
-                    feature.peptide_idx.0,
-                    proteins,
-                    decoy,
-                    score,
-                    Some(feature.expmass),
-                    Some(feature.calcmass),
-                    Some(sage_sequence_to_unimod_sequence(sequence, &peptide.modifications)),
-                    Some(charge),
-                    Some(feature.rt),
-                    None,
-                    Some(feature.ims),
-                    None,
-                    Some(intensity_ms1),
-                    Some(intensity_ms2),
-                    None,
-                    None,
-                   );
-                psms.push(psm);
-            }
-            psm_map.insert(spectrum.inner.id.clone(), psms);
-        }
-         */
-
-        // Execute the parallel iterator within the custom thread pool's scope
         let psm_map = pool.install(|| {
             spectra.par_iter().zip(result.into_par_iter())
                 .map(|(spectrum, features)| {
