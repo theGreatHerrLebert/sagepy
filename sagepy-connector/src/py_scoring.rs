@@ -7,10 +7,9 @@ use rayon::ThreadPoolBuilder;
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
-use crate::py_spectrum::{PyProcessedSpectrum, spectrum};
+use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
-use crate::py_peptide::peptide;
 use crate::py_qfdr::{PyPsmDataset};
 
 #[pyclass]
