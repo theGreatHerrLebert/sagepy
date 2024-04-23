@@ -543,6 +543,8 @@ impl PyScorer {
                     proteins,
                     decoy,
                     score,
+                    Some(feature.expmass),
+                    Some(feature.calcmass),
                     Some(sage_sequence_to_unimod_sequence(sequence, &peptide.modifications)),
                     Some(charge),
                     Some(feature.rt),
@@ -551,6 +553,7 @@ impl PyScorer {
                     None,
                     Some(intensity_ms1),
                     Some(intensity_ms2),
+                    None,
                     None,
                    );
                 psms.push(psm);
