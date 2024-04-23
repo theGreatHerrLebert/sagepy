@@ -18,7 +18,6 @@ pub struct PeptideSpectrumMatch {
     pub intensity_ms1: Option<f32>,
     pub intensity_ms2: Option<f32>,
     pub q_value: Option<f64>,
-    pub peptide_product_ion_series_collection: Option<PeptideProductIonSeriesCollection>,
 }
 
 impl PeptideSpectrumMatch {
@@ -44,12 +43,6 @@ impl PeptideSpectrumMatch {
             None => None,
         };
 
-
-        let peptide_product_ion_series_collection = match &peptide_sequence {
-            Some(seq) => Some(seq.associate_with_predicted_intensities(charge.unwrap() as i32, FragmentType::B, Vec::new(), false, false)),
-            None => None,
-        };
-
         PeptideSpectrumMatch {
             spec_idx,
             peptide_idx,
@@ -65,7 +58,6 @@ impl PeptideSpectrumMatch {
             intensity_ms1,
             intensity_ms2,
             q_value,
-            peptide_product_ion_series_collection,
         }
     }
     pub fn associate_with_prosit_predicted_intensities(&self, flat_intensities: Vec<f64>) -> Option<PeptideProductIonSeriesCollection> {
@@ -444,7 +436,6 @@ fn tdc_psm(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             intensity_ms1: psm.intensity_ms1,
             intensity_ms2: psm.intensity_ms2,
             q_value: Some(*q),
-            peptide_product_ion_series_collection: psm.peptide_product_ion_series_collection.clone(),
         }
     }).collect()
 }
@@ -473,7 +464,6 @@ fn tdc_peptide_psm_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
                 intensity_ms1: psm.intensity_ms1,
                 intensity_ms2: psm.intensity_ms2,
                 q_value: Some(*q),
-                peptide_product_ion_series_collection: psm.peptide_product_ion_series_collection.clone(),
         }
     }).collect()
 }
@@ -500,7 +490,6 @@ fn tdc_peptide_peptide_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             intensity_ms1: psm.intensity_ms1,
             intensity_ms2: psm.intensity_ms2,
             q_value: Some(*q),
-            peptide_product_ion_series_collection: psm.peptide_product_ion_series_collection.clone(),
         }
     }).collect()
 }
@@ -527,7 +516,6 @@ fn tdc_peptide_psm_peptide(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             intensity_ms1: psm.intensity_ms1,
             intensity_ms2: psm.intensity_ms2,
             q_value: Some(*q),
-            peptide_product_ion_series_collection: psm.peptide_product_ion_series_collection.clone(),
         }
     }).collect()
 }

@@ -533,8 +533,9 @@ impl PyScorer {
                 let score = feature.hyperscore;
                 let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap()).sum();
                 let intensity_ms2: f32 = feature.ms2_intensity;
-                let charge = spectrum.inner.precursors.first().unwrap().charge.unwrap();
+                let charge = feature.charge;
                 let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
+                let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
 
                 let psm = PeptideSpectrumMatch::new(
                     spectrum.inner.id.clone(),
@@ -542,7 +543,7 @@ impl PyScorer {
                     proteins,
                     decoy,
                     score,
-                    Some(sage_sequence_to_unimod_sequence(std::str::from_utf8(&peptide.sequence).unwrap().to_string(), &peptide.modifications)),
+                    Some(sage_sequence_to_unimod_sequence(sequence, &peptide.modifications)),
                     Some(charge),
                     Some(feature.rt),
                     None,
