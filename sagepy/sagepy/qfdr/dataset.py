@@ -2,6 +2,7 @@ import pandas as pd
 from typing import List, Union, Tuple
 
 import sagepy_connector
+
 psc = sagepy_connector.py_qfdr
 
 
@@ -25,55 +26,72 @@ class TDCMethod:
 
 
 class PeptideSpectrumMatch:
-    def __init__(self, spec_id: str, peptide_id: int,
-                 sequence: str,
-                 proteins: List[str], decoy: bool, score: float,
-                 intensity_ms1: Union[None, float],
-                 intensity_ms2: Union[None, float] = None, features: Union[None, List[Tuple[str, float]]] = None,
-                 q_value: Union[None, float] = None,
-                 ):
-        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_id, peptide_id, sequence, proteins,
-                                                   decoy, score, intensity_ms1, intensity_ms2,
-                                                   features, q_value)
+    def __init__(self,
+                 spec_idx: str, peptide_idx: int, proteins: List[str], decoy: bool, hyper_score: float,
+                 charge: Union[None, int], peptide_sequence: Union[None, str],
+                 retention_time_observed: Union[None, float], retention_time_predicted: Union[None, float],
+                 inverse_mobility_observed: Union[None, float], inverse_mobility_predicted: Union[None, float],
+                 intensity_ms1: Union[None, float], intensity_ms2: Union[None, float], q_value: Union[None, float]):
+
+        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_idx, peptide_idx, proteins, decoy, hyper_score, charge,
+                                                   peptide_sequence, retention_time_observed, retention_time_predicted,
+                                                   inverse_mobility_observed, inverse_mobility_predicted, intensity_ms1,
+                                                   intensity_ms2, q_value)
 
     @property
-    def spec_id(self) -> str:
-        return self.__py_ptr.spec_id
+    def spec_idx(self):
+        return self.__py_ptr.spec_idx
 
     @property
-    def peptide_id(self) -> int:
-        return self.__py_ptr.peptide_id
+    def peptide_idx(self):
+        return self.__py_ptr.peptide_idx
 
     @property
-    def sequence(self):
-        return self.__py_ptr.sequence
-
-    @property
-    def proteins(self) -> List[str]:
+    def proteins(self):
         return self.__py_ptr.proteins
 
     @property
-    def decoy(self) -> bool:
+    def decoy(self):
         return self.__py_ptr.decoy
 
     @property
-    def score(self) -> float:
-        return self.__py_ptr.score
+    def hyper_score(self):
+        return self.__py_ptr.hyper_score
 
     @property
-    def intensity_ms1(self) -> Union[None, float]:
+    def charge(self):
+        return self.__py_ptr.charge
+
+    @property
+    def peptide_sequence(self):
+        return self.__py_ptr.peptide_sequence
+
+    @property
+    def retention_time_observed(self):
+        return self.__py_ptr.retention_time_observed
+
+    @property
+    def retention_time_predicted(self):
+        return self.__py_ptr.retention_time_predicted
+
+    @property
+    def inverse_mobility_observed(self):
+        return self.__py_ptr.inverse_mobility_observed
+
+    @property
+    def inverse_mobility_predicted(self):
+        return self.__py_ptr.inverse_mobility_predicted
+
+    @property
+    def intensity_ms1(self):
         return self.__py_ptr.intensity_ms1
 
     @property
-    def intensity_ms2(self) -> Union[None, float]:
-        return self.__py_ptr.intensity_ms1
+    def intensity_ms2(self):
+        return self.__py_ptr.intensity_ms2
 
     @property
-    def features(self) -> Union[None, List[Tuple[str, float]]]:
-        return self.__py_ptr.features
-
-    @property
-    def q_value(self) -> Union[None, float]:
+    def q_value(self):
         return self.__py_ptr.q_value
 
     @classmethod
@@ -86,11 +104,10 @@ class PeptideSpectrumMatch:
         return self.__py_ptr
 
     def __repr__(self):
-        return (f"PeptideSpectrumMatch(spec_id: {self.spec_id}, peptide_id: {self.peptide_id}, "
-                f"proteins: {self.proteins}, decoy: {self.decoy}, "
-                f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
-                f"score: {self.score}, features: {self.features}, "
-                f"q_value: {self.q_value})")
+        return f"PeptideSpectrumMatch({self.spec_idx}, {self.peptide_idx}, {self.proteins}, {self.decoy}, " \
+               f"{self.hyper_score}, {self.charge}, {self.peptide_sequence}, {self.retention_time_observed}, " \
+               f"{self.retention_time_predicted}, {self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, " \
+               f"{self.intensity_ms1}, {self.intensity_ms2}, {self.q_value})"
 
 
 class PsmDataset:
@@ -135,14 +152,13 @@ class PsmDataset:
         row_list = []
 
         for match in matches:
-            row_dict = {'spec_id': match.spec_id, 'peptide_id': match.peptide_id, 'sequence': match.sequence,
-                        'proteins': match.proteins,
-                        'decoy': match.decoy, 'score': match.score, 'intensity_ms1': match.intensity_ms1,
-                        'intensity_ms2': match.intensity_ms2, 'q_value': match.q_value}
-
-            for name, value in match.features:
-                row_dict[name] = value
-
+            row_dict = {'spec_idx': match.spec_idx, 'peptide_idx': match.peptide_idx, 'proteins': match.proteins,
+                        'decoy': match.decoy, 'hyper_score': match.hyper_score, 'charge': match.charge,
+                        'peptide_sequence': match.peptide_sequence, 'retention_time_observed': match.retention_time_observed,
+                        'retention_time_predicted': match.retention_time_predicted,
+                        'inverse_mobility_observed': match.inverse_mobility_observed,
+                        'inverse_mobility_predicted': match.inverse_mobility_predicted,
+                        'intensity_ms1': match.intensity_ms1, 'intensity_ms2': match.intensity_ms2, 'q_value': match.q_value}
             row_list.append(row_dict)
 
         return pd.DataFrame(row_list)
