@@ -30,75 +30,112 @@ pub struct PyPeptideSpectrumMatch {
 #[pymethods]
 impl PyPeptideSpectrumMatch {
     #[new]
-    fn new(spec_id: String, peptide_id: u32,
-           sequence: String,
-           proteins: Vec<String>,
-           decoy: bool, score: f64, intensity_ms1: Option<f64>,
-           intensity_ms2: Option<f64>, features: Option<Vec<(String, f64)>>,
-           q_value: Option<f64>) -> Self {
+    fn new(
+        spec_idx: String,
+        peptide_idx: u32,
+        proteins: Vec<String>,
+        decoy: bool,
+        hyper_score: f64,
+        sequence: Option<String>,
+        charge: Option<u8>,
+        retention_time_observed: Option<f32>,
+        retention_time_predicted: Option<f32>,
+        inverse_mobility_observed: Option<f32>,
+        inverse_mobility_predicted: Option<f32>,
+        intensity_ms1: Option<f32>,
+        intensity_ms2: Option<f32>,
+        q_value: Option<f64>
+    ) -> Self {
         PyPeptideSpectrumMatch {
-            inner: PeptideSpectrumMatch {
-                spec_id,
-                peptide_id,
-                sequence,
+            inner: PeptideSpectrumMatch::new(
+                spec_idx,
+                peptide_idx,
                 proteins,
                 decoy,
-                score,
+                hyper_score,
+                sequence,
+                charge,
+                retention_time_observed,
+                retention_time_predicted,
+                inverse_mobility_observed,
+                inverse_mobility_predicted,
                 intensity_ms1,
                 intensity_ms2,
-                features,
                 q_value,
-            },
+            ),
         }
     }
 
     #[getter]
-    fn spec_id(&self) -> String {
-        self.inner.spec_id.clone()
+    pub fn spec_idx(&self) -> &str {
+        &self.inner.spec_idx
     }
 
     #[getter]
-    fn peptide_id(&self) -> u32 {
-        self.inner.peptide_id
+    pub fn peptide_idx(&self) -> u32 {
+        self.inner.peptide_idx
     }
 
     #[getter]
-    fn sequence(&self) -> String {
-        self.inner.sequence.clone()
-    }
-
-    #[getter]
-    fn proteins(&self) -> Vec<String> {
+    pub fn proteins(&self) -> Vec<String> {
         self.inner.proteins.clone()
     }
 
     #[getter]
-    fn decoy(&self) -> bool {
+    pub fn decoy(&self) -> bool {
         self.inner.decoy
     }
 
     #[getter]
-    fn score(&self) -> f64 {
-        self.inner.score
+    pub fn hyper_score(&self) -> f64 {
+        self.inner.hyper_score
     }
 
     #[getter]
-    fn intensity_ms1(&self) -> Option<f64> {
+    pub fn sequence(&self) -> Option<String> {
+        match self.inner.peptide_sequence {
+            Some(ref seq) => Some(seq.sequence.clone()),
+            None => None,
+        }
+    }
+
+    #[getter]
+    pub fn charge(&self) -> Option<u8> {
+        self.inner.charge
+    }
+
+    #[getter]
+    pub fn retention_time_observed(&self) -> Option<f32> {
+        self.inner.retention_time_observed
+    }
+
+    #[getter]
+    pub fn retention_time_predicted(&self) -> Option<f32> {
+        self.inner.retention_time_predicted
+    }
+
+    #[getter]
+    pub fn inverse_mobility_observed(&self) -> Option<f32> {
+        self.inner.inverse_mobility_observed
+    }
+
+    #[getter]
+    pub fn inverse_mobility_predicted(&self) -> Option<f32> {
+        self.inner.inverse_mobility_predicted
+    }
+
+    #[getter]
+    pub fn intensity_ms1(&self) -> Option<f32> {
         self.inner.intensity_ms1
     }
 
     #[getter]
-    fn intensity_ms2(&self) -> Option<f64> {
+    pub fn intensity_ms2(&self) -> Option<f32> {
         self.inner.intensity_ms2
     }
 
     #[getter]
-    fn features(&self) -> Option<Vec<(String, f64)>> {
-        self.inner.features.clone()
-    }
-
-    #[getter]
-    fn q_value(&self) -> Option<f64> {
+    pub fn q_value(&self) -> Option<f64> {
         self.inner.q_value
     }
 }

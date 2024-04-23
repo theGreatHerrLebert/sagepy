@@ -7,7 +7,7 @@ use rayon::ThreadPoolBuilder;
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
-use crate::py_spectrum::{PyProcessedSpectrum};
+use crate::py_spectrum::{PyProcessedSpectrum, spectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
 use crate::py_peptide::peptide;
@@ -523,31 +523,35 @@ impl PyScorer {
         let mut psm_map = std::collections::BTreeMap::new();
 
         for (spectrum, features) in spectra.iter().zip(result.into_iter()) {
+
             let mut psms = Vec::new();
+
             for feature in features {
+
                 let peptide = &db.inner[feature.peptide_idx];
                 let decoy = peptide.decoy;
                 let score = feature.hyperscore;
                 let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap()).sum();
-                let features = vec![
-                    ("charge".to_string(), feature.charge as f64),
-                    ("exp_mass".to_string(), feature.expmass as f64),
-                    ("calc_mass".to_string(), feature.calcmass as f64),
-                    ("delta_mass".to_string(), feature.delta_mass as f64)];
-
+                let intensity_ms2: f32 = feature.ms2_intensity;
+                let charge = spectrum.inner.precursors.first().unwrap().charge.unwrap();
                 let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
-                let psm = PeptideSpectrumMatch {
-                    spec_id: spectrum.inner.id.clone(),
-                    peptide_id: feature.peptide_idx.0,
-                    sequence: sage_sequence_to_unimod_sequence(std::str::from_utf8(&peptide.sequence).unwrap().to_string(), &peptide.modifications),
+
+                let psm = PeptideSpectrumMatch::new(
+                    spectrum.inner.id.clone(),
+                    feature.peptide_idx.0,
                     proteins,
                     decoy,
                     score,
-                    intensity_ms1: Some(intensity_ms1 as f64),
-                    intensity_ms2: Some(feature.ms2_intensity as f64),
-                    features: Some(features),
-                    q_value: None,
-                };
+                    Some(sage_sequence_to_unimod_sequence(std::str::from_utf8(&peptide.sequence).unwrap().to_string(), &peptide.modifications)),
+                    Some(charge),
+                    Some(feature.rt),
+                    None,
+                    Some(feature.ims),
+                    None,
+                    Some(intensity_ms1),
+                    Some(intensity_ms2),
+                    None,
+                   );
                 psms.push(psm);
             }
             psm_map.insert(spectrum.inner.id.clone(), psms);
