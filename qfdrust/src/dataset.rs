@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap};
-use mscore::chemistry::formulas::calculate_mz;
-use mscore::data::peptide::{FragmentType, PeptideProductIonSeriesCollection, PeptideSequence};
+use rustms::chemistry::formula::calculate_mz;
+use rustms::proteomics::peptide::{FragmentType, PeptideProductIonSeriesCollection, PeptideSequence};
 use crate::utility;
 
 #[derive(Clone, Debug)]
