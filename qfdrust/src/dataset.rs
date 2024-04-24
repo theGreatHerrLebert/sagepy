@@ -10,6 +10,7 @@ pub struct PeptideSpectrumMatch {
     pub proteins: Vec<String>,
     pub decoy: bool,
     pub hyper_score: f64,
+    pub rank: u32,
     pub mono_mz_calculated: Option<f32>,
     pub mono_mass_observed: Option<f32>,
     pub mono_mass_calculated: Option<f32>,
@@ -33,6 +34,7 @@ impl PeptideSpectrumMatch {
         proteins: Vec<String>,
         decoy: bool,
         hyper_score: f64,
+        rank: u32,
         mono_mass_observed: Option<f32>,
         mono_mass_calculated: Option<f32>,
         sequence: Option<String>,
@@ -63,6 +65,7 @@ impl PeptideSpectrumMatch {
             proteins,
             decoy,
             hyper_score,
+            rank,
             mono_mz_calculated,
             mono_mass_observed,
             mono_mass_calculated,
@@ -233,6 +236,16 @@ impl PsmDataset {
             }
         }
         peptide_map
+    }
+
+    pub fn flatten(&self) -> Vec<PeptideSpectrumMatch> {
+        let mut result: Vec<PeptideSpectrumMatch> = Vec::new();
+
+        for psms in self.psm_map.values() {
+            result.extend(psms.iter().cloned());
+        }
+
+        result
     }
 }
 
@@ -446,6 +459,7 @@ fn tdc_psm(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             hyper_score: psm.hyper_score,
+            rank: psm.rank,
             mono_mz_calculated: psm.mono_mz_calculated,
             mono_mass_calculated: psm.mono_mass_calculated,
             mono_mass_observed: psm.mono_mass_observed,
@@ -479,6 +493,7 @@ fn tdc_peptide_psm_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
                 proteins: psm.proteins.clone(),
                 decoy: psm.decoy,
                 hyper_score: psm.hyper_score,
+                rank: psm.rank,
                 mono_mz_calculated: psm.mono_mz_calculated,
                 mono_mass_calculated: psm.mono_mass_calculated,
                 mono_mass_observed: psm.mono_mass_observed,
@@ -510,6 +525,7 @@ fn tdc_peptide_peptide_only(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             hyper_score: psm.hyper_score,
+            rank: psm.rank,
             mono_mz_calculated: psm.mono_mz_calculated,
             mono_mass_calculated: psm.mono_mass_calculated,
             mono_mass_observed: psm.mono_mass_observed,
@@ -541,6 +557,7 @@ fn tdc_peptide_psm_peptide(ds: &PsmDataset) -> Vec<PeptideSpectrumMatch> {
             proteins: psm.proteins.clone(),
             decoy: psm.decoy,
             hyper_score: psm.hyper_score,
+            rank: psm.rank,
             mono_mz_calculated: psm.mono_mz_calculated,
             mono_mass_calculated: psm.mono_mass_calculated,
             mono_mass_observed: psm.mono_mass_observed,

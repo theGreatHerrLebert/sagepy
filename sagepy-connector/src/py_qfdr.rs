@@ -36,6 +36,7 @@ impl PyPeptideSpectrumMatch {
         proteins: Vec<String>,
         decoy: bool,
         hyper_score: f64,
+        rank: u32,
         mono_mass_calculated: Option<f32>,
         mono_mass_observed: Option<f32>,
         sequence: Option<String>,
@@ -56,6 +57,7 @@ impl PyPeptideSpectrumMatch {
                 proteins,
                 decoy,
                 hyper_score,
+                rank,
                 mono_mass_calculated,
                 mono_mass_observed,
                 sequence,
@@ -95,6 +97,11 @@ impl PyPeptideSpectrumMatch {
     #[getter]
     pub fn hyper_score(&self) -> f64 {
         self.inner.hyper_score
+    }
+
+    #[getter]
+    pub fn rank(&self) -> u32 {
+        self.inner.rank
     }
 
     #[setter]
@@ -240,6 +247,9 @@ impl PyPsmDataset {
 
     pub fn tdc(&self, method: PyTDCMethod) -> Vec<PyPeptideSpectrumMatch> {
         self.inner.tdc(method.inner).iter().map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() }).collect()
+    }
+    pub fn flatten(&self) -> Vec<PyPeptideSpectrumMatch> {
+        self.inner.flatten().iter().map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() }).collect()
     }
 }
 

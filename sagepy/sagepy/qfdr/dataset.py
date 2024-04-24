@@ -27,14 +27,14 @@ class TDCMethod:
 
 class PeptideSpectrumMatch:
     def __init__(self,
-                 spec_idx: str, peptide_idx: int, proteins: List[str], decoy: bool, hyper_score: float,
+                 spec_idx: str, peptide_idx: int, proteins: List[str], decoy: bool, hyper_score: float, rank: int,
                  mono_mass_observed: Union[None, float], mono_mass_predicted: Union[None, float],
                  charge: Union[None, int], peptide_sequence: Union[None, str],
                  retention_time_observed: Union[None, float], retention_time_predicted: Union[None, float],
                  inverse_mobility_observed: Union[None, float], inverse_mobility_predicted: Union[None, float],
                  intensity_ms1: Union[None, float], intensity_ms2: Union[None, float], q_value: Union[None, float]):
 
-        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_idx, peptide_idx, proteins, decoy, hyper_score, charge,
+        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, charge,
                                                    mono_mass_observed, mono_mass_predicted,
                                                    peptide_sequence, retention_time_observed, retention_time_predicted,
                                                    inverse_mobility_observed, inverse_mobility_predicted, intensity_ms1,
@@ -59,6 +59,10 @@ class PeptideSpectrumMatch:
     @property
     def hyper_score(self):
         return self.__py_ptr.hyper_score
+
+    @property
+    def rank(self):
+        return self.__py_ptr.rank
 
     @property
     def charge(self):
@@ -119,7 +123,7 @@ class PeptideSpectrumMatch:
 
     def __repr__(self):
         return f"PeptideSpectrumMatch({self.spec_idx}, {self.peptide_idx}, {self.proteins}, {self.decoy}, " \
-               f"{self.hyper_score}, {self.charge}, {self.peptide_sequence}, {self.mono_mass_observed}, " \
+               f"{self.hyper_score}, {self.rank} {self.charge}, {self.peptide_sequence}, {self.mono_mass_observed}, " \
                f"{self.mono_mass_calculated}, {self.retention_time_observed}, {self.retention_time_predicted}, " \
                f"{self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, {self.intensity_ms1}, " \
                f"{self.intensity_ms2}, {self.q_value})"
@@ -183,6 +187,9 @@ class PsmDataset:
                         'q_value': match.q_value}
             row_list.append(row_dict)
         return pd.DataFrame(row_list)
+
+    def flatten(self) -> List[PeptideSpectrumMatch]:
+        return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.flatten()]
 
     def __repr__(self):
         return f"PsmDataset(scored spectra: {self.size})"
