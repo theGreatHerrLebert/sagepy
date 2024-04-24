@@ -1,4 +1,3 @@
-use std::ops::Index;
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset};
 use qfdrust::utility::sage_sequence_to_unimod_sequence;

@@ -189,6 +189,11 @@ impl PyPeptideSpectrumMatch {
     pub fn set_q_value(&mut self, q_value: f64) {
         self.inner.q_value = Some(q_value);
     }
+
+    pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
+        let ion_series = self.inner.associate_with_prosit_predicted_intensities(flat_intensities);
+        self.inner.peptide_product_ion_series_collection = ion_series;
+    }
 }
 
 #[pyclass]
