@@ -30,76 +30,169 @@ pub struct PyPeptideSpectrumMatch {
 #[pymethods]
 impl PyPeptideSpectrumMatch {
     #[new]
-    fn new(spec_id: String, peptide_id: u32,
-           sequence: String,
-           proteins: Vec<String>,
-           decoy: bool, score: f64, intensity_ms1: Option<f64>,
-           intensity_ms2: Option<f64>, features: Option<Vec<(String, f64)>>,
-           q_value: Option<f64>) -> Self {
+    fn new(
+        spec_idx: String,
+        peptide_idx: u32,
+        proteins: Vec<String>,
+        decoy: bool,
+        hyper_score: f64,
+        mono_mass_calculated: Option<f32>,
+        mono_mass_observed: Option<f32>,
+        sequence: Option<String>,
+        charge: Option<u8>,
+        retention_time_observed: Option<f32>,
+        retention_time_predicted: Option<f32>,
+        inverse_mobility_observed: Option<f32>,
+        inverse_mobility_predicted: Option<f32>,
+        intensity_ms1: Option<f32>,
+        intensity_ms2: Option<f32>,
+        q_value: Option<f64>,
+        re_score: Option<f64>,
+    ) -> Self {
         PyPeptideSpectrumMatch {
-            inner: PeptideSpectrumMatch {
-                spec_id,
-                peptide_id,
-                sequence,
+            inner: PeptideSpectrumMatch::new(
+                spec_idx,
+                peptide_idx,
                 proteins,
                 decoy,
-                score,
+                hyper_score,
+                mono_mass_calculated,
+                mono_mass_observed,
+                sequence,
+                charge,
+                retention_time_observed,
+                retention_time_predicted,
+                inverse_mobility_observed,
+                inverse_mobility_predicted,
                 intensity_ms1,
                 intensity_ms2,
-                features,
                 q_value,
-            },
+                re_score,
+            ),
         }
     }
 
     #[getter]
-    fn spec_id(&self) -> String {
-        self.inner.spec_id.clone()
+    pub fn spec_idx(&self) -> &str {
+        &self.inner.spec_idx
     }
 
     #[getter]
-    fn peptide_id(&self) -> u32 {
-        self.inner.peptide_id
+    pub fn peptide_idx(&self) -> u32 {
+        self.inner.peptide_idx
     }
 
     #[getter]
-    fn sequence(&self) -> String {
-        self.inner.sequence.clone()
-    }
-
-    #[getter]
-    fn proteins(&self) -> Vec<String> {
+    pub fn proteins(&self) -> Vec<String> {
         self.inner.proteins.clone()
     }
 
     #[getter]
-    fn decoy(&self) -> bool {
+    pub fn decoy(&self) -> bool {
         self.inner.decoy
     }
 
     #[getter]
-    fn score(&self) -> f64 {
-        self.inner.score
+    pub fn hyper_score(&self) -> f64 {
+        self.inner.hyper_score
+    }
+
+    #[setter]
+    pub fn set_hyper_score(&mut self, hyper_score: f64) {
+        self.inner.hyper_score = hyper_score;
     }
 
     #[getter]
-    fn intensity_ms1(&self) -> Option<f64> {
+    pub fn re_score(&self) -> Option<f64> {
+        self.inner.re_score
+    }
+
+    #[setter]
+    pub fn set_re_score(&mut self, re_score: f64) {
+        self.inner.re_score = Some(re_score);
+    }
+
+    #[getter]
+    pub fn mono_mz_calculated(&self) -> Option<f32> {
+        self.inner.mono_mz_calculated
+    }
+
+    #[getter]
+    pub fn mono_mass_calculated(&self) -> Option<f32> {
+        self.inner.mono_mass_calculated
+    }
+
+    #[getter]
+    pub fn mono_mass_observed(&self) -> Option<f32> {
+        self.inner.mono_mass_observed
+    }
+
+    #[getter]
+    pub fn peptide_sequence(&self) -> Option<String> {
+        match self.inner.peptide_sequence {
+            Some(ref seq) => Some(seq.sequence.clone()),
+            None => None,
+        }
+    }
+
+    #[getter]
+    pub fn charge(&self) -> Option<u8> {
+        self.inner.charge
+    }
+
+    #[getter]
+    pub fn retention_time_observed(&self) -> Option<f32> {
+        self.inner.retention_time_observed
+    }
+
+    #[getter]
+    pub fn retention_time_predicted(&self) -> Option<f32> {
+        self.inner.retention_time_predicted
+    }
+
+    #[setter]
+    pub fn set_retention_time_predicted(&mut self, retention_time_predicted: f32) {
+        self.inner.retention_time_predicted = Some(retention_time_predicted);
+    }
+
+    #[getter]
+    pub fn inverse_mobility_observed(&self) -> Option<f32> {
+        self.inner.inverse_mobility_observed
+    }
+
+    #[getter]
+    pub fn inverse_mobility_predicted(&self) -> Option<f32> {
+        self.inner.inverse_mobility_predicted
+    }
+
+    #[setter]
+    pub fn set_inverse_mobility_predicted(&mut self, inverse_mobility_predicted: f32) {
+        self.inner.inverse_mobility_predicted = Some(inverse_mobility_predicted);
+    }
+
+    #[getter]
+    pub fn intensity_ms1(&self) -> Option<f32> {
         self.inner.intensity_ms1
     }
 
     #[getter]
-    fn intensity_ms2(&self) -> Option<f64> {
+    pub fn intensity_ms2(&self) -> Option<f32> {
         self.inner.intensity_ms2
     }
 
     #[getter]
-    fn features(&self) -> Option<Vec<(String, f64)>> {
-        self.inner.features.clone()
+    pub fn q_value(&self) -> Option<f64> {
+        self.inner.q_value
     }
 
-    #[getter]
-    fn q_value(&self) -> Option<f64> {
-        self.inner.q_value
+    #[setter]
+    pub fn set_q_value(&mut self, q_value: f64) {
+        self.inner.q_value = Some(q_value);
+    }
+
+    pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
+        let ion_series = self.inner.associate_with_prosit_predicted_intensities(flat_intensities);
+        self.inner.peptide_product_ion_series_collection = ion_series;
     }
 }
 

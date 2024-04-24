@@ -142,7 +142,8 @@ class Precursor:
                 f"intensity: {self.intensity}, "
                 f"charge: {self.charge}, "
                 f"spectrum_ref: {self.spectrum_ref}, "
-                f"isolation_window: {self.isolation_window})")
+                f"isolation_window: {self.isolation_window}), "
+                f"inverse_ion_mobility: {np.round(self.inverse_ion_mobility, 2)})")
 
 
 class Representation:
