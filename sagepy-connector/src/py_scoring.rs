@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset};
 use qfdrust::utility::sage_sequence_to_unimod_sequence;
@@ -522,6 +523,9 @@ impl PyScorer {
             spectra.par_iter().zip(result.into_par_iter())
                 .map(|(spectrum, features)| {
                     let mut psms = Vec::new();
+
+                    let mut hash_set: HashSet<(u32, bool)> = HashSet::new();
+
                     for feature in features {
                         let peptide = &db.inner[feature.peptide_idx];
                         let decoy = peptide.decoy;
@@ -531,6 +535,14 @@ impl PyScorer {
                         let charge = feature.charge;
                         let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
                         let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
+
+                        let key = (feature.peptide_idx.0, decoy);
+
+                        if hash_set.contains(&key) {
+                            continue;
+                        }
+
+                        hash_set.insert(key);
 
                         let psm = PeptideSpectrumMatch::new(
                             spectrum.inner.id.clone(),
