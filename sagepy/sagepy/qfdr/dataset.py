@@ -213,5 +213,9 @@ class PsmDataset:
 
         return pd.DataFrame(row_list)
 
+    @staticmethod
+    def from_collection(collection: List[PeptideSpectrumMatch]) -> 'PsmDataset':
+        return PsmDataset.from_py_ptr(psc.PyPsmDataset.from_collection([match.get_py_ptr() for match in collection]))
+
     def __repr__(self):
         return f"PsmDataset(scored spectra: {self.size})"

@@ -251,6 +251,14 @@ impl PyPsmDataset {
     pub fn flatten(&self) -> Vec<PyPeptideSpectrumMatch> {
         self.inner.flatten().iter().map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() }).collect()
     }
+
+    #[staticmethod]
+    pub fn from_collection(collection: Vec<PyPeptideSpectrumMatch>) -> PyPsmDataset {
+        let matches = collection.into_iter().map(|m| m.inner).collect();
+        PyPsmDataset {
+            inner: PsmDataset::from_collection(matches),
+        }
+    }
 }
 
 #[pymodule]

@@ -146,6 +146,18 @@ impl PsmDataset {
             psm_map: map,
         }
     }
+
+    pub fn from_collection(collection: Vec<PeptideSpectrumMatch>) -> PsmDataset {
+        let mut map: BTreeMap<String, Vec<PeptideSpectrumMatch>> = BTreeMap::new();
+
+        for psm in collection {
+            let entry = map.entry(psm.spec_idx.clone()).or_insert(Vec::new());
+            entry.push(psm);
+        }
+
+        PsmDataset::new(map)
+    }
+
     pub fn get_spectra_ids(&self) -> Vec<String> {
         self.psm_map.keys().cloned().collect()
     }
