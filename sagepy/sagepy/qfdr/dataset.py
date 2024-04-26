@@ -276,27 +276,16 @@ class PsmDataset:
 
     @staticmethod
     def from_pandas(df: pd.DataFrame) -> 'PsmDataset':
-        collection = []
-        for _, row in df.iterrows():
-            collection.append(PeptideSpectrumMatch(
-                row['spec_idx'],
-                row['peptide_idx'],
-                row['proteins'],
-                row['decoy'],
-                row['hyper_score'],
-                row['rank'],
-                row['mono_mass_observed'],
-                row['peptide_sequence'],
-                row['charge'],
-                row['retention_time_observed'],
-                row['retention_time_predicted'],
-                row['inverse_mobility_observed'],
-                row['inverse_mobility_predicted'],
-                row['intensity_ms1'],
-                row['intensity_ms2'],
-                row['q_value'],
-                row['re_score']
-            ))
+        collection = df.apply(lambda row: PeptideSpectrumMatch(
+            spec_idx=row['spec_idx'], peptide_idx=row['peptide_idx'], proteins=row['proteins'], decoy=row['decoy'],
+            hyper_score=row['hyper_score'], rank=row['rank'], mono_mass_observed=row['mono_mass_observed'],
+            sequence=row['peptide_sequence'], charge=row['charge'],
+            retention_time_observed=row['retention_time_observed'],
+            retention_time_predicted=row['retention_time_predicted'],
+            inverse_mobility_observed=row['inverse_mobility_observed'],
+            inverse_mobility_predicted=row['inverse_mobility_predicted'], intensity_ms1=row['intensity_ms1'],
+            intensity_ms2=row['intensity_ms2'], q_value=row['q_value'], re_score=row['re_score']
+        ), axis=1)
 
         return PsmDataset.from_collection(collection)
 
