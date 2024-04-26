@@ -147,7 +147,7 @@ class PeptideSpectrumMatch:
                f"{self.hyper_score}, {self.rank} {self.charge}, {self.peptide_sequence}, {self.mono_mass_observed}, " \
                f"{self.mono_mass_calculated}, {self.retention_time_observed}, {self.retention_time_predicted}, " \
                f"{self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, {self.intensity_ms1}, " \
-               f"{self.intensity_ms2}, {self.q_value})"
+               f"{self.intensity_ms2}, {self.q_value}, {self.re_score})"
 
 
 class PsmDataset:
@@ -206,7 +206,7 @@ class PsmDataset:
                         'inverse_mobility_observed': match.inverse_mobility_observed,
                         'inverse_mobility_predicted': match.inverse_mobility_predicted,
                         'intensity_ms1': match.intensity_ms1, 'intensity_ms2': match.intensity_ms2,
-                        'q_value': match.q_value}
+                        'q_value': match.q_value, 're_score': match.re_score}
             row_list.append(row_dict)
         return pd.DataFrame(row_list)
 
@@ -232,7 +232,7 @@ class PsmDataset:
                         'inverse_mobility_observed': match.inverse_mobility_observed,
                         'inverse_mobility_predicted': match.inverse_mobility_predicted,
                         'intensity_ms1': match.intensity_ms1, 'intensity_ms2': match.intensity_ms2,
-                        'q_value': match.q_value}
+                        'q_value': match.q_value, 're_score': match.re_score}
             row_list.append(row_dict)
 
         return pd.DataFrame(row_list)
