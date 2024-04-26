@@ -217,5 +217,25 @@ class PsmDataset:
     def from_collection(collection: List[PeptideSpectrumMatch]) -> 'PsmDataset':
         return PsmDataset.from_py_ptr(psc.PyPsmDataset.from_collection([match.get_py_ptr() for match in collection]))
 
+    @staticmethod
+    def from_panadas(df: pd.DataFrame) -> 'PsmDataset':
+        row_list = []
+        for _, row in df.iterrows():
+            row_dict = {'spec_idx': row['spec_idx'], 'peptide_idx': row['peptide_idx'], 'proteins': row['proteins'],
+                        'decoy': row['decoy'],
+                        'hyper_score': row['hyper_score'],
+                        'rank': row['rank'],
+                        'charge': row['charge'],
+                        'peptide_sequence': row['peptide_sequence'],
+                        'retention_time_observed': row['retention_time_observed'],
+                        'retention_time_predicted': row['retention_time_predicted'],
+                        'inverse_mobility_observed': row['inverse_mobility_observed'],
+                        'inverse_mobility_predicted': row['inverse_mobility_predicted'],
+                        'intensity_ms1': row['intensity_ms1'], 'intensity_ms2': row['intensity_ms2'],
+                        'q_value': row['q_value']}
+            row_list.append(row_dict)
+
+        return PsmDataset.from_py_ptr(psc.PyPsmDataset.from_pandas(pd.DataFrame(row_list)))
+
     def __repr__(self):
         return f"PsmDataset(scored spectra: {self.size})"
