@@ -279,11 +279,23 @@ class PsmDataset:
         collection = []
         for _, row in df.iterrows():
             collection.append(PeptideSpectrumMatch(
-                row['spec_idx'], row['peptide_idx'], row['proteins'], row['decoy'], row['hyper_score'],
-                row['rank'], row['mono_mass_observed'], row['charge'],
-                row['peptide_sequence'], row['retention_time_observed'], row['retention_time_predicted'],
-                row['inverse_mobility_observed'], row['inverse_mobility_predicted'], row['intensity_ms1'],
-                row['intensity_ms2'], row['q_value'], row['re_score']
+                row['spec_idx'],
+                row['peptide_idx'],
+                row['proteins'],
+                row['decoy'],
+                row['hyper_score'],
+                row['rank'],
+                row['mono_mass_observed'],
+                row['peptide_sequence'],
+                row['charge'],
+                row['retention_time_observed'],
+                row['retention_time_predicted'],
+                row['inverse_mobility_observed'],
+                row['inverse_mobility_predicted'],
+                row['intensity_ms1'],
+                row['intensity_ms2'],
+                row['q_value'],
+                row['re_score']
             ))
 
         return PsmDataset.from_collection(collection)
