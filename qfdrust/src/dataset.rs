@@ -53,6 +53,11 @@ impl PeptideSpectrumMatch {
             None => None,
         };
 
+        let mono_mass_calculated = match peptide_sequence.clone() {
+            Some(seq) => Some(seq.mono_isotopic_mass() as f32),
+            _ => None,
+        };
+
         let mono_mz_calculated = match (peptide_sequence.clone(), charge) {
             (Some(seq), Some(ch)) => Some(calculate_mz(seq.mono_isotopic_mass(), ch as i32) as f32),
             (_, _) => None,
