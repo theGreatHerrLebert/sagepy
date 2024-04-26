@@ -24,22 +24,51 @@ class TDCMethod:
     def __repr__(self):
         return f"TDCMethod({self.__py_ptr.to_str()})"
 
+"""
+ spec_idx: String,
+        peptide_idx: u32,
+        proteins: Vec<String>,
+        decoy: bool,
+        hyper_score: f64,
+        rank: u32,
+        mono_mass_observed: Option<f32>,
+        sequence: Option<String>,
+        charge: Option<u8>,
+        retention_time_observed: Option<f32>,
+        retention_time_predicted: Option<f32>,
+        inverse_mobility_observed: Option<f32>,
+        inverse_mobility_predicted: Option<f32>,
+        intensity_ms1: Option<f32>,
+        intensity_ms2: Option<f32>,
+        q_value: Option<f64>,
+        re_score: Option<f64>,
+"""
 
 class PeptideSpectrumMatch:
     def __init__(self,
-                 spec_idx: str, peptide_idx: int, proteins: List[str], decoy: bool, hyper_score: float, rank: int,
-                 mono_mass_observed: Union[None, float], mono_mass_predicted: Union[None, float],
-                 charge: Union[None, int], peptide_sequence: Union[None, str],
-                 retention_time_observed: Union[None, float], retention_time_predicted: Union[None, float],
-                 inverse_mobility_observed: Union[None, float], inverse_mobility_predicted: Union[None, float],
-                 intensity_ms1: Union[None, float], intensity_ms2: Union[None, float], q_value: Union[None, float],
+                 spec_idx: str,
+                 peptide_idx: int,
+                 proteins: List[str],
+                 decoy: bool,
+                 hyper_score: float,
+                 rank: int,
+                 mono_mass_observed: Union[None, float],
+                 sequence: Union[None, str],
+                 charge: Union[None, int],
+                 retention_time_observed: Union[None, float],
+                 retention_time_predicted: Union[None, float],
+                 inverse_mobility_observed: Union[None, float],
+                 inverse_mobility_predicted: Union[None, float],
+                 intensity_ms1: Union[None, float],
+                 intensity_ms2: Union[None, float],
+                 q_value: Union[None, float],
                  re_score: Union[None, float]):
 
-        self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, charge,
-                                                   mono_mass_observed, mono_mass_predicted,
-                                                   peptide_sequence, retention_time_observed, retention_time_predicted,
-                                                   inverse_mobility_observed, inverse_mobility_predicted, intensity_ms1,
-                                                   intensity_ms2, q_value, re_score)
+        self.__py_ptr = psc.PyPeptideSpectrumMatch(
+            spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed, sequence, charge,
+            retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
+            intensity_ms1, intensity_ms2, q_value, re_score
+        )
 
     @property
     def spec_idx(self):
@@ -192,7 +221,9 @@ class PsmDataset:
         row_list = []
 
         for match in matches:
-            row_dict = {'spec_idx': match.spec_idx, 'peptide_idx': match.peptide_idx, 'proteins': match.proteins,
+            row_dict = {'spec_idx': match.spec_idx,
+                        'peptide_idx': match.peptide_idx,
+                        'proteins': match.proteins,
                         'decoy': match.decoy,
                         'hyper_score': match.hyper_score,
                         'rank': match.rank,
@@ -205,8 +236,10 @@ class PsmDataset:
                         'retention_time_predicted': match.retention_time_predicted,
                         'inverse_mobility_observed': match.inverse_mobility_observed,
                         'inverse_mobility_predicted': match.inverse_mobility_predicted,
-                        'intensity_ms1': match.intensity_ms1, 'intensity_ms2': match.intensity_ms2,
-                        'q_value': match.q_value, 're_score': match.re_score}
+                        'intensity_ms1': match.intensity_ms1,
+                        'intensity_ms2': match.intensity_ms2,
+                        'q_value': match.q_value,
+                        're_score': match.re_score}
             row_list.append(row_dict)
         return pd.DataFrame(row_list)
 

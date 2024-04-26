@@ -36,7 +36,6 @@ impl PeptideSpectrumMatch {
         hyper_score: f64,
         rank: u32,
         mono_mass_observed: Option<f32>,
-        mono_mass_calculated: Option<f32>,
         sequence: Option<String>,
         charge: Option<u8>,
         retention_time_observed: Option<f32>,
