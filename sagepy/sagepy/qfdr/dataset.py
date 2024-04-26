@@ -251,7 +251,7 @@ class PsmDataset:
                 row['peptide_sequence'], row['retention_time_observed'], row['retention_time_predicted'],
                 row['inverse_mobility_observed'], row['inverse_mobility_predicted'], row['intensity_ms1'],
                 row['intensity_ms2'], row['q_value'], row['re_score']
-            ).get_py_ptr())
+            ))
 
         return PsmDataset.from_collection(collection)
 
