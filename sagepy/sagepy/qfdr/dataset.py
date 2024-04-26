@@ -32,13 +32,14 @@ class PeptideSpectrumMatch:
                  charge: Union[None, int], peptide_sequence: Union[None, str],
                  retention_time_observed: Union[None, float], retention_time_predicted: Union[None, float],
                  inverse_mobility_observed: Union[None, float], inverse_mobility_predicted: Union[None, float],
-                 intensity_ms1: Union[None, float], intensity_ms2: Union[None, float], q_value: Union[None, float]):
+                 intensity_ms1: Union[None, float], intensity_ms2: Union[None, float], q_value: Union[None, float],
+                 re_score: Union[None, float]):
 
         self.__py_ptr = psc.PyPeptideSpectrumMatch(spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, charge,
                                                    mono_mass_observed, mono_mass_predicted,
                                                    peptide_sequence, retention_time_observed, retention_time_predicted,
                                                    inverse_mobility_observed, inverse_mobility_predicted, intensity_ms1,
-                                                   intensity_ms2, q_value)
+                                                   intensity_ms2, q_value, re_score)
 
     @property
     def spec_idx(self):
@@ -59,6 +60,10 @@ class PeptideSpectrumMatch:
     @property
     def hyper_score(self):
         return self.__py_ptr.hyper_score
+
+    @hyper_score.setter
+    def hyper_score(self, value):
+        self.__py_ptr.hyper_score = value
 
     @property
     def rank(self):
@@ -92,6 +97,10 @@ class PeptideSpectrumMatch:
     def retention_time_predicted(self):
         return self.__py_ptr.retention_time_predicted
 
+    @retention_time_predicted.setter
+    def retention_time_predicted(self, value):
+        self.__py_ptr.retention_time_predicted = value
+
     @property
     def inverse_mobility_observed(self):
         return self.__py_ptr.inverse_mobility_observed
@@ -99,6 +108,10 @@ class PeptideSpectrumMatch:
     @property
     def inverse_mobility_predicted(self):
         return self.__py_ptr.inverse_mobility_predicted
+
+    @inverse_mobility_predicted.setter
+    def inverse_mobility_predicted(self, value):
+        self.__py_ptr.inverse_mobility_predicted = value
 
     @property
     def intensity_ms1(self):
@@ -111,6 +124,14 @@ class PeptideSpectrumMatch:
     @property
     def q_value(self):
         return self.__py_ptr.q_value
+
+    @property
+    def re_score(self):
+        return self.__py_ptr.re_score
+
+    @re_score.setter
+    def re_score(self, value):
+        self.__py_ptr.re_score = value
 
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
@@ -203,6 +224,9 @@ class PsmDataset:
                         'rank': match.rank,
                         'charge': match.charge,
                         'peptide_sequence': match.peptide_sequence,
+                        'mono_mz_calculated': match.mono_mz_calculated,
+                        'mono_mass_observed': match.mono_mass_observed,
+                        'mono_mass_calculated': match.mono_mass_calculated,
                         'retention_time_observed': match.retention_time_observed,
                         'retention_time_predicted': match.retention_time_predicted,
                         'inverse_mobility_observed': match.inverse_mobility_observed,
