@@ -552,7 +552,6 @@ impl PyScorer {
                             score,
                             feature.rank,
                             Some(feature.expmass),
-                            Some(feature.calcmass),
                             Some(sage_sequence_to_unimod_sequence(sequence, &peptide.modifications)),
                             Some(charge),
                             Some(feature.rt),
