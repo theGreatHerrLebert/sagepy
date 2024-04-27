@@ -1,8 +1,6 @@
 from typing import Optional, List
 
 import sagepy_connector
-
-from sagepy.qfdr.dataset import PsmDataset
 from .spectrum import ProcessedSpectrum
 
 psc = sagepy_connector.py_scoring
