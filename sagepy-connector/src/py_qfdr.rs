@@ -1,6 +1,5 @@
-use std::collections::BTreeMap;
 use pyo3::prelude::*;
-use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset, TDCMethod};
+use qfdrust::dataset::{PeptideSpectrumMatch, TDCMethod};
 
 #[pyclass]
 #[derive(Clone)]
@@ -201,68 +200,25 @@ impl PyPeptideSpectrumMatch {
     }
 }
 
-#[pyclass]
-pub struct PyPsmDataset {
-    pub inner: PsmDataset,
-}
+#[pyfunction]
+pub fn target_decoy_competition(
+    method: &PyTDCMethod,
+    spectra_idx: Vec<String>,
+    match_idx: Vec<u32>,
+    target: Vec<bool>,
+    scores: Vec<f32>) -> (Vec<String>, Vec<u32>, Vec<bool>, Vec<f32>, Vec<f64>) {
 
-#[pymethods]
-impl PyPsmDataset {
-    #[new]
-    fn new(spec_ids: Vec<String>, matches: Vec<Vec<PyPeptideSpectrumMatch>>) -> Self {
-        let mut psm_map = BTreeMap::new();
-        let inner_matches: Vec<Vec<_>> = matches.into_iter().map(|m| m.iter().map(|m| m.inner.clone()).collect()).collect();
-        for (spec_id, matches) in spec_ids.into_iter().zip(inner_matches.into_iter()) {
-            psm_map.insert(spec_id, matches);
-        }
-        PyPsmDataset {
-            inner: PsmDataset {
-                psm_map,
-            },
-        }
-    }
-    pub fn get_spec_psms(&self, spec_id: String) -> PyResult<Vec<PyPeptideSpectrumMatch>> {
-        Ok(self.inner.psm_map.get(&spec_id).unwrap().iter().map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() }).collect())
-    }
+    let method = method.inner.clone();
 
-    #[getter]
-    pub fn size(&self) -> usize {
-        self.inner.size()
-    }
+    let (spec_idx, match_idx, decoy, scores, q_values) = qfdrust::dataset::target_decoy_competition(method, spectra_idx, match_idx, target, scores);
 
-    #[getter]
-    pub fn keys(&self) -> Vec<String> {
-        self.inner.get_spectra_ids()
-    }
-
-    pub fn best_target_ptm(&self, spec_id: String) -> Option<PyPeptideSpectrumMatch> {
-        self.inner.get_best_target_psm(&spec_id).map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() })
-    }
-
-    pub fn best_decoy_ptm(&self, spec_id: String) -> Option<PyPeptideSpectrumMatch> {
-        self.inner.get_best_decoy_psm(&spec_id).map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() })
-    }
-
-    pub fn tdc(&self, method: PyTDCMethod) -> Vec<PyPeptideSpectrumMatch> {
-        self.inner.tdc(method.inner).iter().map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() }).collect()
-    }
-    pub fn flatten(&self) -> Vec<PyPeptideSpectrumMatch> {
-        self.inner.flatten().iter().map(|psm| PyPeptideSpectrumMatch { inner: psm.clone() }).collect()
-    }
-
-    #[staticmethod]
-    pub fn from_collection(collection: Vec<PyPeptideSpectrumMatch>) -> PyPsmDataset {
-        let matches = collection.into_iter().map(|m| m.inner).collect();
-        PyPsmDataset {
-            inner: PsmDataset::from_collection(matches),
-        }
-    }
+    (spec_idx, match_idx, decoy, scores, q_values)
 }
 
 #[pymodule]
 pub fn qfdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPeptideSpectrumMatch>()?;
-    m.add_class::<PyPsmDataset>()?;
     m.add_class::<PyTDCMethod>()?;
+    m.add_function(wrap_pyfunction!(target_decoy_competition, m)?)?;
     Ok(())
 }

@@ -1,6 +1,6 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use pyo3::prelude::*;
-use qfdrust::dataset::{PeptideSpectrumMatch, PsmDataset};
+use qfdrust::dataset::{PeptideSpectrumMatch};
 use qfdrust::utility::sage_sequence_to_unimod_sequence;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
@@ -10,7 +10,7 @@ use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
-use crate::py_qfdr::{PyPsmDataset};
+use crate::py_qfdr::{PyPeptideSpectrumMatch};
 
 #[pyclass]
 #[derive(Clone)]
@@ -483,12 +483,12 @@ impl PyScorer {
         result
     }
 
-    pub fn score_collection_to_psm_dataset(
+    pub fn score_collection_to_psm_collection(
         &self,
         db: &PyIndexedDatabase,
         spectra: Vec<PyProcessedSpectrum>,
         num_threads: usize,
-    ) -> PyPsmDataset {
+    ) -> Vec<PyPeptideSpectrumMatch> {
         let scorer = Scorer {
             db: &db.inner,
             precursor_tol: self.precursor_tolerance.inner.clone(),
@@ -519,7 +519,7 @@ impl PyScorer {
                 .collect()
         });
 
-        let psm_map = pool.install(|| {
+        let psm_map: BTreeMap<String, Vec<PeptideSpectrumMatch>> = pool.install(|| {
             spectra.par_iter().zip(result.into_par_iter())
                 .map(|(spectrum, features)| {
                     let mut psms = Vec::new();
@@ -570,9 +570,17 @@ impl PyScorer {
                 .collect()
         });
 
-        PyPsmDataset {
-            inner: PsmDataset::new(psm_map),
+        let mut result: Vec<PyPeptideSpectrumMatch> = Vec::new();
+
+        for (_, psms) in psm_map {
+            for psm in psms {
+                result.push(PyPeptideSpectrumMatch {
+                    inner: psm,
+                });
+            }
         }
+
+        result
     }
 
     pub fn score_chimera_fast(
