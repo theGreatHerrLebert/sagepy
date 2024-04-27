@@ -194,13 +194,6 @@ class Scorer:
 
         return result
 
-    def score_collection_to_psm_dataset(self, db: IndexedDatabase,
-                                        spectrum_collection: List[ProcessedSpectrum], num_threads: int) -> 'PsmDataset':
-        return PsmDataset.from_py_ptr(
-            self.__scorer_ptr.score_collection_to_psm_dataset(db.get_py_ptr(),
-                                                              [spec.get_py_ptr() for spec in spectrum_collection],
-                                                              num_threads))
-
     def _score_chimera_fast(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
         return [Feature.from_py_feature(f) for f in
                 self.__scorer_ptr.score_chimera_fast(db.get_py_ptr(), spectrum.get_py_ptr())]
