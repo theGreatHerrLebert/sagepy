@@ -7,7 +7,7 @@ psc = sagepy_connector.py_qfdr
 
 
 class TDCMethod:
-    def __init__(self, method: int):
+    def __init__(self, method: str):
         self.methods = {"psm", "peptide_psm_only", "peptide_peptide_only", "peptide_psm_peptide"}
         assert method in self.methods, f"Invalid method: {method}, allowed values are: {self.methods}"
         self.__py_ptr = psc.PyTDCMethod(method)
@@ -24,25 +24,6 @@ class TDCMethod:
     def __repr__(self):
         return f"TDCMethod({self.__py_ptr.to_str()})"
 
-"""
- spec_idx: String,
-        peptide_idx: u32,
-        proteins: Vec<String>,
-        decoy: bool,
-        hyper_score: f64,
-        rank: u32,
-        mono_mass_observed: Option<f32>,
-        sequence: Option<String>,
-        charge: Option<u8>,
-        retention_time_observed: Option<f32>,
-        retention_time_predicted: Option<f32>,
-        inverse_mobility_observed: Option<f32>,
-        inverse_mobility_predicted: Option<f32>,
-        intensity_ms1: Option<f32>,
-        intensity_ms2: Option<f32>,
-        q_value: Option<f64>,
-        re_score: Option<f64>,
-"""
 
 class PeptideSpectrumMatch:
     def __init__(self,
@@ -63,7 +44,6 @@ class PeptideSpectrumMatch:
                  intensity_ms2: Union[None, float],
                  q_value: Union[None, float],
                  re_score: Union[None, float]):
-
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed, sequence, charge,
             retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
@@ -179,115 +159,9 @@ class PeptideSpectrumMatch:
                f"{self.intensity_ms2}, {self.q_value}, {self.re_score})"
 
 
-class PsmDataset:
-    def __init__(self, spec_ids: List[str], matches: List[List[PeptideSpectrumMatch]]):
-        self.__py_ptr = psc.PyPsmDataset(spec_ids, matches)
-
-    @property
-    def size(self):
-        return self.__py_ptr.size
-
-    @property
-    def keys(self):
-        return self.__py_ptr.keys
-
-    @classmethod
-    def from_py_ptr(cls, py_ptr: psc.PyPsmDataset):
-        instance = cls.__new__(cls)
-        instance.__py_ptr = py_ptr
-        return instance
-
-    def get_py_ptr(self) -> psc.PyPsmDataset:
-        return self.__py_ptr
-
-    def best_target_psm(self, spec_id: str) -> Union[None, PeptideSpectrumMatch]:
-        psm = self.__py_ptr.best_target_psm(spec_id)
-        if psm is None:
-            return None
-        return PeptideSpectrumMatch.from_py_ptr(psm)
-
-    def best_decoy_psm(self, spec_id: str) -> Union[None, PeptideSpectrumMatch]:
-        psm = self.__py_ptr.best_decoy_psm(spec_id)
-        if psm is None:
-            return None
-        return PeptideSpectrumMatch.from_py_ptr(psm)
-
-    def target_decoy_competition(self, method: TDCMethod) -> List[PeptideSpectrumMatch]:
-        return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.tdc(method.get_py_ptr())]
-
-    def target_decoy_competition_pandas(self, method: TDCMethod) -> pd.DataFrame:
-        matches = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.tdc(method.get_py_ptr())]
-
-        row_list = []
-
-        for match in matches:
-            row_dict = {'spec_idx': match.spec_idx,
-                        'peptide_idx': match.peptide_idx,
-                        'proteins': match.proteins,
-                        'decoy': match.decoy,
-                        'hyper_score': match.hyper_score,
-                        'rank': match.rank,
-                        'mono_mz_calculated': match.mono_mz_calculated,
-                        'mono_mass_observed': match.mono_mass_observed,
-                        'mono_mass_calculated': match.mono_mass_calculated,
-                        'charge': match.charge,
-                        'peptide_sequence': match.peptide_sequence,
-                        'retention_time_observed': match.retention_time_observed,
-                        'retention_time_predicted': match.retention_time_predicted,
-                        'inverse_mobility_observed': match.inverse_mobility_observed,
-                        'inverse_mobility_predicted': match.inverse_mobility_predicted,
-                        'intensity_ms1': match.intensity_ms1,
-                        'intensity_ms2': match.intensity_ms2,
-                        'q_value': match.q_value,
-                        're_score': match.re_score}
-            row_list.append(row_dict)
-        return pd.DataFrame(row_list)
-
-    def flatten(self) -> List[PeptideSpectrumMatch]:
-        return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in self.__py_ptr.flatten()]
-
-    def df(self) -> pd.DataFrame:
-        flattened = self.flatten()
-        row_list = []
-
-        for match in flattened:
-            row_dict = {'spec_idx': match.spec_idx, 'peptide_idx': match.peptide_idx, 'proteins': match.proteins,
-                        'decoy': match.decoy,
-                        'hyper_score': match.hyper_score,
-                        'rank': match.rank,
-                        'charge': match.charge,
-                        'peptide_sequence': match.peptide_sequence,
-                        'mono_mz_calculated': match.mono_mz_calculated,
-                        'mono_mass_observed': match.mono_mass_observed,
-                        'mono_mass_calculated': match.mono_mass_calculated,
-                        'retention_time_observed': match.retention_time_observed,
-                        'retention_time_predicted': match.retention_time_predicted,
-                        'inverse_mobility_observed': match.inverse_mobility_observed,
-                        'inverse_mobility_predicted': match.inverse_mobility_predicted,
-                        'intensity_ms1': match.intensity_ms1, 'intensity_ms2': match.intensity_ms2,
-                        'q_value': match.q_value, 're_score': match.re_score}
-            row_list.append(row_dict)
-
-        return pd.DataFrame(row_list)
-
-    @staticmethod
-    def from_collection(collection: List[PeptideSpectrumMatch]) -> 'PsmDataset':
-        return PsmDataset.from_py_ptr(psc.PyPsmDataset.from_collection([match.get_py_ptr() for match in collection]))
-
-    @staticmethod
-    def from_pandas(df: pd.DataFrame) -> 'PsmDataset':
-        collection = df.apply(lambda row: PeptideSpectrumMatch(
-            spec_idx=row['spec_idx'], peptide_idx=row['peptide_idx'], proteins=row['proteins'], decoy=row['decoy'],
-            hyper_score=row['hyper_score'], rank=row['rank'], mono_mass_observed=row['mono_mass_observed'],
-            sequence=row['peptide_sequence'], charge=row['charge'],
-            retention_time_observed=row['retention_time_observed'],
-            retention_time_predicted=row['retention_time_predicted'],
-            inverse_mobility_observed=row['inverse_mobility_observed'],
-            inverse_mobility_predicted=row['inverse_mobility_predicted'], intensity_ms1=row['intensity_ms1'],
-            intensity_ms2=row['intensity_ms2'], q_value=row['q_value'], re_score=row['re_score']
-        ), axis=1)
-
-        return PsmDataset.from_collection(collection)
-
-    def __repr__(self):
-        return f"PsmDataset(scored spectra: {self.size})"
+def target_decoy_competition(method: str, spectra_idx: List[str], match_idx: List[int], target: List[bool],
+                             scores: List[float]) -> Tuple[List[str], List[int], List[bool], List[float], List[float]]:
+    tdc_method = TDCMethod(method)
+    spec_idx, match_idx, decoy, scores, q_values = sagepy_connector.target_decoy_competition(tdc_method, spectra_idx,
+                                                                                             match_idx, target, scores)
+    return spec_idx, match_idx, decoy, scores, q_values
