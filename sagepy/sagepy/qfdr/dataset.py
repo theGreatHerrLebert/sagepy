@@ -1,6 +1,7 @@
 from typing import List, Union, Tuple
 
 import sagepy_connector
+
 psc = sagepy_connector.py_qfdr
 
 
@@ -160,6 +161,7 @@ class PeptideSpectrumMatch:
 def target_decoy_competition(method: str, spectra_idx: List[str], match_idx: List[int], target: List[bool],
                              scores: List[float]) -> Tuple[List[str], List[int], List[bool], List[float], List[float]]:
     tdc_method = TDCMethod(method)
-    spec_idx, match_idx, decoy, scores, q_values = psc.target_decoy_competition(tdc_method, spectra_idx,
-                                                                                             match_idx, target, scores)
+    spec_idx, match_idx, decoy, scores, q_values = psc.target_decoy_competition(
+        tdc_method.get_py_ptr(), spectra_idx,
+        match_idx, target, scores)
     return spec_idx, match_idx, decoy, scores, q_values
