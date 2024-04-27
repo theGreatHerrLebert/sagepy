@@ -1,7 +1,110 @@
 use std::collections::{BTreeMap};
+use itertools::multizip;
 use rustms::chemistry::formula::calculate_mz;
 use rustms::proteomics::peptide::{FragmentType, PeptideProductIonSeriesCollection, PeptideSequence};
 use crate::utility;
+
+#[derive(Clone, Debug)]
+pub struct Match {
+    pub score: f32,
+    pub match_idx: u32,
+    pub spectrum_idx: String,
+    pub match_identity_candidates: Option<Vec<String>>,
+    pub q_value: Option<f64>,
+}
+
+pub struct MatchDataset {
+    pub matches: BTreeMap<String, Vec<Match>>,
+}
+
+impl MatchDataset {
+    pub fn new(mut map: BTreeMap<String, Vec<Match>>) -> MatchDataset {
+        // score should be descending
+        for (_, matches) in &mut map {
+            matches.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+        }
+
+        map.retain(|_, v| !v.is_empty());
+
+        MatchDataset {
+            matches: map,
+        }
+    }
+
+    pub fn get_spectra_ids(&self) -> Vec<String> {
+        self.matches.keys().cloned().collect()
+    }
+
+    pub fn from_collection(collection: Vec<Match>) -> MatchDataset {
+        let mut map: BTreeMap<String, Vec<Match>> = BTreeMap::new();
+
+        for m in collection {
+            let entry = map.entry(m.spectrum_idx.clone()).or_insert(Vec::new());
+            entry.push(m);
+        }
+
+        MatchDataset::new(map)
+    }
+
+    pub fn from_vectors(spectrum_idx: Vec<String>, match_idx: Vec<u32>, score: Vec<f32>) -> MatchDataset {
+        let mut map: BTreeMap<String, Vec<Match>> = BTreeMap::new();
+        for (spec_idx, match_idx, score) in multizip((spectrum_idx, match_idx, score)) {
+            let entry = map.entry(spec_idx.clone()).or_insert(Vec::new());
+            entry.push(Match {
+                score,
+                match_idx,
+                spectrum_idx: spec_idx,
+                match_identity_candidates: None,
+                q_value: None,
+            });
+        }
+        MatchDataset::new(map)
+    }
+    pub fn get_best_target_match(&self, spec_id: &str) -> Option<&Match> {
+        self.matches.get(spec_id).unwrap().iter().find(|m| m.q_value.is_none())
+    }
+    pub fn get_best_decoy_match(&self, spec_id: &str) -> Option<&Match> {
+        self.matches.get(spec_id).unwrap().iter().find(|m| m.q_value.is_some())
+    }
+    pub fn get_best_target_matches(&self) -> Vec<&Match> {
+        let maybe_matches: Vec<_> = self.get_spectra_ids().iter().map(|spec_id| self.get_best_target_match(spec_id)).collect();
+        maybe_matches.iter().filter_map(|m| *m).collect()
+    }
+
+    pub fn get_best_decoy_matches(&self) -> Vec<&Match> {
+        let maybe_matches: Vec<_> = self.get_spectra_ids().iter().map(|spec_id| self.get_best_decoy_match(spec_id)).collect();
+        maybe_matches.iter().filter_map(|m| *m).collect()
+    }
+    pub fn get_best_match(&self, spec_id: &str) -> Option<&Match> {
+        let matches = self.matches.get(spec_id).unwrap();
+        let maybe_best_target = matches.iter().find(|m| m.q_value.is_none());
+        let maybe_best_decoy = matches.iter().find(|m| m.q_value.is_some());
+
+        match (maybe_best_target, maybe_best_decoy) {
+            (Some(best_target), Some(best_decoy)) => {
+                if best_target.score > best_decoy.score {
+                    Some(best_target)
+                }
+                else if best_target.score == best_decoy.score {
+                    if rand::random() {
+                        Some(best_target)
+                    } else {
+                        Some(best_decoy)
+                    }
+                }
+                else {
+                    Some(best_decoy)
+                }
+            },
+            (Some(best_target), None) => Some(best_target),
+            (None, Some(best_decoy)) => Some(best_decoy),
+            _ => None,
+        }
+    }
+    pub fn get_best_matches(&self) -> Vec<&Match> {
+        self.get_spectra_ids().iter().filter_map(|spec_id| self.get_best_match(spec_id)).collect()
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct PeptideSpectrumMatch {
