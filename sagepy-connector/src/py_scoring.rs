@@ -10,7 +10,6 @@ use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
-use crate::py_qfdr::{PyPeptideSpectrumMatch};
 
 #[pyclass]
 #[derive(Clone)]
