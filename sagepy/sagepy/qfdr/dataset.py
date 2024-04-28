@@ -186,5 +186,5 @@ def target_decoy_competition_pandas(method: str, df: pd.DataFrame) -> pd.DataFra
         'decoy': target,
         'score': scores,
         'q_value': q_values
-    })
+    }).sort_values('q_value')
 
