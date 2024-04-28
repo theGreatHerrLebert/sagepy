@@ -174,12 +174,10 @@ def target_decoy_competition_pandas(method: str, df: pd.DataFrame) -> pd.DataFra
     assert 'decoy' in df.columns, "decoy column not found"
     assert 'score' in df.columns, "score column not found"
 
-    tdc_method = TDCMethod(method)
-
     spec_idx, match_idx, target, scores = (df['spec_idx'].tolist(),
                                            df['match_idx'].tolist(), df['decoy'].tolist(), df['score'].tolist())
 
-    spec_idx, match_idx, target, scores, q_values = target_decoy_competition(tdc_method.get_py_ptr(), spec_idx,
+    spec_idx, match_idx, target, scores, q_values = target_decoy_competition(method, spec_idx,
                                                                              match_idx, target, scores)
 
     return pd.DataFrame({
