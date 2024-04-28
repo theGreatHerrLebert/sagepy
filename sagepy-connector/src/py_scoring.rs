@@ -842,31 +842,35 @@ impl PyPeptideSpectrumMatch {
         let maybe_fragments = self.inner.peptide_product_ion_series_collection_predicted.clone();
         match maybe_fragments {
             Some(fragments) => {
+
+                let mut charges = Vec::new();
+                let mut kinds = Vec::new();
+                let mut fragment_ordinals = Vec::new();
+                let mut intensities = Vec::new();
+                let mut mz_calculated = Vec::new();
+                let mut mz_experimental = Vec::new();
+
                 for series in fragments.peptide_ions.iter() {
                     let charge = series.charge;
-                    let mut charges = Vec::new();
-                    let mut kinds = Vec::new();
-                    let mut fragment_ordinals = Vec::new();
-                    let mut intensities = Vec::new();
-                    let mut mz_calculated = Vec::new();
-                    let mut mz_experimental = Vec::new();
 
                     for b_ion in series.n_ions.iter() {
-                        let kind = PyKind { inner: Kind::B };
+                        let kind = Kind::B;
+                        kinds.push(kind);
                         charges.push(charge);
-                        fragment_ordinals.push(b_ion.ion.ordinal);
-                        intensities.push(b_ion.ion.intensity);
-                        mz_calculated.push(b_ion.mz());
-                        mz_experimental.push(b_ion.mz());
+                        fragment_ordinals.push(b_ion.ion.ordinal as i32);
+                        intensities.push(b_ion.ion.intensity as f32);
+                        mz_calculated.push(b_ion.mz() as f32);
+                        mz_experimental.push(b_ion.mz() as f32);
                     }
 
                     for y_ion in series.c_ions.iter() {
-                        let kind = PyKind { inner: Kind::Y };
+                        let kind = Kind::Y;
+                        kinds.push(kind);
                         charges.push(charge);
-                        fragment_ordinals.push(y_ion.ion.ordinal);
-                        intensities.push(y_ion.ion.intensity);
-                        mz_calculated.push(y_ion.ion.mz());
-                        mz_experimental.push(y_ion.mz());
+                        fragment_ordinals.push(y_ion.ion.ordinal as i32);
+                        intensities.push(y_ion.ion.intensity as f32);
+                        mz_calculated.push(y_ion.ion.mz() as f32);
+                        mz_experimental.push(y_ion.mz() as f32);
                     }
                 }
                 Some(PyFragments {
@@ -877,7 +881,7 @@ impl PyPeptideSpectrumMatch {
                         intensities,
                         mz_calculated,
                         mz_experimental,
-                    },
+                    }
                 })
             }
             None => None,
