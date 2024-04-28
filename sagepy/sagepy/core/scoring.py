@@ -224,7 +224,7 @@ class Scorer:
                 "q_value": match.q_value,
             })
 
-        return pd.DataFrame(row_list)
+        return pd.DataFrame(row_list).sort_values(by=["spec_idx", "match_idx", "decoy"])
 
     def _score_chimera_fast(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
         return [Feature.from_py_feature(f) for f in
