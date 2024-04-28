@@ -3,6 +3,8 @@ from typing import List, Union, Tuple
 import pandas as pd
 import sagepy_connector
 
+from sagepy.core.scoring import Fragments
+
 psc = sagepy_connector.py_qfdr
 
 
@@ -43,11 +45,12 @@ class PeptideSpectrumMatch:
                  intensity_ms1: Union[None, float],
                  intensity_ms2: Union[None, float],
                  q_value: Union[None, float],
-                 re_score: Union[None, float]):
+                 fragments: Union[None, Fragments] = None,
+                 ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed, sequence, charge,
             retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
-            intensity_ms1, intensity_ms2, q_value, re_score
+            intensity_ms1, intensity_ms2, q_value, fragments.get_py_ptr()
         )
 
     @property
@@ -135,12 +138,8 @@ class PeptideSpectrumMatch:
         return self.__py_ptr.q_value
 
     @property
-    def re_score(self):
-        return self.__py_ptr.re_score
-
-    @re_score.setter
-    def re_score(self, value):
-        self.__py_ptr.re_score = value
+    def fragments(self) -> Fragments:
+        return Fragments.from_py_fragments(self.__py_ptr.fragments)
 
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
@@ -156,7 +155,7 @@ class PeptideSpectrumMatch:
                f"{self.hyper_score}, {self.rank} {self.charge}, {self.peptide_sequence}, {self.mono_mass_observed}, " \
                f"{self.mono_mass_calculated}, {self.retention_time_observed}, {self.retention_time_predicted}, " \
                f"{self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, {self.intensity_ms1}, " \
-               f"{self.intensity_ms2}, {self.q_value}, {self.re_score})"
+               f"{self.intensity_ms2}, {self.q_value})"
 
 
 def target_decoy_competition(method: str, spectra_idx: List[str], match_idx: List[int], decoy: List[bool],

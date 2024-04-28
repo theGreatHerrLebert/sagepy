@@ -194,7 +194,15 @@ class Scorer:
 
         return result
 
-    def score_collection_pandas(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
+    def score_collection_psm(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
+                             num_threads: int = 4) -> List[PeptideSpectrumMatch]:
+        py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(),
+                                                                       [spec.get_py_ptr() for spec in
+                                                                        spectrum_collection],
+                                                                       num_threads)
+        return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in py_psms]
+
+    def score_collection_psm_pandas(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
                                 num_threads: int = 4) -> pd.DataFrame:
 
         py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(),

@@ -1,5 +1,7 @@
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch, TDCMethod};
+use sage_core::scoring::Fragments;
+use crate::py_scoring::PyFragments;
 
 #[pyclass]
 #[derive(Clone)]
@@ -24,6 +26,7 @@ impl PyTDCMethod {
 #[derive(Clone)]
 pub struct PyPeptideSpectrumMatch {
     pub inner: PeptideSpectrumMatch,
+    pub fragments: Option<Fragments>,
 }
 
 #[pymethods]
@@ -46,8 +49,14 @@ impl PyPeptideSpectrumMatch {
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
         q_value: Option<f64>,
-        re_score: Option<f64>,
+        fragments: Option<PyFragments>,
     ) -> Self {
+
+        let fragments = match fragments {
+            Some(fragments) => Some(fragments.inner),
+            None => None,
+        };
+
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch::new(
                 spec_idx,
@@ -66,8 +75,8 @@ impl PyPeptideSpectrumMatch {
                 intensity_ms1,
                 intensity_ms2,
                 q_value,
-                re_score,
             ),
+            fragments,
         }
     }
 
@@ -104,16 +113,6 @@ impl PyPeptideSpectrumMatch {
     #[setter]
     pub fn set_hyper_score(&mut self, hyper_score: f64) {
         self.inner.hyper_score = hyper_score;
-    }
-
-    #[getter]
-    pub fn re_score(&self) -> Option<f64> {
-        self.inner.re_score
-    }
-
-    #[setter]
-    pub fn set_re_score(&mut self, re_score: f64) {
-        self.inner.re_score = Some(re_score);
     }
 
     #[getter]
@@ -196,7 +195,7 @@ impl PyPeptideSpectrumMatch {
 
     pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
         let ion_series = self.inner.associate_with_prosit_predicted_intensities(flat_intensities);
-        self.inner.peptide_product_ion_series_collection = ion_series;
+        self.inner.peptide_product_ion_series_collection_predicted = ion_series;
     }
 }
 

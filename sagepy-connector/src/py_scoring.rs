@@ -519,7 +519,7 @@ impl PyScorer {
                 .collect()
         });
 
-        let psm_map: BTreeMap<String, Vec<PeptideSpectrumMatch>> = pool.install(|| {
+        let psm_map: BTreeMap<String, Vec<(PeptideSpectrumMatch, Option<Fragments>)>> = pool.install(|| {
             spectra.par_iter().zip(result.into_par_iter())
                 .map(|(spectrum, features)| {
                     let mut psms = Vec::new();
@@ -535,6 +535,7 @@ impl PyScorer {
                         let charge = feature.charge;
                         let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
                         let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
+                        let fragments = feature.fragments;
 
                         let key = (feature.peptide_idx.0, decoy);
 
@@ -561,9 +562,8 @@ impl PyScorer {
                             Some(intensity_ms1),
                             Some(intensity_ms2),
                             None,
-                            None,
                         );
-                        psms.push(psm);
+                        psms.push((psm, fragments));
                     }
                     (spectrum.inner.id.clone(), psms)
                 })
@@ -573,9 +573,10 @@ impl PyScorer {
         let mut result: Vec<PyPeptideSpectrumMatch> = Vec::new();
 
         for (_, psms) in psm_map {
-            for psm in psms {
+            for (psm, fragments) in psms {
                 result.push(PyPeptideSpectrumMatch {
                     inner: psm,
+                    fragments
                 });
             }
         }
