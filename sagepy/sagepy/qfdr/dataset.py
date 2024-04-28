@@ -138,8 +138,12 @@ class PeptideSpectrumMatch:
         return self.__py_ptr.q_value
 
     @property
-    def fragments(self) -> Fragments:
-        return Fragments.from_py_fragments(self.__py_ptr.fragments)
+    def fragments_observed(self) -> Union[None, Fragments]:
+        return Fragments.from_py_fragments(self.__py_ptr.fragments_observed)
+
+    @property
+    def fragments_predicted(self) -> Union[None, Fragments]:
+        return Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
 
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
