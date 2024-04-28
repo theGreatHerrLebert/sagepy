@@ -1,14 +1,148 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 
 import pandas as pd
 import sagepy_connector
 from .spectrum import ProcessedSpectrum
-from sagepy.qfdr.dataset import PeptideSpectrumMatch
 
 psc = sagepy_connector.py_scoring
 from .ion_series import IonType
 from .mass import Tolerance
 from .database import PeptideIx, IndexedDatabase
+
+
+class PeptideSpectrumMatch:
+    def __init__(self,
+                 spec_idx: str,
+                 peptide_idx: int,
+                 proteins: List[str],
+                 decoy: bool,
+                 hyper_score: float,
+                 rank: int,
+                 mono_mass_observed: Union[None, float],
+                 sequence: Union[None, str],
+                 charge: Union[None, int],
+                 retention_time_observed: Union[None, float],
+                 retention_time_predicted: Union[None, float],
+                 inverse_mobility_observed: Union[None, float],
+                 inverse_mobility_predicted: Union[None, float],
+                 intensity_ms1: Union[None, float],
+                 intensity_ms2: Union[None, float],
+                 q_value: Union[None, float],
+                 fragments: Union[None, 'Fragments'] = None,
+                 ):
+        self.__py_ptr = psc.PyPeptideSpectrumMatch(
+            spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed, sequence, charge,
+            retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
+            intensity_ms1, intensity_ms2, q_value, fragments.get_py_ptr()
+        )
+
+    @property
+    def spec_idx(self):
+        return self.__py_ptr.spec_idx
+
+    @property
+    def peptide_idx(self):
+        return self.__py_ptr.peptide_idx
+
+    @property
+    def proteins(self):
+        return self.__py_ptr.proteins
+
+    @property
+    def decoy(self):
+        return self.__py_ptr.decoy
+
+    @property
+    def hyper_score(self):
+        return self.__py_ptr.hyper_score
+
+    @hyper_score.setter
+    def hyper_score(self, value):
+        self.__py_ptr.hyper_score = value
+
+    @property
+    def rank(self):
+        return self.__py_ptr.rank
+
+    @property
+    def charge(self):
+        return self.__py_ptr.charge
+
+    @property
+    def peptide_sequence(self):
+        return self.__py_ptr.peptide_sequence
+
+    @property
+    def mono_mz_calculated(self):
+        return self.__py_ptr.mono_mz_calculated
+
+    @property
+    def mono_mass_observed(self):
+        return self.__py_ptr.mono_mass_observed
+
+    @property
+    def mono_mass_calculated(self):
+        return self.__py_ptr.mono_mass_calculated
+
+    @property
+    def retention_time_observed(self):
+        return self.__py_ptr.retention_time_observed
+
+    @property
+    def retention_time_predicted(self):
+        return self.__py_ptr.retention_time_predicted
+
+    @retention_time_predicted.setter
+    def retention_time_predicted(self, value):
+        self.__py_ptr.retention_time_predicted = value
+
+    @property
+    def inverse_mobility_observed(self):
+        return self.__py_ptr.inverse_mobility_observed
+
+    @property
+    def inverse_mobility_predicted(self):
+        return self.__py_ptr.inverse_mobility_predicted
+
+    @inverse_mobility_predicted.setter
+    def inverse_mobility_predicted(self, value):
+        self.__py_ptr.inverse_mobility_predicted = value
+
+    @property
+    def intensity_ms1(self):
+        return self.__py_ptr.intensity_ms1
+
+    @property
+    def intensity_ms2(self):
+        return self.__py_ptr.intensity_ms2
+
+    @property
+    def q_value(self):
+        return self.__py_ptr.q_value
+
+    @property
+    def fragments_observed(self) -> Union[None, 'Fragments']:
+        return Fragments.from_py_fragments(self.__py_ptr.fragments_observed)
+
+    @property
+    def fragments_predicted(self) -> Union[None, 'Fragments']:
+        return Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
+
+    @classmethod
+    def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
+        instance = cls.__new__(cls)
+        instance.__py_ptr = py_ptr
+        return instance
+
+    def get_py_ptr(self) -> psc.PyPeptideSpectrumMatch:
+        return self.__py_ptr
+
+    def __repr__(self):
+        return f"PeptideSpectrumMatch({self.spec_idx}, {self.peptide_idx}, {self.proteins}, {self.decoy}, " \
+               f"{self.hyper_score}, {self.rank} {self.charge}, {self.peptide_sequence}, {self.mono_mass_observed}, " \
+               f"{self.mono_mass_calculated}, {self.retention_time_observed}, {self.retention_time_predicted}, " \
+               f"{self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, {self.intensity_ms1}, " \
+               f"{self.intensity_ms2}, {self.q_value})"
 
 
 class Fragments:
