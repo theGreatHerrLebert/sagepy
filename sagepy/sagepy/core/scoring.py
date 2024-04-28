@@ -194,31 +194,6 @@ class Scorer:
 
         return result
 
-    """
-    #[derive(Clone, Debug)]
-pub struct PeptideSpectrumMatch {
-    pub spec_idx: String,
-    pub peptide_idx: u32,
-    pub proteins: Vec<String>,
-    pub decoy: bool,
-    pub hyper_score: f64,
-    pub rank: u32,
-    pub mono_mz_calculated: Option<f32>,
-    pub mono_mass_observed: Option<f32>,
-    pub mono_mass_calculated: Option<f32>,
-    pub peptide_sequence: Option<PeptideSequence>,
-    pub charge: Option<u8>,
-    pub retention_time_observed: Option<f32>,
-    pub retention_time_predicted: Option<f32>,
-    pub inverse_mobility_observed: Option<f32>,
-    pub inverse_mobility_predicted: Option<f32>,
-    pub intensity_ms1: Option<f32>,
-    pub intensity_ms2: Option<f32>,
-    pub q_value: Option<f64>,
-    pub re_score: Option<f64>,
-}
-    """
-
     def score_collection_to_pandas(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
                                    num_threads: int = 4) -> pd.DataFrame:
 
@@ -233,7 +208,7 @@ pub struct PeptideSpectrumMatch {
                 "peptide_idx": match.peptide_idx,
                 "proteins": match.proteins,
                 "decoy": match.decoy,
-                "hyper_score": match.hyper_score,
+                "score": match.hyper_score,
                 "rank": match.rank,
                 "mono_mz_calculated": match.mono_mz_calculated,
                 "mono_mass_observed": match.mono_mass_observed,
@@ -247,7 +222,6 @@ pub struct PeptideSpectrumMatch {
                 "intensity_ms1": match.intensity_ms1,
                 "intensity_ms2": match.intensity_ms2,
                 "q_value": match.q_value,
-                "re_score": match.re_score
             })
 
         return pd.DataFrame(row_list)
