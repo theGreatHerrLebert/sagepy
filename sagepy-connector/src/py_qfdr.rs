@@ -144,6 +144,21 @@ impl PyPeptideSpectrumMatch {
     }
 
     #[getter]
+    pub fn fragments_predicted(&self) -> Option<PyFragments> {
+        todo!("Implement this")
+    }
+
+    #[getter]
+    pub fn fragments_observed(&self) -> Option<PyFragments> {
+        let maybe_fragments = self.fragments.clone();
+        match maybe_fragments {
+            Some(fragments) => Some(PyFragments { inner: fragments }),
+            None => None,
+        }
+    }
+
+
+    #[getter]
     pub fn retention_time_observed(&self) -> Option<f32> {
         self.inner.retention_time_observed
     }
