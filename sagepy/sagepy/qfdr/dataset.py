@@ -168,7 +168,7 @@ def target_decoy_competition(method: str, spectra_idx: List[str], match_idx: Lis
     return spec_idx, match_idx, decoy, scores, q_values
 
 
-def target_decoy_competition_pandas(self, method: str, df: pd.DataFrame) -> pd.DataFrame:
+def target_decoy_competition_pandas(method: str, df: pd.DataFrame) -> pd.DataFrame:
     assert 'spec_idx' in df.columns, "spec_idx column not found"
     assert 'match_idx' in df.columns, "match_idx column not found"
     assert 'decoy' in df.columns, "decoy column not found"
