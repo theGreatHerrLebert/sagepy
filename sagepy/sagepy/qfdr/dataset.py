@@ -1,5 +1,6 @@
 from typing import List, Union, Tuple
 
+import pandas as pd
 import sagepy_connector
 
 psc = sagepy_connector.py_qfdr
@@ -158,10 +159,34 @@ class PeptideSpectrumMatch:
                f"{self.intensity_ms2}, {self.q_value}, {self.re_score})"
 
 
-def target_decoy_competition(method: str, spectra_idx: List[str], match_idx: List[int], target: List[bool],
+def target_decoy_competition(method: str, spectra_idx: List[str], match_idx: List[int], decoy: List[bool],
                              scores: List[float]) -> Tuple[List[str], List[int], List[bool], List[float], List[float]]:
     tdc_method = TDCMethod(method)
     spec_idx, match_idx, decoy, scores, q_values = psc.target_decoy_competition(
         tdc_method.get_py_ptr(), spectra_idx,
-        match_idx, target, scores)
+        match_idx, decoy, scores)
     return spec_idx, match_idx, decoy, scores, q_values
+
+
+def target_decoy_competition_pandas(self, method: str, df: pd.DataFrame) -> pd.DataFrame:
+    assert 'spec_idx' in df.columns, "spec_idx column not found"
+    assert 'match_idx' in df.columns, "match_idx column not found"
+    assert 'decoy' in df.columns, "decoy column not found"
+    assert 'score' in df.columns, "score column not found"
+
+    tdc_method = TDCMethod(method)
+
+    spec_idx, match_idx, target, scores = (df['spec_idx'].tolist(),
+                                           df['match_idx'].tolist(), df['decoy'].tolist(), df['score'].tolist())
+
+    spec_idx, match_idx, target, scores, q_values = target_decoy_competition(tdc_method.get_py_ptr(), spec_idx,
+                                                                             match_idx, target, scores)
+
+    return pd.DataFrame({
+        'spec_idx': spec_idx,
+        'match_idx': match_idx,
+        'decoy': target,
+        'score': scores,
+        'q_value': q_values
+    })
+

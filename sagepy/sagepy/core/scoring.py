@@ -1,7 +1,9 @@
 from typing import Optional, List
 
+import pandas as pd
 import sagepy_connector
 from .spectrum import ProcessedSpectrum
+from sagepy.qfdr.dataset import PeptideSpectrumMatch
 
 psc = sagepy_connector.py_scoring
 from .ion_series import IonType
@@ -192,6 +194,64 @@ class Scorer:
 
         return result
 
+    """
+    #[derive(Clone, Debug)]
+pub struct PeptideSpectrumMatch {
+    pub spec_idx: String,
+    pub peptide_idx: u32,
+    pub proteins: Vec<String>,
+    pub decoy: bool,
+    pub hyper_score: f64,
+    pub rank: u32,
+    pub mono_mz_calculated: Option<f32>,
+    pub mono_mass_observed: Option<f32>,
+    pub mono_mass_calculated: Option<f32>,
+    pub peptide_sequence: Option<PeptideSequence>,
+    pub charge: Option<u8>,
+    pub retention_time_observed: Option<f32>,
+    pub retention_time_predicted: Option<f32>,
+    pub inverse_mobility_observed: Option<f32>,
+    pub inverse_mobility_predicted: Option<f32>,
+    pub intensity_ms1: Option<f32>,
+    pub intensity_ms2: Option<f32>,
+    pub q_value: Option<f64>,
+    pub re_score: Option<f64>,
+}
+    """
+
+    def score_collection_to_pandas(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
+                                   num_threads: int = 4) -> pd.DataFrame:
+
+        py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(),
+                                                                       [spec.get_py_ptr() for spec in
+                                                                        spectrum_collection],
+                                                                       num_threads)
+        row_list = []
+        for match in py_psms:
+            row_list.append({
+                "spec_idx": match.spec_idx,
+                "peptide_idx": match.peptide_idx,
+                "proteins": match.proteins,
+                "decoy": match.decoy,
+                "hyper_score": match.hyper_score,
+                "rank": match.rank,
+                "mono_mz_calculated": match.mono_mz_calculated,
+                "mono_mass_observed": match.mono_mass_observed,
+                "mono_mass_calculated": match.mono_mass_calculated,
+                "peptide_sequence": match.peptide_sequence,
+                "charge": match.charge,
+                "retention_time_observed": match.retention_time_observed,
+                "retention_time_predicted": match.retention_time_predicted,
+                "inverse_mobility_observed": match.inverse_mobility_observed,
+                "inverse_mobility_predicted": match.inverse_mobility_predicted,
+                "intensity_ms1": match.intensity_ms1,
+                "intensity_ms2": match.intensity_ms2,
+                "q_value": match.q_value,
+                "re_score": match.re_score
+            })
+
+        return pd.DataFrame(row_list)
+
     def _score_chimera_fast(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
         return [Feature.from_py_feature(f) for f in
                 self.__scorer_ptr.score_chimera_fast(db.get_py_ptr(), spectrum.get_py_ptr())]
@@ -217,7 +277,7 @@ class Feature:
                  delta_rt_model: Optional[float] = None,
                  ims: Optional[float] = None,
                  predicted_ims: Optional[float] = None,
-                 delta_ims_model: Optional[float] = None,):
+                 delta_ims_model: Optional[float] = None, ):
         """Feature class
 
         Args:
@@ -271,7 +331,7 @@ class Feature:
                                            delta_rt_model,
                                            ims,
                                            predicted_ims,
-                                           delta_ims_model,)
+                                           delta_ims_model, )
 
     @classmethod
     def from_py_feature(cls, feature: psc.PyFeature):
