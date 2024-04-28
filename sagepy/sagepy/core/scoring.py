@@ -194,8 +194,8 @@ class Scorer:
 
         return result
 
-    def score_collection_to_pandas(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
-                                   num_threads: int = 4) -> pd.DataFrame:
+    def score_collection_pandas(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
+                                num_threads: int = 4) -> pd.DataFrame:
 
         py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(),
                                                                        [spec.get_py_ptr() for spec in
@@ -205,7 +205,7 @@ class Scorer:
         for match in py_psms:
             row_list.append({
                 "spec_idx": match.spec_idx,
-                "peptide_idx": match.peptide_idx,
+                "match_idx": match.peptide_idx,
                 "proteins": match.proteins,
                 "decoy": match.decoy,
                 "score": match.hyper_score,
