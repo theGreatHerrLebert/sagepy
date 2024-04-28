@@ -4,6 +4,7 @@ use qfdrust::dataset::{PeptideSpectrumMatch};
 use qfdrust::utility::sage_sequence_to_unimod_sequence;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
+use sage_core::ion_series::Kind;
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
@@ -827,12 +828,6 @@ impl PyPeptideSpectrumMatch {
     pub fn charge(&self) -> Option<u8> {
         self.inner.charge
     }
-
-    #[getter]
-    pub fn fragments_predicted(&self) -> Option<PyFragments> {
-        todo!("Implement this")
-    }
-
     #[getter]
     pub fn fragments_observed(&self) -> Option<PyFragments> {
         let maybe_fragments = self.fragments.clone();
@@ -842,6 +837,52 @@ impl PyPeptideSpectrumMatch {
         }
     }
 
+    #[getter]
+    pub fn fragments_predicted(&self) -> Option<PyFragments> {
+        let maybe_fragments = self.inner.peptide_product_ion_series_collection_predicted.clone();
+        match maybe_fragments {
+            Some(fragments) => {
+                for series in fragments.peptide_ions.iter() {
+                    let charge = series.charge;
+                    let mut charges = Vec::new();
+                    let mut kinds = Vec::new();
+                    let mut fragment_ordinals = Vec::new();
+                    let mut intensities = Vec::new();
+                    let mut mz_calculated = Vec::new();
+                    let mut mz_experimental = Vec::new();
+
+                    for b_ion in series.n_ions.iter() {
+                        let kind = PyKind { inner: Kind::B };
+                        charges.push(charge);
+                        fragment_ordinals.push(b_ion.ion.ordinal);
+                        intensities.push(b_ion.ion.intensity);
+                        mz_calculated.push(b_ion.mz());
+                        mz_experimental.push(b_ion.mz());
+                    }
+
+                    for y_ion in series.c_ions.iter() {
+                        let kind = PyKind { inner: Kind::Y };
+                        charges.push(charge);
+                        fragment_ordinals.push(y_ion.ion.ordinal);
+                        intensities.push(y_ion.ion.intensity);
+                        mz_calculated.push(y_ion.ion.mz());
+                        mz_experimental.push(y_ion.mz());
+                    }
+                }
+                Some(PyFragments {
+                    inner: Fragments {
+                        charges,
+                        kinds,
+                        fragment_ordinals,
+                        intensities,
+                        mz_calculated,
+                        mz_experimental,
+                    },
+                })
+            }
+            None => None,
+        }
+    }
 
     #[getter]
     pub fn retention_time_observed(&self) -> Option<f32> {
