@@ -1,9 +1,7 @@
-from typing import List, Union, Tuple
+from typing import List, Tuple
 
 import pandas as pd
 import sagepy_connector
-
-from sagepy.core.scoring import Fragments
 
 psc = sagepy_connector.py_qfdr
 
