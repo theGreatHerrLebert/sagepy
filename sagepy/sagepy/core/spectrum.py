@@ -97,11 +97,11 @@ class Precursor:
         """
         if isolation_window is not None:
             self.__precursor_ptr = psc.PyPrecursor(mz, intensity, charge,
-                                                   spectrum_ref, isolation_window.get_py_ptr(), inverse_ion_mobility)
+                                                   spectrum_ref, isolation_window.get_py_ptr(), inverse_ion_mobility,
+                                                   collision_energy)
         else:
-            self.__precursor_ptr = psc.PyPrecursor(mz, intensity, charge, spectrum_ref, None, inverse_ion_mobility)
-
-        self.__collision_energy = collision_energy
+            self.__precursor_ptr = psc.PyPrecursor(mz, intensity, charge, spectrum_ref, None, inverse_ion_mobility,
+                                                   collision_energy)
 
     @classmethod
     def from_py_precursor(cls, precursor: psc.PyPrecursor):
@@ -139,7 +139,7 @@ class Precursor:
 
     @property
     def collision_energy(self):
-        return self.__collision_energy
+        return self.__precursor_ptr.collision_energy
 
     def get_py_ptr(self):
         return self.__precursor_ptr
