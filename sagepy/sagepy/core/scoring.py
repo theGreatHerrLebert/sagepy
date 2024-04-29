@@ -372,7 +372,7 @@ class Scorer:
                 "collision_energy": match.collision_energy,
             })
 
-        return pd.DataFrame(row_list).sort_values(by=["spec_idx", "match_idx", "decoy"])
+        return pd.DataFrame(row_list)
 
     def _score_chimera_fast(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
         return [Feature.from_py_feature(f) for f in
