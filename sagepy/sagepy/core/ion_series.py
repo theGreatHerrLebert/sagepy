@@ -34,10 +34,18 @@ class IonType:
     def __repr__(self):
         return f"IonType({self.__ion_type_ptr.kind_as_string()})"
 
+    def __hash__(self):
+        return hash(self.__ion_type_ptr.kind_as_string())
+
+    def __eq__(self, other):
+        if not isinstance(other, IonType):
+            return False
+        return self.__ion_type_ptr.kind_as_string() == other.__ion_type_ptr.kind_as_string()
+
     def get_py_ptr(self):
         return self.__ion_type_ptr
 
-    def to_str(self):
+    def to_string(self) -> str:
         return self.__ion_type_ptr.kind_as_string()
 
 
