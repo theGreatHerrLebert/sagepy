@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch};
 use qfdrust::utility::sage_sequence_to_unimod_sequence;
@@ -8,9 +8,36 @@ use sage_core::ion_series::Kind;
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
-use crate::py_spectrum::{PyProcessedSpectrum, spectrum};
+use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
+
+/// Calculates the cosine similarity between two vectors.
+///
+/// # Arguments
+///
+/// * `vec1` - A vector of f32.
+/// * `vec2` - A vector of f32.
+///
+/// # Returns
+///
+/// * The cosine similarity as a f32. If vectors are empty or different lengths, it returns None.
+///
+fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>) -> Option<f32> {
+    if vec1.len() != vec2.len() || vec1.is_empty() {
+        return None;
+    }
+
+    let dot_product: f32 = vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum();
+    let magnitude_vec1: f32 = vec1.iter().map(|x| x.powi(2)).sum::<f32>().sqrt();
+    let magnitude_vec2: f32 = vec2.iter().map(|x| x.powi(2)).sum::<f32>().sqrt();
+
+    if magnitude_vec1 == 0.0 || magnitude_vec2 == 0.0 {
+        return None;
+    }
+
+    Some(dot_product / (magnitude_vec1 * magnitude_vec2))
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -972,6 +999,81 @@ impl PyPeptideSpectrumMatch {
     pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
         let ion_series = self.inner.associate_with_prosit_predicted_intensities(flat_intensities);
         self.inner.peptide_product_ion_series_collection_predicted = ion_series;
+    }
+
+    pub fn calculate_cosine_similarity(&self) -> Option<f32> {
+        let maybe_predicted = &self.inner.peptide_product_ion_series_collection_predicted;
+        let maybe_observed = &self.fragments;
+
+        let maybe_predicted_feature = match (maybe_predicted, maybe_observed) {
+            (Some(predicted), Some(observed)) => {
+                let mut charges = Vec::new();
+                let mut kinds = Vec::new();
+                let mut fragment_ordinals = Vec::new();
+                let mut intensities = Vec::new();
+
+                for series in predicted.peptide_ions.iter() {
+                    let charge = series.charge;
+                    for b_ion in series.n_ions.iter() {
+                        let kind = Kind::B;
+                        kinds.push(kind);
+                        charges.push(charge);
+                        fragment_ordinals.push(b_ion.ion.ordinal as i32);
+                        intensities.push(b_ion.ion.intensity as f32);
+                    }
+
+                    for y_ion in series.c_ions.iter() {
+                        let kind = Kind::Y;
+                        kinds.push(kind);
+                        charges.push(charge);
+                        fragment_ordinals.push(y_ion.ion.ordinal as i32);
+                        intensities.push(y_ion.ion.intensity as f32);
+                    }
+                }
+
+                let max_intensity = intensities.iter().cloned().fold(0. / 0., f32::max);
+                let intensities: Vec<f32> = intensities.iter().map(|i| *i / max_intensity).collect();
+
+                let mut observed_map: HashMap<(&str, i32, i32), f32> = HashMap::new();
+                let mut predicted_map: HashMap<(&str, i32, i32), f32> = HashMap::new();
+
+                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(kinds, charges, fragment_ordinals, intensities) {
+                    let string_kind = match kind {
+                        Kind::B => "B",
+                        Kind::Y => "Y",
+                        _ => "UNKNOWN",
+                    };
+                    let key = (string_kind, fragment_ordinal, charge);
+                    observed_map.insert(key, intensity);
+                }
+
+                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(observed.kinds.iter(),
+                    observed.fragment_ordinals.iter(), observed.charges.iter(), observed.intensities.iter()) {
+                    let string_kind = match kind {
+                        Kind::B => "B",
+                        Kind::Y => "Y",
+                        _ => "UNKNOWN",
+                    };
+                    let key = (string_kind, *fragment_ordinal, *charge);
+                    predicted_map.insert(key, *intensity);
+                }
+
+                let mut observed_intensities: Vec<f32> = Vec::new();
+                let mut predicted_intensities: Vec<f32> = Vec::new();
+
+                for (kind, fragment_ordinal, charge) in observed_map.keys() {
+                    let key = (*kind, *fragment_ordinal, *charge);
+                    let observed_intensity = observed_map.get(&key).unwrap();
+                    let predicted_intensity = predicted_map.get(&key).unwrap();
+                    observed_intensities.push(*observed_intensity);
+                    predicted_intensities.push(*predicted_intensity);
+                }
+                cosine_similarity(&observed_intensities, &predicted_intensities)
+            }
+            (_, _) => None,
+        };
+
+        maybe_predicted_feature
     }
 }
 
