@@ -583,6 +583,15 @@ impl PyScorer {
             }
         }
 
+        // sort by sec_id, match_id, decoy
+        result.sort_by(|a, b| {
+            let a = &a.inner;
+            let b = &b.inner;
+            a.spec_idx.cmp(&b.spec_idx)
+                .then(a.peptide_idx.cmp(&b.peptide_idx))
+                .then(a.decoy.cmp(&b.decoy))
+        });
+
         result
     }
 
