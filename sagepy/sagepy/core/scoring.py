@@ -369,6 +369,7 @@ class Scorer:
                 "intensity_ms1": match.intensity_ms1,
                 "intensity_ms2": match.intensity_ms2,
                 "q_value": match.q_value,
+                "collision_energy": match.collision_energy,
             })
 
         return pd.DataFrame(row_list).sort_values(by=["spec_idx", "match_idx", "decoy"])
