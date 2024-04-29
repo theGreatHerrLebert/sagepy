@@ -37,6 +37,9 @@ class IonType:
     def get_py_ptr(self):
         return self.__ion_type_ptr
 
+    def to_str(self):
+        return self.__ion_type_ptr.kind_as_string()
+
 
 class Ion:
     """Ion class
