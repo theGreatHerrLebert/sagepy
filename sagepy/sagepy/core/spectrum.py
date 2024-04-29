@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import List
+from typing import List, Optional
 
 import sagepy_connector
 from numpy.typing import NDArray
@@ -83,7 +83,8 @@ class Deisotoped:
 
 class Precursor:
     def __init__(self, mz: float, intensity: float = None, charge: int = None,
-                 spectrum_ref: str = None, isolation_window: Tolerance = None, inverse_ion_mobility: float = None):
+                 spectrum_ref: str = None, isolation_window: Tolerance = None,
+                 inverse_ion_mobility: float = None, collision_energy: Optional[float] = None):
         """Precursor class
 
         Args:
@@ -99,6 +100,8 @@ class Precursor:
                                                    spectrum_ref, isolation_window.get_py_ptr(), inverse_ion_mobility)
         else:
             self.__precursor_ptr = psc.PyPrecursor(mz, intensity, charge, spectrum_ref, None, inverse_ion_mobility)
+
+        self.__collision_energy = collision_energy
 
     @classmethod
     def from_py_precursor(cls, precursor: psc.PyPrecursor):
@@ -134,6 +137,10 @@ class Precursor:
     def inverse_ion_mobility(self):
         return self.__precursor_ptr.inverse_ion_mobility
 
+    @property
+    def collision_energy(self):
+        return self.__collision_energy
+
     def get_py_ptr(self):
         return self.__precursor_ptr
 
@@ -143,7 +150,8 @@ class Precursor:
                 f"charge: {self.charge}, "
                 f"spectrum_ref: {self.spectrum_ref}, "
                 f"isolation_window: {self.isolation_window}), "
-                f"inverse_ion_mobility: {np.round(self.inverse_ion_mobility, 2)})")
+                f"inverse_ion_mobility: {np.round(self.inverse_ion_mobility, 2)}, "
+                f"collision_energy: {np.round(self.collision_energy, 2)})")
 
 
 class Representation:
