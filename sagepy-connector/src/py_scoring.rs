@@ -564,6 +564,7 @@ impl PyScorer {
                             Some(intensity_ms2),
                             None,
                             Some(collision_energy as f64),
+                            None,
                         );
                         psms.push((psm, fragments));
                     }
@@ -747,6 +748,7 @@ impl PyPeptideSpectrumMatch {
         intensity_ms2: Option<f32>,
         q_value: Option<f64>,
         collision_energy: Option<f64>,
+        cosine_similarity: Option<f64>,
         fragments: Option<PyFragments>,
     ) -> Self {
 
@@ -773,6 +775,7 @@ impl PyPeptideSpectrumMatch {
                 intensity_ms1,
                 intensity_ms2,
                 q_value,
+                cosine_similarity,
                 collision_energy,
             ),
             fragments,
@@ -954,6 +957,16 @@ impl PyPeptideSpectrumMatch {
     #[getter]
     pub fn collision_energy(&self) -> Option<f64> {
         self.inner.collision_energy
+    }
+
+    #[getter]
+    pub fn cosine_similarity(&self) -> Option<f64> {
+        self.inner.cosine_similarity
+    }
+
+    #[setter]
+    pub fn set_cosine_similarity(&mut self, cosine_similarity: f64) {
+        self.inner.cosine_similarity = Some(cosine_similarity);
     }
 
     pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
