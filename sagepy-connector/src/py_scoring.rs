@@ -1037,16 +1037,6 @@ impl PyPeptideSpectrumMatch {
                 let mut observed_map: HashMap<(&str, i32, i32), f32> = HashMap::new();
                 let mut predicted_map: HashMap<(&str, i32, i32), f32> = HashMap::new();
 
-                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(kinds, charges, fragment_ordinals, intensities) {
-                    let string_kind = match kind {
-                        Kind::B => "B",
-                        Kind::Y => "Y",
-                        _ => "UNKNOWN",
-                    };
-                    let key = (string_kind, fragment_ordinal, charge);
-                    observed_map.insert(key, intensity);
-                }
-
                 for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(observed.kinds.iter(),
                     observed.fragment_ordinals.iter(), observed.charges.iter(), observed.intensities.iter()) {
                     let string_kind = match kind {
@@ -1055,7 +1045,17 @@ impl PyPeptideSpectrumMatch {
                         _ => "UNKNOWN",
                     };
                     let key = (string_kind, *fragment_ordinal, *charge);
-                    predicted_map.insert(key, *intensity);
+                    observed_map.insert(key, *intensity);
+                }
+
+                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(kinds, charges, fragment_ordinals, intensities) {
+                    let string_kind = match kind {
+                        Kind::B => "B",
+                        Kind::Y => "Y",
+                        _ => "UNKNOWN",
+                    };
+                    let key = (string_kind, fragment_ordinal, charge);
+                    predicted_map.insert(key, intensity);
                 }
 
                 let mut observed_intensities: Vec<f32> = Vec::new();
