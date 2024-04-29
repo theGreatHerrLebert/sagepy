@@ -562,8 +562,8 @@ impl PyScorer {
                             None,
                             Some(intensity_ms1),
                             Some(intensity_ms2),
-                            Some(collision_energy as f64),
                             None,
+                            Some(collision_energy as f64),
                         );
                         psms.push((psm, fragments));
                     }
