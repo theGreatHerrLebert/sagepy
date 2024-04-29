@@ -8,7 +8,7 @@ use sage_core::ion_series::Kind;
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
-use crate::py_spectrum::{PyProcessedSpectrum};
+use crate::py_spectrum::{PyProcessedSpectrum, spectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
 
@@ -536,6 +536,7 @@ impl PyScorer {
                         let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
                         let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
                         let fragments = feature.fragments;
+                        let collision_energy = spectrum.collision_energies.first().unwrap_or(&None).unwrap_or(0.0f32);
 
                         let key = (feature.peptide_idx.0, decoy);
 
@@ -561,6 +562,7 @@ impl PyScorer {
                             None,
                             Some(intensity_ms1),
                             Some(intensity_ms2),
+                            Some(collision_energy as f64),
                             None,
                         );
                         psms.push((psm, fragments));
@@ -735,6 +737,7 @@ impl PyPeptideSpectrumMatch {
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
         q_value: Option<f64>,
+        collision_energy: Option<f64>,
         fragments: Option<PyFragments>,
     ) -> Self {
 
@@ -761,6 +764,7 @@ impl PyPeptideSpectrumMatch {
                 intensity_ms1,
                 intensity_ms2,
                 q_value,
+                collision_energy,
             ),
             fragments,
         }
@@ -936,6 +940,11 @@ impl PyPeptideSpectrumMatch {
     #[setter]
     pub fn set_q_value(&mut self, q_value: f64) {
         self.inner.q_value = Some(q_value);
+    }
+
+    #[getter]
+    pub fn collision_energy(&self) -> Option<f64> {
+        self.inner.collision_energy
     }
 
     pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {

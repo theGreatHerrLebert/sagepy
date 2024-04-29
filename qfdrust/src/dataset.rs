@@ -152,6 +152,7 @@ pub struct PeptideSpectrumMatch {
     pub intensity_ms1: Option<f32>,
     pub intensity_ms2: Option<f32>,
     pub q_value: Option<f64>,
+    pub collision_energy: Option<f64>,
     pub peptide_product_ion_series_collection_predicted: Option<PeptideProductIonSeriesCollection>,
 }
 
@@ -173,6 +174,7 @@ impl PeptideSpectrumMatch {
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
         q_value: Option<f64>,
+        collision_energy: Option<f64>,
     ) -> PeptideSpectrumMatch {
 
         let peptide_sequence = match &sequence {
@@ -209,6 +211,7 @@ impl PeptideSpectrumMatch {
             intensity_ms1,
             intensity_ms2,
             q_value,
+            collision_energy,
             peptide_product_ion_series_collection_predicted: None,
         }
     }

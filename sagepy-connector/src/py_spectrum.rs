@@ -43,6 +43,7 @@ impl PyRepresentation {
 #[derive(Clone)]
 pub struct PyProcessedSpectrum {
     pub inner: ProcessedSpectrum,
+    pub collision_energies: Vec<Option<f32>>,
 }
 
 #[pymethods]
@@ -58,6 +59,10 @@ impl PyProcessedSpectrum {
         peaks: Vec<PyPeak>,
         total_ion_current: f32,
     ) -> Self {
+        let collision_energies = precursors
+            .iter()
+            .map(|p| p.collision_energy)
+            .collect::<Vec<_>>();
         PyProcessedSpectrum {
             inner: ProcessedSpectrum {
                 level,
@@ -69,6 +74,7 @@ impl PyProcessedSpectrum {
                 peaks: peaks.into_iter().map(|p| p.inner).collect(),
                 total_ion_current,
             },
+            collision_energies,
         }
     }
 
@@ -100,10 +106,9 @@ impl PyProcessedSpectrum {
     #[getter]
     pub fn precursors(&self) -> Vec<PyPrecursor> {
         self.inner
-            .precursors
-            .clone()
+            .precursors.iter().zip(self.collision_energies.iter())
             .into_iter()
-            .map(|p| PyPrecursor { inner: p })
+            .map(|p| PyPrecursor { inner: p.0.clone(), collision_energy: *p.1})
             .collect()
     }
 
@@ -135,6 +140,7 @@ impl PyProcessedSpectrum {
 #[derive(Clone)]
 pub struct PyRawSpectrum {
     pub inner: RawSpectrum,
+    pub collision_energies: Vec<Option<f32>>,
 }
 
 #[pymethods]
@@ -154,6 +160,10 @@ impl PyRawSpectrum {
     ) -> Self {
         let mz_vec = unsafe { mz.as_array().to_vec() };
         let intensity_vec = unsafe { intensity.as_array().to_vec() };
+        let collision_energies = precursors
+            .iter()
+            .map(|p| p.collision_energy)
+            .collect::<Vec<_>>();
 
         PyRawSpectrum {
             inner: RawSpectrum {
@@ -168,6 +178,7 @@ impl PyRawSpectrum {
                 mz: mz_vec,
                 intensity: intensity_vec,
             },
+            collision_energies,
         }
     }
 
@@ -189,10 +200,9 @@ impl PyRawSpectrum {
     #[getter]
     pub fn precursors(&self) -> Vec<PyPrecursor> {
         self.inner
-            .precursors
-            .clone()
+            .precursors.iter().zip(self.collision_energies.iter())
             .into_iter()
-            .map(|p| PyPrecursor { inner: p })
+            .map(|p| PyPrecursor { inner: p.0.clone(), collision_energy: *p.1 })
             .collect()
     }
 
@@ -303,6 +313,7 @@ impl PySpectrumProcessor {
     pub fn process(&self, spectrum: &PyRawSpectrum) -> PyProcessedSpectrum {
         PyProcessedSpectrum {
             inner: self.inner.process(spectrum.inner.clone()),
+            collision_energies: spectrum.collision_energies.clone(),
         }
     }
 }
@@ -352,6 +363,7 @@ impl PyDeisotoped {
 #[derive(Default, Clone, Debug)]
 pub struct PyPrecursor {
     pub inner: Precursor,
+    pub collision_energy: Option<f32>,
 }
 
 #[pymethods]
@@ -364,6 +376,7 @@ impl PyPrecursor {
         spectrum_ref: Option<String>,
         isolation_window: Option<PyTolerance>,
         inverse_ion_mobility: Option<f32>,
+        collision_energy: Option<f32>,
     ) -> Self {
         PyPrecursor {
             inner: Precursor {
@@ -374,6 +387,7 @@ impl PyPrecursor {
                 isolation_window: isolation_window.map(|t| t.inner),
                 inverse_ion_mobility,
             },
+            collision_energy,
         }
     }
 
@@ -408,6 +422,11 @@ impl PyPrecursor {
     #[getter]
     pub fn inverse_ion_mobility(&self) -> Option<f32> {
         self.inner.inverse_ion_mobility
+    }
+
+    #[getter]
+    pub fn collision_energy(&self) -> Option<f32> {
+        self.collision_energy
     }
 }
 
