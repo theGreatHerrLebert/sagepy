@@ -70,7 +70,7 @@ class PeptideSpectrumMatch:
         return self.__py_ptr.charge
 
     @property
-    def peptide_sequence(self):
+    def sequence(self):
         return self.__py_ptr.peptide_sequence
 
     @property
@@ -144,7 +144,7 @@ class PeptideSpectrumMatch:
 
     def __repr__(self):
         return f"PeptideSpectrumMatch({self.spec_idx}, {self.peptide_idx}, {self.proteins}, {self.decoy}, " \
-               f"{self.hyper_score}, {self.rank} {self.charge}, {self.peptide_sequence}, {self.mono_mass_observed}, " \
+               f"{self.hyper_score}, {self.rank} {self.charge}, {self.sequence}, {self.mono_mass_observed}, " \
                f"{self.mono_mass_calculated}, {self.retention_time_observed}, {self.retention_time_predicted}, " \
                f"{self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, {self.intensity_ms1}, " \
                f"{self.intensity_ms2}, {self.q_value}, {self.collision_energy})"
