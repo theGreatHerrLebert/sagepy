@@ -142,6 +142,9 @@ class PeptideSpectrumMatch:
     def get_py_ptr(self) -> psc.PyPeptideSpectrumMatch:
         return self.__py_ptr
 
+    def associate_fragment_ions_with_prosit_predicted_intensities(self, flat_intensities: List[float]):
+        self.__py_ptr.associate_fragment_ions_with_prosit_predicted_intensities(flat_intensities)
+
     def __repr__(self):
         return f"PeptideSpectrumMatch({self.spec_idx}, {self.peptide_idx}, {self.proteins}, {self.decoy}, " \
                f"{self.hyper_score}, {self.rank} {self.charge}, {self.sequence}, {self.mono_mass_observed}, " \
