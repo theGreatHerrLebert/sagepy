@@ -999,15 +999,6 @@ impl PyPeptideSpectrumMatch {
     pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
         let ion_series = self.inner.associate_with_prosit_predicted_intensities(flat_intensities);
         self.inner.peptide_product_ion_series_collection_predicted = ion_series;
-        let maybe_cos_sim = self.calculate_cosine_similarity();
-        match  maybe_cos_sim {
-            Some(sim) => {
-                self.inner.cosine_similarity = Some(sim as f64);
-            },
-            None => {
-                self.inner.cosine_similarity = None;
-            }
-        }
     }
 
     pub fn calculate_cosine_similarity(&self) -> Option<f32> {
