@@ -154,12 +154,18 @@ class PeptideSpectrumMatch:
     def associate_fragment_ions_with_prosit_predicted_intensities(self, flat_intensities: List[float]):
         self.__py_ptr.associate_fragment_ions_with_prosit_predicted_intensities(flat_intensities)
 
+    def match_observed_predicted_intensities(self) -> Optional['Feature', List[float]]:
+        maybe_feature, flat_intensities = self.__py_ptr.match_observed_predicted_intensities()
+        if maybe_feature is not None:
+            return Feature.from_py_feature(maybe_feature), flat_intensities
+        return None, None
+
     def __repr__(self):
         return f"PeptideSpectrumMatch({self.spec_idx}, {self.peptide_idx}, {self.proteins}, {self.decoy}, " \
                f"{self.hyper_score}, {self.rank} {self.charge}, {self.sequence}, {self.mono_mass_observed}, " \
                f"{self.mono_mass_calculated}, {self.retention_time_observed}, {self.retention_time_predicted}, " \
                f"{self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, {self.intensity_ms1}, " \
-               f"{self.intensity_ms2}, {self.q_value}, {self.collision_energy}, {self.cosine_similarity})"
+               f"{self.intensity_ms2}, {self.q_value}, {self.collision_energy}, {self.spectral_angle})"
 
 
 class Fragments:

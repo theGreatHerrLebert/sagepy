@@ -985,7 +985,7 @@ impl PyPeptideSpectrumMatch {
         }
     }
 
-    fn match_observed_predicted_intensities(&self) -> (Option<PyFragments>, Option<Vec<f32>>) {
+    pub fn match_observed_predicted_intensities(&self) -> (Option<PyFragments>, Option<Vec<f32>>) {
         let maybe_predicted = &self.fragments_predicted;
         let maybe_observed = &self.fragments_observed;
 
@@ -1065,8 +1065,7 @@ impl PyPeptideSpectrumMatch {
 
 #[pyfunction]
 pub fn associate_fragment_ions_with_prosit_predicted_intensities(
-    mut psm: PyPeptideSpectrumMatch,
-    flat_intensities: Vec<f64>) {
+    mut psm: PyPeptideSpectrumMatch, flat_intensities: Vec<f64>) {
     psm.associate_fragment_ions_with_prosit_predicted_intensities(flat_intensities);
 }
 
