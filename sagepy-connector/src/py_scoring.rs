@@ -1001,7 +1001,7 @@ impl PyPeptideSpectrumMatch {
         self.inner.peptide_product_ion_series_collection_predicted = ion_series;
     }
 
-    pub fn calculate_cosine_similarity(&self) -> Option<f32> {
+    pub fn calculate_cosine_similarity(&self) -> Option<(HashMap<(&str, i32, i32), f32>, HashMap<(&str, i32, i32), f32>)> {
         let maybe_predicted = &self.inner.peptide_product_ion_series_collection_predicted;
         let maybe_observed = &self.fragments;
 
@@ -1068,11 +1068,11 @@ impl PyPeptideSpectrumMatch {
                     observed_intensities.push(*observed_intensity);
                     predicted_intensities.push(*predicted_intensity);
                 }
-                cosine_similarity(&observed_intensities, &predicted_intensities)
+                // cosine_similarity(&observed_intensities, &predicted_intensities)
+                Some((observed_map, predicted_map))
             }
             (_, _) => None,
         };
-
         maybe_predicted_feature
     }
 }
