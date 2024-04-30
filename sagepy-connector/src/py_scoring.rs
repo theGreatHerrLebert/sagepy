@@ -103,6 +103,7 @@ impl PyFragments {
 #[derive(Clone)]
 pub struct PyFeature {
     pub inner: Feature,
+    pub predicted_intensities: Option<Vec<f32>>,
 }
 
 #[pymethods]
@@ -146,7 +147,8 @@ impl PyFeature {
         ims: Option<f32>,
         predicted_ims: Option<f32>,
         delta_ims_model: Option<f32>,
-        fragments: Option<PyFragments>
+        fragments: Option<PyFragments>,
+        predicted_intensities: Option<Vec<f32>>,
     ) -> Self {
         PyFeature {
             inner: Feature {
@@ -189,6 +191,7 @@ impl PyFeature {
                 ms2_intensity,
                 fragments: fragments.map(|f| f.inner),
             },
+            predicted_intensities,
         }
     }
 
@@ -461,7 +464,7 @@ impl PyScorer {
         let features = scorer.score(&spectrum.inner);
         features
             .into_iter()
-            .map(|f| PyFeature { inner: f })
+            .map(|f| PyFeature { inner: f, predicted_intensities: None })
             .collect()
     }
 
@@ -501,7 +504,7 @@ impl PyScorer {
                     let features = scorer.score(&spectrum.inner);
                     features
                         .into_iter()
-                        .map(|f| PyFeature { inner: f })
+                        .map(|f| PyFeature { inner: f, predicted_intensities: None })
                         .collect()
                 })
                 .collect()
@@ -606,7 +609,8 @@ impl PyScorer {
             for (psm, fragments) in psms {
                 result.push(PyPeptideSpectrumMatch {
                     inner: psm,
-                    fragments
+                    fragments_observed: fragments.map(|f| PyFragments { inner: f }),
+                    fragments_predicted: None,
                 });
             }
         }
@@ -648,7 +652,7 @@ impl PyScorer {
         let features = scorer.score_chimera_fast(&query.inner);
         features
             .into_iter()
-            .map(|f| PyFeature { inner: f })
+            .map(|f| PyFeature { inner: f, predicted_intensities: None })
             .collect()
     }
 
@@ -677,7 +681,7 @@ impl PyScorer {
         let features = scorer.score_standard(&query.inner);
         features
             .into_iter()
-            .map(|f| PyFeature { inner: f })
+            .map(|f| PyFeature { inner: f, predicted_intensities: None })
             .collect()
     }
 
@@ -751,7 +755,8 @@ impl PyScorer {
 #[derive(Clone)]
 pub struct PyPeptideSpectrumMatch {
     pub inner: PeptideSpectrumMatch,
-    pub fragments: Option<Fragments>,
+    pub fragments_observed: Option<PyFragments>,
+    pub fragments_predicted: Option<PyFragments>,
 }
 
 #[pymethods]
@@ -776,13 +781,9 @@ impl PyPeptideSpectrumMatch {
         q_value: Option<f64>,
         collision_energy: Option<f64>,
         cosine_similarity: Option<f64>,
-        fragments: Option<PyFragments>,
+        fragments_observed: Option<PyFragments>,
+        fragments_predicted: Option<PyFragments>,
     ) -> Self {
-
-        let fragments = match fragments {
-            Some(fragments) => Some(fragments.inner),
-            None => None,
-        };
 
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch::new(
@@ -805,7 +806,8 @@ impl PyPeptideSpectrumMatch {
                 cosine_similarity,
                 collision_energy,
             ),
-            fragments,
+            fragments_observed,
+            fragments_predicted,
         }
     }
 
@@ -873,62 +875,12 @@ impl PyPeptideSpectrumMatch {
     }
     #[getter]
     pub fn fragments_observed(&self) -> Option<PyFragments> {
-        let maybe_fragments = self.fragments.clone();
-        match maybe_fragments {
-            Some(fragments) => Some(PyFragments { inner: fragments }),
-            None => None,
-        }
+        self.fragments_observed.clone()
     }
 
     #[getter]
     pub fn fragments_predicted(&self) -> Option<PyFragments> {
-        let maybe_fragments = self.inner.peptide_product_ion_series_collection_predicted.clone();
-        match maybe_fragments {
-            Some(fragments) => {
-
-                let mut charges = Vec::new();
-                let mut kinds = Vec::new();
-                let mut fragment_ordinals = Vec::new();
-                let mut intensities = Vec::new();
-                let mut mz_calculated = Vec::new();
-                let mut mz_experimental = Vec::new();
-
-                for series in fragments.peptide_ions.iter() {
-                    let charge = series.charge;
-
-                    for b_ion in series.n_ions.iter() {
-                        let kind = Kind::B;
-                        kinds.push(kind);
-                        charges.push(charge);
-                        fragment_ordinals.push(b_ion.ion.ordinal as i32);
-                        intensities.push(b_ion.ion.intensity as f32);
-                        mz_calculated.push(b_ion.mz() as f32);
-                        mz_experimental.push(b_ion.mz() as f32);
-                    }
-
-                    for y_ion in series.c_ions.iter() {
-                        let kind = Kind::Y;
-                        kinds.push(kind);
-                        charges.push(charge);
-                        fragment_ordinals.push(y_ion.ion.ordinal as i32);
-                        intensities.push(y_ion.ion.intensity as f32);
-                        mz_calculated.push(y_ion.ion.mz() as f32);
-                        mz_experimental.push(y_ion.mz() as f32);
-                    }
-                }
-                Some(PyFragments {
-                    inner: Fragments {
-                        charges,
-                        kinds,
-                        fragment_ordinals,
-                        intensities,
-                        mz_calculated,
-                        mz_experimental,
-                    }
-                })
-            }
-            None => None,
-        }
+        self.fragments_predicted.clone()
     }
 
     #[getter]
@@ -996,35 +948,28 @@ impl PyPeptideSpectrumMatch {
         self.inner.cosine_similarity = Some(cosine_similarity);
     }
 
-    pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
-        let ion_series = self.inner.associate_with_prosit_predicted_intensities(flat_intensities);
-        self.inner.peptide_product_ion_series_collection_predicted = ion_series;
-        let maybe_cosim = self.calculate_cosine_similarity();
-        match maybe_cosim {
-            Some(cosim) => self.inner.cosine_similarity = Some(cosim as f64),
-            None => {}
-        }
-    }
-
-    pub fn calculate_cosine_similarity(&self) -> Option<f32> {
-        let maybe_predicted = &self.inner.peptide_product_ion_series_collection_predicted;
-        let maybe_observed = &self.fragments;
-
-        let maybe_predicted_feature = match (maybe_predicted, maybe_observed) {
-            (Some(predicted), Some(observed)) => {
+    fn ion_series_to_py_fragments(&mut self) {
+        let maybe_fragments = self.inner.peptide_product_ion_series_collection_predicted.clone();
+        let fragments = match maybe_fragments {
+            Some(fragments) => {
                 let mut charges = Vec::new();
                 let mut kinds = Vec::new();
                 let mut fragment_ordinals = Vec::new();
                 let mut intensities = Vec::new();
+                let mut mz_calculated = Vec::new();
+                let mut mz_experimental = Vec::new();
 
-                for series in predicted.peptide_ions.iter() {
+                for series in fragments.peptide_ions.iter() {
                     let charge = series.charge;
+
                     for b_ion in series.n_ions.iter() {
                         let kind = Kind::B;
                         kinds.push(kind);
                         charges.push(charge);
                         fragment_ordinals.push(b_ion.ion.ordinal as i32);
                         intensities.push(b_ion.ion.intensity as f32);
+                        mz_calculated.push(b_ion.mz() as f32);
+                        mz_experimental.push(b_ion.mz() as f32);
                     }
 
                     for y_ion in series.c_ions.iter() {
@@ -1033,17 +978,53 @@ impl PyPeptideSpectrumMatch {
                         charges.push(charge);
                         fragment_ordinals.push(y_ion.ion.ordinal as i32);
                         intensities.push(y_ion.ion.intensity as f32);
+                        mz_calculated.push(y_ion.ion.mz() as f32);
+                        mz_experimental.push(y_ion.mz() as f32);
                     }
                 }
+                Some(PyFragments {
+                    inner: Fragments {
+                        charges,
+                        kinds,
+                        fragment_ordinals,
+                        intensities,
+                        mz_calculated,
+                        mz_experimental,
+                    }
+                })
+            }
+            None => None,
+        };
+        self.fragments_predicted = fragments;
+    }
 
-                let max_intensity = intensities.iter().cloned().fold(0. / 0., f32::max);
-                let intensities: Vec<f32> = intensities.iter().map(|i| *i / max_intensity).collect();
+    pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
+        let ion_series = self.inner.associate_with_prosit_predicted_intensities(flat_intensities);
+        self.inner.peptide_product_ion_series_collection_predicted = ion_series;
+        self.ion_series_to_py_fragments();
+        let (maybe_fragments, maybe_intensities) = self.match_observed_predicted_intensities();
+        match (maybe_fragments, maybe_intensities) {
+            (Some(fragments), Some(intensities)) => {
+                self.set_cosine_similarity(cosine_similarity(&fragments.inner.intensities, &intensities).unwrap_or(0.0) as f64);
+            }
+            (_, _) => {}
+        }
+    }
+    
+    fn match_observed_predicted_intensities(&self) -> (Option<PyFragments>, Option<Vec<f32>>) {
+        let maybe_predicted = &self.fragments_predicted;
+        let maybe_observed = &self.fragments_observed;
+
+        let maybe_predicted_feature = match (maybe_predicted, maybe_observed) {
+            (Some(predicted), Some(observed)) => {
+                let max_intensity = observed.inner.intensities.iter().cloned().fold(0. / 0., f32::max);
+                let intensities_normalized: Vec<f32> = observed.inner.intensities.iter().map(|i| *i / max_intensity).collect();
 
                 let mut observed_map: HashMap<(&str, i32, i32), f32> = HashMap::new();
                 let mut predicted_map: HashMap<(&str, i32, i32), f32> = HashMap::new();
 
-                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(observed.kinds.iter(),
-                    observed.fragment_ordinals.iter(), observed.charges.iter(), observed.intensities.iter()) {
+                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(observed.inner.kinds.iter(),
+                    observed.inner.fragment_ordinals.iter(), observed.inner.charges.iter(), intensities_normalized.iter()) {
                     let string_kind = match kind {
                         Kind::B => "B",
                         Kind::Y => "Y",
@@ -1053,29 +1034,56 @@ impl PyPeptideSpectrumMatch {
                     observed_map.insert(key, *intensity);
                 }
 
-                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(kinds, fragment_ordinals, charges, intensities) {
+                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(predicted.inner.kinds.iter(),
+                    predicted.inner.fragment_ordinals.iter(), predicted.inner.charges.iter(), predicted.inner.intensities.iter()) {
                     let string_kind = match kind {
                         Kind::B => "B",
                         Kind::Y => "Y",
                         _ => "UNKNOWN",
                     };
-                    let key = (string_kind, fragment_ordinal, charge);
-                    predicted_map.insert(key, intensity);
+                    let key = (string_kind, *fragment_ordinal, *charge);
+                    predicted_map.insert(key, *intensity);
                 }
 
-                let mut observed_intensities: Vec<f32> = Vec::new();
+                let mut kinds: Vec<Kind> = Vec::new();
+                let mut fragment_ordinals: Vec<i32> = Vec::new();
+                let mut charges: Vec<i32> = Vec::new();
+                let mut intensities: Vec<f32> = Vec::new();
                 let mut predicted_intensities: Vec<f32> = Vec::new();
 
-                for (kind, fragment_ordinal, charge) in observed_map.keys() {
-                    let key = (*kind, *fragment_ordinal, *charge);
-                    let observed_intensity = observed_map.get(&key).unwrap();
-                    let predicted_intensity = predicted_map.get(&key).unwrap();
-                    observed_intensities.push(*observed_intensity);
+                for (kind, fragment_ordinal, charge) in itertools::izip!(observed.inner.kinds.iter(),
+                    observed.inner.fragment_ordinals.iter(), observed.inner.charges.iter()) {
+
+                    kinds.push(*kind);
+                    fragment_ordinals.push(*fragment_ordinal);
+                    charges.push(*charge);
+
+                    let string_kind = match kind {
+                        Kind::B => "B",
+                        Kind::Y => "Y",
+                        _ => "UNKNOWN",
+                    };
+
+                    let key = (string_kind, *fragment_ordinal, *charge);
+                    let intensity = observed_map.get(&key).unwrap_or(&0.0);
+                    intensities.push(*intensity);
+
+                    let predicted_intensity = predicted_map.get(&key).unwrap_or(&0.0);
                     predicted_intensities.push(*predicted_intensity);
                 }
-                cosine_similarity(&observed_intensities, &predicted_intensities)
+
+                (Some(PyFragments {
+                    inner: Fragments {
+                        charges,
+                        kinds,
+                        fragment_ordinals,
+                        intensities,
+                        mz_calculated: observed.inner.mz_calculated.clone(),
+                        mz_experimental: observed.inner.mz_experimental.clone(),
+                    }
+                }), Some(predicted_intensities))
             }
-            (_, _) => None,
+            (_, _) => (None, None),
         };
         maybe_predicted_feature
     }
