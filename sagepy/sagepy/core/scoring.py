@@ -354,7 +354,7 @@ class Scorer:
         return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in py_psms]
 
     def score_collection_psm_pandas(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
-                                num_threads: int = 4) -> pd.DataFrame:
+                                    num_threads: int = 4) -> pd.DataFrame:
 
         py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(),
                                                                        [spec.get_py_ptr() for spec in
@@ -668,3 +668,10 @@ class Feature:
 
     def get_py_ptr(self):
         return self.__feature_ptr
+
+
+def associate_fragment_ions_with_prosit_predicted_intensities_par(
+        psms: List[PeptideSpectrumMatch],
+        flat_intensities: List[List[float]], num_threads: int):
+    psc.associate_fragment_ions_with_prosit_predicted_intensities_par([psm.get_py_ptr() for
+                                                                       psm in psms], flat_intensities, num_threads)
