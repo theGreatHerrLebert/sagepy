@@ -1078,7 +1078,7 @@ pub fn associate_fragment_ions_with_prosit_predicted_intensities_par(
     let pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
     pool.install(|| {
         psms.into_par_iter().zip(flat_intensities.into_par_iter())
-            .for_each(|(psm, flat_intensities)| {
+            .for_each(|(mut psm, flat_intensities)| {
                 associate_fragment_ions_with_prosit_predicted_intensities(psm, flat_intensities);
             });
     });
