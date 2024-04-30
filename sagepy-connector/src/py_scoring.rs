@@ -1083,6 +1083,16 @@ pub fn associate_fragment_ions_with_prosit_predicted_intensities_par(
     });
 }
 
+#[pyfunction]
+pub fn associate_fragment_ions_no_parallel(
+    mut psms: Vec<PyPeptideSpectrumMatch>,
+    flat_intensities: Vec<Vec<f64>>,
+) {
+    for (psm, intensities) in psms.iter_mut().zip(flat_intensities.iter()) {
+        psm.associate_fragment_ions_with_prosit_predicted_intensities(intensities.clone());
+    }
+}
+
 #[pymodule]
 pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyFragments>()?;
@@ -1090,5 +1100,6 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyScorer>()?;
     m.add_class::<PyPeptideSpectrumMatch>()?;
     m.add_function(wrap_pyfunction!(associate_fragment_ions_with_prosit_predicted_intensities_par, m)?)?;
+    m.add_function(wrap_pyfunction!(associate_fragment_ions_no_parallel, m)?)?;
     Ok(())
 }
