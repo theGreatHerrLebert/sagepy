@@ -1,4 +1,4 @@
-from typing import Optional, List, Union, Tuple
+from typing import Optional, List, Union
 
 import pandas as pd
 import sagepy_connector
@@ -136,24 +136,11 @@ class PeptideSpectrumMatch:
 
     @property
     def fragments_observed(self) -> Union[None, 'Fragments']:
-        maybe_fragments = Fragments.from_py_fragments(self.__py_ptr.fragments_observed)
-        if maybe_fragments is not None:
-            return Fragments.from_py_fragments(maybe_fragments)
-        return None
+        return Fragments.from_py_fragments(self.__py_ptr.fragments_observed)
 
     @property
     def fragments_predicted(self) -> Union[None, 'Fragments']:
-        maybe_fragments = Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
-        if maybe_fragments is not None:
-            return Fragments.from_py_fragments(maybe_fragments)
-        return None
-
-    @property
-    def matched_fragments(self) -> Union[None, Tuple['Fragments', List[float]]]:
-        maybe_fragments, intensities = self.__py_ptr.from_py_fragments(self.__py_ptr.matched_fragments)
-        if maybe_fragments is not None:
-            return Fragments.from_py_fragments(maybe_fragments), intensities
-        return None
+        return Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
 
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
@@ -685,6 +672,6 @@ class Feature:
 
 def associate_fragment_ions_with_prosit_predicted_intensities_par(
         psms: List[PeptideSpectrumMatch],
-        flat_intensities: List[List[float]], num_threads: int = 4):
+        flat_intensities: List[List[float]], num_threads: int = 16):
     psc.associate_fragment_ions_with_prosit_predicted_intensities_par([psm.get_py_ptr() for
                                                                        psm in psms], flat_intensities, num_threads)
