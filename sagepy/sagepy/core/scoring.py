@@ -154,10 +154,10 @@ class PeptideSpectrumMatch:
     def associate_fragment_ions_with_prosit_predicted_intensities(self, flat_intensities: List[float]):
         self.__py_ptr.associate_fragment_ions_with_prosit_predicted_intensities(flat_intensities)
 
-    def match_observed_predicted_intensities(self) -> Tuple[Optional['Feature'], Optional[List[float]]]:
-        maybe_feature, flat_intensities = self.__py_ptr.match_observed_predicted_intensities()
-        if maybe_feature is not None:
-            return Feature.from_py_feature(maybe_feature), flat_intensities
+    def match_observed_predicted_intensities(self) -> Tuple[Optional['Fragments'], Optional[List[float]]]:
+        maybe_fragment, flat_intensities = self.__py_ptr.match_observed_predicted_intensities()
+        if maybe_fragment is not None:
+            return Fragments.from_py_fragments(maybe_fragment), flat_intensities
         return None, None
 
     def __repr__(self):
