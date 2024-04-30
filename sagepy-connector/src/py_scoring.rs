@@ -918,12 +918,12 @@ impl PyPeptideSpectrumMatch {
     }
 
     #[setter]
-    pub fn set_spectral_angle(&mut self, cosine_similarity: f64) {
-        self.inner.cosine_similarity = Some(cosine_similarity);
+    pub fn set_spectral_angle(&mut self, spectral_angle: f64) {
+        self.inner.cosine_similarity = Some(spectral_angle);
     }
 
-    fn predicted_ion_series_to_py_fragments(&mut self) {
-        let maybe_fragments = &self.inner.peptide_product_ion_series_collection_predicted;
+    fn predicted_ion_series_to_py_fragments(&self) {
+        let maybe_fragments = self.inner.peptide_product_ion_series_collection_predicted.clone();
         let fragments = match maybe_fragments {
             Some(fragments) => {
                 let mut charges = Vec::new();
