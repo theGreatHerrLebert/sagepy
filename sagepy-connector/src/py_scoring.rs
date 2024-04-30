@@ -1072,23 +1072,29 @@ impl PyPeptideSpectrumMatch {
 
 #[pyfunction]
 pub fn associate_fragment_ions_with_prosit_predicted_intensities_par(
-    mut psms: Vec<PyPeptideSpectrumMatch>,
+    psms: Vec<PyPeptideSpectrumMatch>,
     flat_intensities: Vec<Vec<f64>>,
     num_threads: usize
-) {
+) -> Vec<PyPeptideSpectrumMatch> {
     let pool = ThreadPoolBuilder::new()
         .num_threads(num_threads)
         .build()
         .unwrap();
 
-    pool.install(|| {
-        psms.par_iter_mut()
-            .zip(flat_intensities.par_iter())
-            .for_each(|(psm, flat_intensities)| {
-                psm.associate_fragment_ions_with_prosit_predicted_intensities(flat_intensities.clone());
-            });
+    let result = pool.install(|| {
+        psms.par_iter().zip(flat_intensities.par_iter())
+            .map(|(psm, intensities)| {
+                let mut psm = psm.clone();
+                psm.associate_fragment_ions_with_prosit_predicted_intensities(intensities.clone());
+                psm
+            })
+            .collect()
+
     });
+
+    result
 }
+
 
 #[pyfunction]
 pub fn associate_fragment_ions_no_parallel(
