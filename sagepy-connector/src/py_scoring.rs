@@ -949,8 +949,8 @@ impl PyPeptideSpectrumMatch {
     }
 
     #[setter]
-    pub fn set_cosine_similarity(&mut self, cosine_similarity: f64) {
-        self.inner.cosine_similarity = Some(cosine_similarity);
+    pub fn set_spectral_angle(&mut self, spectral_angle: f64) {
+        self.inner.cosine_similarity = Some(spectral_angle);
     }
 
     fn ion_series_to_py_fragments(&mut self) {
