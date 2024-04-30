@@ -29,13 +29,13 @@ class PeptideSpectrumMatch:
                  intensity_ms2: Union[None, float],
                  q_value: Union[None, float],
                  collision_energy: Union[None, float],
-                 cosine_similarity: Union[None, float],
+                 spectral_angle: Union[None, float],
                  fragments: Union[None, 'Fragments'] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed, sequence, charge,
             retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
-            intensity_ms1, intensity_ms2, q_value, collision_energy, cosine_similarity, fragments.get_py_ptr()
+            intensity_ms1, intensity_ms2, q_value, collision_energy, spectral_angle, fragments.get_py_ptr()
         )
 
     @property
@@ -172,7 +172,7 @@ class PeptideSpectrumMatch:
                f"{self.hyper_score}, {self.rank} {self.charge}, {self.sequence}, {self.mono_mass_observed}, " \
                f"{self.mono_mass_calculated}, {self.retention_time_observed}, {self.retention_time_predicted}, " \
                f"{self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, {self.intensity_ms1}, " \
-               f"{self.intensity_ms2}, {self.q_value}, {self.collision_energy}, {self.cosine_similarity})"
+               f"{self.intensity_ms2}, {self.q_value}, {self.collision_energy}, {self.spectral_angle})"
 
 
 class Fragments:
