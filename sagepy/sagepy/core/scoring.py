@@ -1,4 +1,4 @@
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Tuple
 
 import pandas as pd
 import sagepy_connector
@@ -136,11 +136,24 @@ class PeptideSpectrumMatch:
 
     @property
     def fragments_observed(self) -> Union[None, 'Fragments']:
-        return Fragments.from_py_fragments(self.__py_ptr.fragments_observed)
+        maybe_fragments = Fragments.from_py_fragments(self.__py_ptr.fragments_observed)
+        if maybe_fragments is not None:
+            return Fragments.from_py_fragments(maybe_fragments)
+        return None
 
     @property
     def fragments_predicted(self) -> Union[None, 'Fragments']:
-        return Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
+        maybe_fragments = Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
+        if maybe_fragments is not None:
+            return Fragments.from_py_fragments(maybe_fragments)
+        return None
+
+    @property
+    def matched_fragments(self) -> Union[None, Tuple['Fragments', List[float]]]:
+        maybe_fragments, intensities = self.__py_ptr.from_py_fragments(self.__py_ptr.matched_fragments)
+        if maybe_fragments is not None:
+            return Fragments.from_py_fragments(maybe_fragments), intensities
+        return None
 
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):

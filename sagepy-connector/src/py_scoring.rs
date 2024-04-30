@@ -884,6 +884,11 @@ impl PyPeptideSpectrumMatch {
     }
 
     #[getter]
+    pub fn matched_fragments(&self) -> (Option<PyFragments>, Option<Vec<f32>>) {
+        self.match_observed_predicted_intensities()
+    }
+
+    #[getter]
     pub fn retention_time_observed(&self) -> Option<f32> {
         self.inner.retention_time_observed
     }
@@ -1010,7 +1015,6 @@ impl PyPeptideSpectrumMatch {
             (_, _) => {}
         }
     }
-
     fn match_observed_predicted_intensities(&self) -> (Option<PyFragments>, Option<Vec<f32>>) {
         let maybe_predicted = &self.fragments_predicted;
         let maybe_observed = &self.fragments_observed;
