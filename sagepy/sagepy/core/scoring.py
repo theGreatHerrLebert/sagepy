@@ -676,10 +676,6 @@ class Feature:
         return self.__feature_ptr
 
 
-def associate_fragment_ions_with_prosit_predicted_intensities(psm: PeptideSpectrumMatch,
-                                                              flat_intensities: List[float]) -> None:
-    psc.associate_fragment_ions_with_prosit_predicted_intensities(psm.get_py_ptr(), flat_intensities)
-
 def associate_fragment_ions_with_prosit_predicted_intensities_par(
         psms: List[PeptideSpectrumMatch],
         flat_intensities: List[List[float]], num_threads: int = 16) -> None:
