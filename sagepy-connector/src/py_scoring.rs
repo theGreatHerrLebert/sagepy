@@ -1064,27 +1064,24 @@ impl PyPeptideSpectrumMatch {
 }
 
 #[pyfunction]
-pub fn associate_fragment_ions_with_prosit_predicted_intensities(
-    mut psm: PyPeptideSpectrumMatch, flat_intensities: Vec<f64>) {
-    psm.associate_fragment_ions_with_prosit_predicted_intensities(flat_intensities);
-}
-
-#[pyfunction]
 pub fn associate_fragment_ions_with_prosit_predicted_intensities_par(
-    psms: Vec<PyPeptideSpectrumMatch>,
+    mut psms: Vec<PyPeptideSpectrumMatch>,
     flat_intensities: Vec<Vec<f64>>,
     num_threads: usize
 ) {
-    let pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+    let pool = ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build()
+        .unwrap();
+
     pool.install(|| {
-        psms.into_par_iter().zip(flat_intensities.into_par_iter())
-            .for_each(|(mut psm, flat_intensities)| {
-                associate_fragment_ions_with_prosit_predicted_intensities(psm, flat_intensities);
+        psms.par_iter_mut()
+            .zip(flat_intensities.par_iter())
+            .for_each(|(psm, flat_intensities)| {
+                psm.associate_fragment_ions_with_prosit_predicted_intensities(flat_intensities.clone());
             });
     });
 }
-
-
 
 #[pymodule]
 pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -1093,6 +1090,5 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyScorer>()?;
     m.add_class::<PyPeptideSpectrumMatch>()?;
     m.add_function(wrap_pyfunction!(associate_fragment_ions_with_prosit_predicted_intensities_par, m)?)?;
-    m.add_function(wrap_pyfunction!(associate_fragment_ions_with_prosit_predicted_intensities, m)?)?;
     Ok(())
 }
