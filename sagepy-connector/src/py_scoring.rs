@@ -1058,6 +1058,7 @@ impl PyPeptideSpectrumMatch {
                     predicted_map.insert(key, intensity);
                 }
 
+                /*
                 let mut observed_intensities: Vec<f32> = Vec::new();
                 let mut predicted_intensities: Vec<f32> = Vec::new();
 
@@ -1068,6 +1069,7 @@ impl PyPeptideSpectrumMatch {
                     observed_intensities.push(*observed_intensity);
                     predicted_intensities.push(*predicted_intensity);
                 }
+                 */
                 // cosine_similarity(&observed_intensities, &predicted_intensities)
                 Some((observed_map, predicted_map))
             }
