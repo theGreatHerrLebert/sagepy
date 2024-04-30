@@ -944,8 +944,8 @@ impl PyPeptideSpectrumMatch {
     }
 
     #[getter]
-    pub fn spectral_angle(&self) -> Option<f64> {
-        self.inner.cosine_similarity
+    pub fn spectral_angle(&self) -> f64 {
+        self.inner.cosine_similarity.unwrap_or(0.0)
     }
 
     #[setter]
