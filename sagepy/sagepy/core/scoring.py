@@ -29,13 +29,13 @@ class PeptideSpectrumMatch:
                  intensity_ms2: Union[None, float],
                  q_value: Union[None, float],
                  collision_energy: Union[None, float],
-                 spectral_angle: Union[None, float],
+                 cosine_similarity: Union[None, float],
                  fragments: Union[None, 'Fragments'] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed, sequence, charge,
             retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
-            intensity_ms1, intensity_ms2, q_value, collision_energy, spectral_angle, fragments.get_py_ptr()
+            intensity_ms1, intensity_ms2, q_value, collision_energy, cosine_similarity, fragments.get_py_ptr()
         )
 
     @property
@@ -172,7 +172,7 @@ class PeptideSpectrumMatch:
                f"{self.hyper_score}, {self.rank} {self.charge}, {self.sequence}, {self.mono_mass_observed}, " \
                f"{self.mono_mass_calculated}, {self.retention_time_observed}, {self.retention_time_predicted}, " \
                f"{self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, {self.intensity_ms1}, " \
-               f"{self.intensity_ms2}, {self.q_value}, {self.collision_energy}, {self.spectral_angle})"
+               f"{self.intensity_ms2}, {self.q_value}, {self.collision_energy}, {self.cosine_similarity})"
 
 
 class Fragments:
@@ -395,7 +395,6 @@ class Scorer:
                 "intensity_ms2": match.intensity_ms2,
                 "q_value": match.q_value,
                 "collision_energy": match.collision_energy,
-                "spectral_angle": match.spectral_angle,
             })
 
         return pd.DataFrame(row_list)
@@ -689,32 +688,3 @@ def associate_fragment_ions_with_prosit_predicted_intensities_par(
         flat_intensities: List[List[float]], num_threads: int = 4):
     psc.associate_fragment_ions_with_prosit_predicted_intensities_par([psm.get_py_ptr() for
                                                                        psm in psms], flat_intensities, num_threads)
-
-
-def psm_to_pandas(psms: List[PeptideSpectrumMatch]) -> pd.DataFrame:
-    row_list = []
-    for match in psms:
-        row_list.append({
-            "spec_idx": match.spec_idx,
-            "match_idx": match.peptide_idx,
-            "proteins": match.proteins,
-            "decoy": match.decoy,
-            "score": match.hyper_score,
-            "rank": match.rank,
-            "mono_mz_calculated": match.mono_mz_calculated,
-            "mono_mass_observed": match.mono_mass_observed,
-            "mono_mass_calculated": match.mono_mass_calculated,
-            "sequence": match.sequence,
-            "charge": match.charge,
-            "retention_time_observed": match.retention_time_observed,
-            "retention_time_predicted": match.retention_time_predicted,
-            "inverse_mobility_observed": match.inverse_mobility_observed,
-            "inverse_mobility_predicted": match.inverse_mobility_predicted,
-            "intensity_ms1": match.intensity_ms1,
-            "intensity_ms2": match.intensity_ms2,
-            "q_value": match.q_value,
-            "collision_energy": match.collision_energy,
-            "spectral_angle": match.spectral_angle,
-        })
-
-    return pd.DataFrame(row_list)
