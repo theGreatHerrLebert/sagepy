@@ -918,7 +918,7 @@ impl PyPeptideSpectrumMatch {
     }
 
     #[setter]
-    pub fn set_cosine_similarity(&mut self, cosine_similarity: f64) {
+    pub fn set_spectral_angle(&mut self, cosine_similarity: f64) {
         self.inner.cosine_similarity = Some(cosine_similarity);
     }
 
@@ -979,7 +979,7 @@ impl PyPeptideSpectrumMatch {
         let (maybe_fragments, maybe_intensities) = self.match_observed_predicted_intensities();
         match (maybe_fragments, maybe_intensities) {
             (Some(fragments), Some(intensities)) => {
-                self.set_cosine_similarity(cosine_similarity(&fragments.inner.intensities, &intensities).unwrap_or(0.0) as f64);
+                self.set_spectral_angle(cosine_similarity(&fragments.inner.intensities, &intensities).unwrap_or(0.0) as f64);
             }
             (_, _) => {}
         }
