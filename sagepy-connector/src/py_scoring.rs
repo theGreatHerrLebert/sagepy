@@ -857,6 +857,11 @@ impl PyPeptideSpectrumMatch {
         self.fragments_predicted.clone()
     }
 
+    #[setter]
+    pub fn set_fragments_predicted(&mut self, fragments: Option<PyFragments>) {
+        self.fragments_predicted = fragments;
+    }
+
     #[getter]
     pub fn retention_time_observed(&self) -> Option<f32> {
         self.inner.retention_time_observed
@@ -922,8 +927,8 @@ impl PyPeptideSpectrumMatch {
         self.inner.cosine_similarity = Some(spectral_angle);
     }
 
-    fn predicted_ion_series_to_py_fragments(&mut self) {
-        let maybe_fragments = self.inner.peptide_product_ion_series_collection_predicted.clone();
+    fn predicted_ion_series_to_py_fragments(&mut self) -> Option<PyFragments> {
+        let maybe_fragments = &self.inner.peptide_product_ion_series_collection_predicted;
         let fragments = match maybe_fragments {
             Some(fragments) => {
                 let mut charges = Vec::new();
@@ -969,13 +974,15 @@ impl PyPeptideSpectrumMatch {
             }
             None => None,
         };
-        self.fragments_predicted = fragments;
+
+        fragments
     }
 
     pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
         let ion_series = self.inner.associate_with_prosit_predicted_intensities(flat_intensities);
         self.inner.peptide_product_ion_series_collection_predicted = ion_series;
-        self.predicted_ion_series_to_py_fragments();
+        let maybe_fragments_predicted = self.predicted_ion_series_to_py_fragments();
+        self.set_fragments_predicted(maybe_fragments_predicted);
         let (maybe_fragments, maybe_intensities) = self.match_observed_predicted_intensities();
         match (maybe_fragments, maybe_intensities) {
             (Some(fragments), Some(intensities)) => {
