@@ -11,33 +11,7 @@ use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
-
-/// Calculates the cosine similarity between two vectors.
-///
-/// # Arguments
-///
-/// * `vec1` - A vector of f32.
-/// * `vec2` - A vector of f32.
-///
-/// # Returns
-///
-/// * The cosine similarity as a f32. If vectors are empty or different lengths, it returns None.
-///
-fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>) -> Option<f32> {
-    if vec1.len() != vec2.len() || vec1.is_empty() {
-        return None;
-    }
-
-    let dot_product: f32 = vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum();
-    let magnitude_vec1: f32 = vec1.iter().map(|x| x.powi(2)).sum::<f32>().sqrt();
-    let magnitude_vec2: f32 = vec2.iter().map(|x| x.powi(2)).sum::<f32>().sqrt();
-
-    if magnitude_vec1 == 0.0 || magnitude_vec2 == 0.0 {
-        return None;
-    }
-
-    Some(dot_product / (magnitude_vec1 * magnitude_vec2))
-}
+use crate::utility::cosine_similarity;
 
 #[pyclass]
 #[derive(Clone)]
@@ -948,8 +922,8 @@ impl PyPeptideSpectrumMatch {
         self.inner.cosine_similarity = Some(cosine_similarity);
     }
 
-    fn ion_series_to_py_fragments(&mut self) {
-        let maybe_fragments = &self.inner.peptide_product_ion_series_collection_predicted;
+    fn predicted_ion_series_to_py_fragments(&mut self) {
+        let maybe_fragments = &self.inner.peptide_product_ion_series_collection_predicted.clone();
         let fragments = match maybe_fragments {
             Some(fragments) => {
                 let mut charges = Vec::new();
@@ -1001,7 +975,7 @@ impl PyPeptideSpectrumMatch {
     pub fn associate_fragment_ions_with_prosit_predicted_intensities(&mut self, flat_intensities: Vec<f64>) {
         let ion_series = self.inner.associate_with_prosit_predicted_intensities(flat_intensities);
         self.inner.peptide_product_ion_series_collection_predicted = ion_series;
-        self.ion_series_to_py_fragments();
+        self.predicted_ion_series_to_py_fragments();
         let (maybe_fragments, maybe_intensities) = self.match_observed_predicted_intensities();
         match (maybe_fragments, maybe_intensities) {
             (Some(fragments), Some(intensities)) => {

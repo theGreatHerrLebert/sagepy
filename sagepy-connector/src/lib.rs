@@ -13,6 +13,7 @@ mod py_fdr;
 mod py_lfq;
 mod py_tmt;
 mod py_qfdr;
+mod utility;
 
 use py_enzyme::enzyme;
 use py_fasta::fasta;
