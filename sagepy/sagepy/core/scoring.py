@@ -127,12 +127,12 @@ class PeptideSpectrumMatch:
         return self.__py_ptr.collision_energy
 
     @property
-    def cosine_similarity(self):
-        return self.__py_ptr.cosine_similarity
+    def spectral_angle(self):
+        return self.__py_ptr.spectral_angle
 
-    @cosine_similarity.setter
-    def cosine_similarity(self, value):
-        self.__py_ptr.cosine_similarity = value
+    @spectral_angle.setter
+    def spectral_angle(self, value):
+        self.__py_ptr.spectral_angle = value
 
     @property
     def fragments_observed(self) -> Union[None, 'Fragments']:
