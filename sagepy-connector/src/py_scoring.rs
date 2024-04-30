@@ -922,7 +922,7 @@ impl PyPeptideSpectrumMatch {
         self.inner.cosine_similarity = Some(spectral_angle);
     }
 
-    fn predicted_ion_series_to_py_fragments(&self) {
+    fn predicted_ion_series_to_py_fragments(&mut self) {
         let maybe_fragments = self.inner.peptide_product_ion_series_collection_predicted.clone();
         let fragments = match maybe_fragments {
             Some(fragments) => {
