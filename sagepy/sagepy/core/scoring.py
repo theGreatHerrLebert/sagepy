@@ -1,4 +1,4 @@
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Tuple
 
 import pandas as pd
 import sagepy_connector
@@ -154,7 +154,7 @@ class PeptideSpectrumMatch:
     def associate_fragment_ions_with_prosit_predicted_intensities(self, flat_intensities: List[float]):
         self.__py_ptr.associate_fragment_ions_with_prosit_predicted_intensities(flat_intensities)
 
-    def match_observed_predicted_intensities(self) -> Optional['Feature', List[float]]:
+    def match_observed_predicted_intensities(self) -> Tuple[Optional['Feature'], Optional[List[float]]]:
         maybe_feature, flat_intensities = self.__py_ptr.match_observed_predicted_intensities()
         if maybe_feature is not None:
             return Feature.from_py_feature(maybe_feature), flat_intensities
