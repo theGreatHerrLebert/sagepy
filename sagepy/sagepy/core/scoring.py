@@ -678,13 +678,8 @@ class Feature:
 
 def associate_fragment_ions_with_prosit_predicted_intensities_par(
         psms: List[PeptideSpectrumMatch],
-        flat_intensities: List[List[float]], num_threads: int = 16) -> None:
-    psc.associate_fragment_ions_with_prosit_predicted_intensities_par([psm.get_py_ptr() for
-                                                                       psm in psms], flat_intensities, num_threads)
-
-
-def associate_fragment_ions_with_prosit_predicted_intensities_non_par(
-        psms: List[PeptideSpectrumMatch],
-        flat_intensities: List[List[float]]) -> List['Fragments']:
-    result = psc.associate_fragment_ions_no_parallel([psm.get_py_ptr() for psm in psms], flat_intensities)
+        flat_intensities: List[List[float]], num_threads: int = 16) -> List['Fragments']:
+    result = psc.associate_fragment_ions_with_prosit_predicted_intensities_par(
+        [psm.get_py_ptr() for psm in psms], flat_intensities, num_threads
+    )
     return [Fragments.from_py_fragments(f) for f in result]
