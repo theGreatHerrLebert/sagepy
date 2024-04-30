@@ -672,6 +672,6 @@ class Feature:
 
 def associate_fragment_ions_with_prosit_predicted_intensities_par(
         psms: List[PeptideSpectrumMatch],
-        flat_intensities: List[List[float]], num_threads: int):
+        flat_intensities: List[List[float]], num_threads: int = 4):
     psc.associate_fragment_ions_with_prosit_predicted_intensities_par([psm.get_py_ptr() for
                                                                        psm in psms], flat_intensities, num_threads)
