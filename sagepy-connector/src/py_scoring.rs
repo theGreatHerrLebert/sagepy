@@ -949,7 +949,7 @@ impl PyPeptideSpectrumMatch {
     }
 
     fn ion_series_to_py_fragments(&mut self) {
-        let maybe_fragments = self.inner.peptide_product_ion_series_collection_predicted.clone();
+        let maybe_fragments = &self.inner.peptide_product_ion_series_collection_predicted;
         let fragments = match maybe_fragments {
             Some(fragments) => {
                 let mut charges = Vec::new();
@@ -1020,28 +1020,28 @@ impl PyPeptideSpectrumMatch {
                 let max_intensity = observed.inner.intensities.iter().cloned().fold(0. / 0., f32::max);
                 let intensities_normalized: Vec<f32> = observed.inner.intensities.iter().map(|i| *i / max_intensity).collect();
 
-                let mut observed_map: HashMap<(&str, i32, i32), f32> = HashMap::new();
-                let mut predicted_map: HashMap<(&str, i32, i32), f32> = HashMap::new();
+                let mut observed_map: HashMap<(u32, i32, i32), f32> = HashMap::new();
+                let mut predicted_map: HashMap<(u32, i32, i32), f32> = HashMap::new();
 
                 for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(observed.inner.kinds.iter(),
                     observed.inner.fragment_ordinals.iter(), observed.inner.charges.iter(), intensities_normalized.iter()) {
-                    let string_kind = match kind {
-                        Kind::B => "B",
-                        Kind::Y => "Y",
-                        _ => "UNKNOWN",
+                    let int_kind = match kind {
+                        Kind::B => 0,
+                        Kind::Y => 1,
+                        _ => 2,
                     };
-                    let key = (string_kind, *fragment_ordinal, *charge);
+                    let key = (int_kind, *fragment_ordinal, *charge);
                     observed_map.insert(key, *intensity);
                 }
 
                 for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(predicted.inner.kinds.iter(),
                     predicted.inner.fragment_ordinals.iter(), predicted.inner.charges.iter(), predicted.inner.intensities.iter()) {
-                    let string_kind = match kind {
-                        Kind::B => "B",
-                        Kind::Y => "Y",
-                        _ => "UNKNOWN",
+                    let int_kind = match kind {
+                        Kind::B => 0,
+                        Kind::Y => 1,
+                        _ => 2,
                     };
-                    let key = (string_kind, *fragment_ordinal, *charge);
+                    let key = (int_kind, *fragment_ordinal, *charge);
                     predicted_map.insert(key, *intensity);
                 }
 
@@ -1058,13 +1058,13 @@ impl PyPeptideSpectrumMatch {
                     fragment_ordinals.push(*fragment_ordinal);
                     charges.push(*charge);
 
-                    let string_kind = match kind {
-                        Kind::B => "B",
-                        Kind::Y => "Y",
-                        _ => "UNKNOWN",
+                    let int_kind = match kind {
+                        Kind::B => 0,
+                        Kind::Y => 1,
+                        _ => 2,
                     };
 
-                    let key = (string_kind, *fragment_ordinal, *charge);
+                    let key = (int_kind, *fragment_ordinal, *charge);
                     let intensity = observed_map.get(&key).unwrap_or(&0.0);
                     intensities.push(*intensity);
 
