@@ -1001,7 +1001,7 @@ impl PyPeptideSpectrumMatch {
         self.inner.peptide_product_ion_series_collection_predicted = ion_series;
     }
 
-    pub fn calculate_cosine_similarity(&self) -> Option<(HashMap<(&str, i32, i32), f32>, HashMap<(&str, i32, i32), f32>)> {
+    pub fn calculate_cosine_similarity(&self) -> Option<f32> {
         let maybe_predicted = &self.inner.peptide_product_ion_series_collection_predicted;
         let maybe_observed = &self.fragments;
 
@@ -1048,7 +1048,7 @@ impl PyPeptideSpectrumMatch {
                     observed_map.insert(key, *intensity);
                 }
 
-                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(kinds, charges, fragment_ordinals, intensities) {
+                for (kind, fragment_ordinal, charge, intensity) in itertools::izip!(kinds, fragment_ordinals, charges, intensities) {
                     let string_kind = match kind {
                         Kind::B => "B",
                         Kind::Y => "Y",
@@ -1058,7 +1058,6 @@ impl PyPeptideSpectrumMatch {
                     predicted_map.insert(key, intensity);
                 }
 
-                /*
                 let mut observed_intensities: Vec<f32> = Vec::new();
                 let mut predicted_intensities: Vec<f32> = Vec::new();
 
@@ -1069,9 +1068,7 @@ impl PyPeptideSpectrumMatch {
                     observed_intensities.push(*observed_intensity);
                     predicted_intensities.push(*predicted_intensity);
                 }
-                 */
-                // cosine_similarity(&observed_intensities, &predicted_intensities)
-                Some((observed_map, predicted_map))
+                cosine_similarity(&observed_intensities, &predicted_intensities)
             }
             (_, _) => None,
         };
