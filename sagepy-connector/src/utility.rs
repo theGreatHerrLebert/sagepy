@@ -76,7 +76,7 @@ pub fn flat_prosit_array_to_py_fragments(flat_intensities: Vec<f32>) -> HashMap<
         }
 
         let mut intensity_y: Vec<f32> = reshaped_intensities[..].iter().map(|x| x[0][z as usize - 1]).collect();
-        intensity_y.reverse();
+        // intensity_y.reverse();
         for i in 1..=29 {
             let intensity = intensity_y[i as usize - 1];
             if intensity >= 0.0 {
