@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use sage_core::ion_series::Kind;
+use sage_core::scoring::Fragments;
 use crate::py_scoring::PyFragments;
 
 /// Calculates the cosine similarity between two vectors.
@@ -58,17 +60,78 @@ pub fn reshape_prosit_array(flat_array: Vec<f32>) -> Vec<Vec<Vec<f32>>> {
     array_return
 }
 
-pub fn flat_prosit_array_to_py_fragments(flat_intensities: Vec<f32>) -> PyFragments {
-
+pub fn flat_prosit_array_to_py_fragments(flat_intensities: Vec<f32>) -> HashMap<(u32, i32, i32), f32> {
+    // Reshape the flat prosit array into a 3D array of shape (29, 2, 3)
     let reshaped_intensities = reshape_prosit_array(flat_intensities);
-    let mut kinds: Vec<Kind> = Vec::new();
-    let mut ordinals: Vec<u32> = Vec::new();
-    let mut intensities: Vec<Vec<f32>> = Vec::new();
 
+    // create hashmap of (kind, ordinal, charge) -> intensity
+    let mut fragments: HashMap<(u32, i32, i32), f32> = HashMap::new();
     for z in 1..=3 {
         let intensity_b: Vec<f32> = reshaped_intensities[..].iter().map(|x| x[1][z as usize - 1]).collect();
-        let intensity_y: Vec<f32> = reshaped_intensities[..].iter().map(|x| x[0][z as usize - 1]).collect(); // Reverse for y
+        for i in 1..=29 {
+                let intensity = intensity_b[i as usize - 1];
+                if intensity >= 0.0 {
+                    fragments.insert((0, i, z), intensity);
+                }
+        }
+
+        let mut intensity_y: Vec<f32> = reshaped_intensities[..].iter().map(|x| x[0][z as usize - 1]).collect();
+        intensity_y.reverse();
+        for i in 1..=29 {
+            let intensity = intensity_y[i as usize - 1];
+            if intensity >= 0.0 {
+                fragments.insert((1, i, z), intensity);
+            }
+        }
+    }
+    fragments
+}
+
+pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
+                           mz_calculated: Vec<f32>, mz_experimental: Vec<f32>) -> PyFragments {
+
+    let mut kinds: Vec<Kind> = Vec::new();
+    let mut ordinals: Vec<i32> = Vec::new();
+    let mut charges: Vec<i32> = Vec::new();
+    let mut intensities: Vec<f32> = Vec::new();
+
+    for (kind, ordinal, charge) in fragments.keys() {
+        let intensity = fragments.get(&(*kind, *ordinal, *charge)).unwrap();
+        let kind = match kind {
+            0 => Kind::B,
+            1 => Kind::Y,
+            _ => panic!("Invalid ion kind"),
+        };
+        kinds.push(kind);
+        ordinals.push(*ordinal);
+        charges.push(*charge);
+        intensities.push(*intensity);
     }
 
-    todo!("Finish this function")
+    let fragments = Fragments {
+        mz_calculated,
+        mz_experimental,
+        kinds,
+        fragment_ordinals: ordinals,
+        charges,
+        intensities,
+    };
+
+    PyFragments {
+        inner: fragments,
+    }
+}
+
+pub fn py_fragments_to_map(fragments: &PyFragments) -> HashMap<(u32, i32, i32), f32> {
+    let mut fragments_map: HashMap<(u32, i32, i32), f32> = HashMap::new();
+    for i in 0..fragments.inner.mz_calculated.len() {
+        let kind = match fragments.inner.kinds[i] {
+            Kind::B => 0,
+            Kind::Y => 1,
+            _ => panic!("Invalid ion kind"),
+        };
+        fragments_map.insert((kind, fragments.inner.fragment_ordinals[i],
+                              fragments.inner.charges[i]), fragments.inner.intensities[i]);
+    }
+    fragments_map
 }
