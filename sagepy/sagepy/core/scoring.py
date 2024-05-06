@@ -720,7 +720,7 @@ def associate_fragment_ions_with_prosit_predicted_intensities_pandas(
             "mono_mz_calculated": match.mono_mz_calculated,
             "mono_mass_observed": match.mono_mass_observed,
             "mono_mass_calculated": match.mono_mass_calculated,
-            "sequence": match.sequence,
+            "sequence": match.peptide_sequence,
             "charge": match.charge,
             "retention_time_observed": match.retention_time_observed,
             "retention_time_predicted": match.retention_time_predicted,
