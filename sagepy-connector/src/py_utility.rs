@@ -66,14 +66,14 @@ pub fn flat_prosit_array_to_fragments_map(flat_intensities: Vec<f32>) -> BTreeMa
     // Reshape the flat prosit array into a 3D array of shape (29, 2, 3)
     let reshaped_intensities = reshape_prosit_array(flat_intensities);
 
-    // create hashmap of (kind, ordinal, charge) -> intensity
+    // create hashmap of (kind, charge, ordinal) -> intensity
     let mut fragments: BTreeMap<(u32, i32, i32), f32> = BTreeMap::new();
     for z in 1..=3 {
         let intensity_b: Vec<f32> = reshaped_intensities[..].iter().map(|x| x[1][z as usize - 1]).collect();
         for i in 1..=29 {
                 let intensity = intensity_b[i as usize - 1];
                 if intensity >= 0.0 {
-                    fragments.insert((0, i, z), intensity);
+                    fragments.insert((0, z, i), intensity);
                 }
         }
 
@@ -82,7 +82,7 @@ pub fn flat_prosit_array_to_fragments_map(flat_intensities: Vec<f32>) -> BTreeMa
         for i in 1..=29 {
             let intensity = intensity_y[i as usize - 1];
             if intensity >= 0.0 {
-                fragments.insert((1, i, z), intensity);
+                fragments.insert((1, z, i), intensity);
             }
         }
     }
@@ -108,8 +108,9 @@ pub fn py_fragments_to_fragments_map(fragments: &PyFragments, normalize: bool) -
             fragments.inner.intensities[i]
         };
 
-        fragments_map.insert((kind, fragments.inner.fragment_ordinals[i],
-                              fragments.inner.charges[i]), intensity);
+        fragments_map.insert((kind,
+                              fragments.inner.charges[i],
+                              fragments.inner.fragment_ordinals[i]), intensity);
     }
     fragments_map
 }
@@ -123,7 +124,7 @@ pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
     let mut intensities: Vec<f32> = Vec::new();
 
     for (kind, ordinal, charge) in fragments.keys() {
-        let intensity = fragments.get(&(*kind, *ordinal, *charge)).unwrap();
+        let intensity = fragments.get(&(*kind, *charge, *ordinal)).unwrap();
         let kind = match kind {
             0 => Kind::B,
             1 => Kind::Y,
