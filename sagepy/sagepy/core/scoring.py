@@ -732,5 +732,4 @@ def associate_fragment_ions_with_prosit_predicted_intensities_pandas(
             "collision_energy": match.collision_energy,
             "cosine_similarity": match.cosine_similarity,
         })
-
     return pd.DataFrame(row_list)
