@@ -25,8 +25,24 @@ class TDCMethod:
         return f"TDCMethod({self.__py_ptr.to_str()})"
 
 
-def target_decoy_competition(method: str, spectra_idx: List[str], match_idx: List[int], decoy: List[bool],
-                             scores: List[float]) -> Tuple[List[str], List[int], List[bool], List[float], List[float]]:
+def target_decoy_competition(
+        spectra_idx: List[str],
+        match_idx: List[int],
+        decoy: List[bool],
+        scores: List[float],
+        method: str = "peptide_psm_peptide") -> Tuple[List[str], List[int], List[bool], List[float], List[float]]:
+    """ Perform target-decoy competition.
+
+    Args:
+        spectra_idx: a list of spectrum indices
+        match_idx: a list of match indices
+        decoy: a list of decoy flags
+        scores: a list of scores
+        method: the method to use, allowed values are: psm, peptide_psm_only, peptide_peptide_only, peptide_psm_peptide
+
+    Returns:
+        a tuple of spectrum indices, match indices, decoy flags, scores, and q-values
+    """
     tdc_method = TDCMethod(method)
     spec_idx, match_idx, decoy, scores, q_values = psc.target_decoy_competition(
         tdc_method.get_py_ptr(), spectra_idx,
@@ -34,7 +50,18 @@ def target_decoy_competition(method: str, spectra_idx: List[str], match_idx: Lis
     return spec_idx, match_idx, decoy, scores, q_values
 
 
-def target_decoy_competition_pandas(method: str, df: pd.DataFrame) -> pd.DataFrame:
+def target_decoy_competition_pandas(
+        df: pd.DataFrame,
+        method: str = "peptide_psm_peptide") -> pd.DataFrame:
+    """ Perform target-decoy competition on a pandas DataFrame.
+
+    Args:
+        df: a pandas DataFrame
+        method: the method to use, allowed values are: psm, peptide_psm_only, peptide_peptide_only, peptide_psm_peptide
+
+    Returns:
+        a pandas DataFrame with q-values
+    """
     assert 'spec_idx' in df.columns, "spec_idx column not found"
     assert 'match_idx' in df.columns, "match_idx column not found"
     assert 'decoy' in df.columns, "decoy column not found"
