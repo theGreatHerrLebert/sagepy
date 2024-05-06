@@ -70,8 +70,8 @@ def target_decoy_competition_pandas(
     spec_idx, match_idx, target, scores = (df['spec_idx'].tolist(),
                                            df['match_idx'].tolist(), df['decoy'].tolist(), df['score'].tolist())
 
-    spec_idx, match_idx, target, scores, q_values = target_decoy_competition(method, spec_idx,
-                                                                             match_idx, target, scores)
+    spec_idx, match_idx, target, scores, q_values = target_decoy_competition(spec_idx,
+                                                                             match_idx, target, scores, method)
 
     return pd.DataFrame({
         'spec_idx': spec_idx,
