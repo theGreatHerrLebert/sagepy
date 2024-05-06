@@ -671,7 +671,7 @@ class Feature:
         return self.__feature_ptr
 
 
-def associate_fragment_ions_with_prosit_predicted_intensities_par(
+def associate_fragment_ions_with_prosit_predicted_intensities(
         psms: List[PeptideSpectrumMatch],
         flat_intensities: List[List[float]], num_threads: int = 16) -> List['PeptideSpectrumMatch']:
     """Associate fragment ions with prosit predicted intensities in parallel
