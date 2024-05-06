@@ -2,10 +2,8 @@ from typing import Dict, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
+
 import sagepy_connector
-
-from sagepy.core.scoring import Fragments
-
 psc = sagepy_connector.py_utility
 
 
@@ -47,7 +45,7 @@ def prosit_intensities_to_fragments_map(intensities: NDArray) -> Dict[Tuple[int,
     return fragment_map
 
 
-def py_fragments_to_fragments_map(fragments: Fragments, normalize: bool = True) -> Dict[Tuple[int, int, int], float]:
+def py_fragments_to_fragments_map(fragments, normalize: bool = True) -> Dict[Tuple[int, int, int], float]:
     """ Convert a Fragments object to a fragment map (ion_type, ordinal, charge) -> intensity.
 
     Args:
