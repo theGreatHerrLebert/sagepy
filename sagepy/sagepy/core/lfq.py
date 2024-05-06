@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List
 from sagepy.core.database import PeptideIx
 import sagepy_connector
 psc = sagepy_connector.py_lfq
