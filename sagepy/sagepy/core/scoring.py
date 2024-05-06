@@ -674,7 +674,63 @@ class Feature:
 def associate_fragment_ions_with_prosit_predicted_intensities_par(
         psms: List[PeptideSpectrumMatch],
         flat_intensities: List[List[float]], num_threads: int = 16) -> List['PeptideSpectrumMatch']:
+    """Associate fragment ions with prosit predicted intensities in parallel
+
+    Args:
+        psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        flat_intensities (List[List[float]]): The flat intensities
+        num_threads (int, optional): The number of threads. Defaults to 16.
+
+    Returns:
+        List[PeptideSpectrumMatch]: The peptide spectrum matches
+    """
     result = psc.associate_fragment_ions_with_prosit_predicted_intensities_par(
         [psm.get_py_ptr() for psm in psms], flat_intensities, num_threads
     )
     return [PeptideSpectrumMatch.from_py_ptr(f) for f in result]
+
+
+def associate_fragment_ions_with_prosit_predicted_intensities_pandas(
+        psms: List[PeptideSpectrumMatch],
+        flat_intensities: List[List[float]],
+        num_threads: int = 16,
+) -> pd.DataFrame:
+    """Associate fragment ions with prosit predicted intensities in parallel
+
+    Args:
+        psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        flat_intensities (List[List[float]]): The flat intensities
+        num_threads (int, optional): The number of threads. Defaults to 16.
+
+    Returns:
+        pd.DataFrame: The pandas dataframe
+    """
+    result = psc.associate_fragment_ions_with_prosit_predicted_intensities_par(
+        [psm.get_py_ptr() for psm in psms], flat_intensities, num_threads
+    )
+    row_list = []
+    for match in result:
+        row_list.append({
+            "spec_idx": match.spec_idx,
+            "match_idx": match.peptide_idx,
+            "proteins": match.proteins,
+            "decoy": match.decoy,
+            "score": match.hyper_score,
+            "rank": match.rank,
+            "mono_mz_calculated": match.mono_mz_calculated,
+            "mono_mass_observed": match.mono_mass_observed,
+            "mono_mass_calculated": match.mono_mass_calculated,
+            "sequence": match.sequence,
+            "charge": match.charge,
+            "retention_time_observed": match.retention_time_observed,
+            "retention_time_predicted": match.retention_time_predicted,
+            "inverse_mobility_observed": match.inverse_mobility_observed,
+            "inverse_mobility_predicted": match.inverse_mobility_predicted,
+            "intensity_ms1": match.intensity_ms1,
+            "intensity_ms2": match.intensity_ms2,
+            "q_value": match.q_value,
+            "collision_energy": match.collision_energy,
+            "cosine_similarity": match.cosine_similarity,
+        })
+
+    return pd.DataFrame(row_list)
