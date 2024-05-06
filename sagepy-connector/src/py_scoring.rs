@@ -11,7 +11,7 @@ use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
 use crate::py_ion_series::PyKind;
-use crate::utility::{cosine_similarity, flat_prosit_array_to_py_fragments, py_fragments_to_map};
+use crate::py_utility::{cosine_similarity, flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
 
 #[pyclass]
 #[derive(Clone)]
@@ -931,8 +931,8 @@ pub fn associate_psm_with_prosit_predicted_intensities(
 ) -> PyPeptideSpectrumMatch {
 
     let fragments_observed = &psm.fragments_observed.unwrap();
-    let observed_map = py_fragments_to_map(fragments_observed, true);
-    let predicted_map = flat_prosit_array_to_py_fragments(flat_intensities);
+    let observed_map = py_fragments_to_fragments_map(fragments_observed, true);
+    let predicted_map = flat_prosit_array_to_fragments_map(flat_intensities);
 
     let mut predicted_kinds: Vec<Kind> = Vec::new();
     let mut predicted_fragment_ordinals = Vec::new();

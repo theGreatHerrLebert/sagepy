@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use pyo3::prelude::*;
+use std::collections::{BTreeMap, HashMap};
 use sage_core::ion_series::Kind;
 use sage_core::scoring::Fragments;
-use crate::py_scoring::PyFragments;
+use crate::py_scoring::{PyFeature, PyFragments, PyPeptideSpectrumMatch, PyScorer};
 
 /// Calculates the cosine similarity between two vectors.
 ///
@@ -60,12 +61,13 @@ pub fn reshape_prosit_array(flat_array: Vec<f32>) -> Vec<Vec<Vec<f32>>> {
     array_return
 }
 
-pub fn flat_prosit_array_to_py_fragments(flat_intensities: Vec<f32>) -> HashMap<(u32, i32, i32), f32> {
+#[pyfunction]
+pub fn flat_prosit_array_to_fragments_map(flat_intensities: Vec<f32>) -> BTreeMap<(u32, i32, i32), f32> {
     // Reshape the flat prosit array into a 3D array of shape (29, 2, 3)
     let reshaped_intensities = reshape_prosit_array(flat_intensities);
 
     // create hashmap of (kind, ordinal, charge) -> intensity
-    let mut fragments: HashMap<(u32, i32, i32), f32> = HashMap::new();
+    let mut fragments: BTreeMap<(u32, i32, i32), f32> = BTreeMap::new();
     for z in 1..=3 {
         let intensity_b: Vec<f32> = reshaped_intensities[..].iter().map(|x| x[1][z as usize - 1]).collect();
         for i in 1..=29 {
@@ -87,8 +89,33 @@ pub fn flat_prosit_array_to_py_fragments(flat_intensities: Vec<f32>) -> HashMap<
     fragments
 }
 
+#[pyfunction]
+pub fn py_fragments_to_fragments_map(fragments: &PyFragments, normalize: bool) -> BTreeMap<(u32, i32, i32), f32> {
+    let mut fragments_map: BTreeMap<(u32, i32, i32), f32> = BTreeMap::new();
+
+    let max_intensity = fragments.inner.intensities.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+
+    for i in 0..fragments.inner.mz_calculated.len() {
+        let kind = match fragments.inner.kinds[i] {
+            Kind::B => 0,
+            Kind::Y => 1,
+            _ => panic!("Invalid ion kind"),
+        };
+
+        let intensity = if normalize {
+            fragments.inner.intensities[i] / max_intensity
+        } else {
+            fragments.inner.intensities[i]
+        };
+
+        fragments_map.insert((kind, fragments.inner.fragment_ordinals[i],
+                              fragments.inner.charges[i]), intensity);
+    }
+    fragments_map
+}
+
 pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
-                           mz_calculated: Vec<f32>, mz_experimental: Vec<f32>) -> PyFragments {
+                            mz_calculated: Vec<f32>, mz_experimental: Vec<f32>) -> PyFragments {
 
     let mut kinds: Vec<Kind> = Vec::new();
     let mut ordinals: Vec<i32> = Vec::new();
@@ -122,26 +149,9 @@ pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
     }
 }
 
-pub fn py_fragments_to_map(fragments: &PyFragments, normalize: bool) -> HashMap<(u32, i32, i32), f32> {
-    let mut fragments_map: HashMap<(u32, i32, i32), f32> = HashMap::new();
-
-    let max_intensity = fragments.inner.intensities.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-
-    for i in 0..fragments.inner.mz_calculated.len() {
-        let kind = match fragments.inner.kinds[i] {
-            Kind::B => 0,
-            Kind::Y => 1,
-            _ => panic!("Invalid ion kind"),
-        };
-
-        let intensity = if normalize {
-            fragments.inner.intensities[i] / max_intensity
-        } else {
-            fragments.inner.intensities[i]
-        };
-
-        fragments_map.insert((kind, fragments.inner.fragment_ordinals[i],
-                              fragments.inner.charges[i]), intensity);
-    }
-    fragments_map
+#[pymodule]
+pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(flat_prosit_array_to_fragments_map, m)?)?;
+    m.add_function(wrap_pyfunction!(py_fragments_to_fragments_map, m)?)?;
+    Ok(())
 }
