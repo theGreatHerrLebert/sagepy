@@ -278,6 +278,7 @@ impl PySpectrumProcessor {
         take_top_n: usize,
         max_fragment_mz: f32,
         min_fragment_mz: f32,
+        min_deisotope_mz: f32,
         deisotope: bool,
     ) -> Self {
         PySpectrumProcessor {
@@ -285,6 +286,7 @@ impl PySpectrumProcessor {
                 take_top_n,
                 max_fragment_mz,
                 min_fragment_mz,
+                min_deisotope_mz,
                 deisotope,
             },
         }

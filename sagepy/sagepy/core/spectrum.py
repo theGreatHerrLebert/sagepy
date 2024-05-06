@@ -351,6 +351,7 @@ class SpectrumProcessor:
             self, take_top_n: int = 150,
             min_fragment_mz: float = 150,
             max_fragment_mz: float = 2000,
+            min_deisotope_mz: float = 0.0,
             deisotope: bool = False,
     ):
         """SpectrumProcessor class
@@ -359,9 +360,11 @@ class SpectrumProcessor:
             take_top_n (int, optional): The number of peaks to take. Defaults to 150.
             min_fragment_mz (float, optional): The minimum fragment mz. Defaults to 150.
             max_fragment_mz (float, optional): The maximum fragment mz. Defaults to 2000.
+            min_deisotope_mz (float, optional): The minimum deisotope mz. Defaults to 0.0.
             deisotope (bool, optional): Whether to deisotope the spectrum. Defaults to False.
         """
-        self.__spectrum_processor_ptr = psc.PySpectrumProcessor(take_top_n, max_fragment_mz, min_fragment_mz, deisotope)
+        self.__spectrum_processor_ptr = psc.PySpectrumProcessor(
+            take_top_n, max_fragment_mz, min_fragment_mz, min_deisotope_mz, deisotope)
 
     @classmethod
     def from_py_spectrum_processor(cls, spectrum_processor: psc.PySpectrumProcessor):

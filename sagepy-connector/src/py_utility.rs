@@ -2,7 +2,7 @@ use pyo3::prelude::*;
 use std::collections::{BTreeMap, HashMap};
 use sage_core::ion_series::Kind;
 use sage_core::scoring::Fragments;
-use crate::py_scoring::{PyFeature, PyFragments, PyPeptideSpectrumMatch, PyScorer};
+use crate::py_scoring::{PyFragments};
 
 /// Calculates the cosine similarity between two vectors.
 ///
@@ -77,8 +77,7 @@ pub fn flat_prosit_array_to_fragments_map(flat_intensities: Vec<f32>) -> BTreeMa
                 }
         }
 
-        let mut intensity_y: Vec<f32> = reshaped_intensities[..].iter().map(|x| x[0][z as usize - 1]).collect();
-        // intensity_y.reverse();
+        let intensity_y: Vec<f32> = reshaped_intensities[..].iter().map(|x| x[0][z as usize - 1]).collect();
         for i in 1..=29 {
             let intensity = intensity_y[i as usize - 1];
             if intensity >= 0.0 {

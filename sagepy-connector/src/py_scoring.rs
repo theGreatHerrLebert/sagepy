@@ -941,7 +941,7 @@ pub fn associate_psm_with_prosit_predicted_intensities(
 
     for (key, _) in observed_map.iter() {
 
-        let (kind, fragment_ordinal, charge) = key;
+        let (kind, charge, fragment_ordinal) = key;
 
         let predicted_intensity = predicted_map.get(key).unwrap_or(&0.0);
         let kind = match kind {
