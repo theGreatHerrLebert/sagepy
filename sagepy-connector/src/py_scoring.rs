@@ -934,34 +934,56 @@ pub fn associate_psm_with_prosit_predicted_intensities(
     let observed_map = py_fragments_to_fragments_map(fragments_observed, true);
     let predicted_map = flat_prosit_array_to_fragments_map(flat_intensities);
 
-    let mut predicted_kinds: Vec<Kind> = Vec::new();
-    let mut predicted_fragment_ordinals = Vec::new();
-    let mut predicted_charges = Vec::new();
-    let mut predicted_intensities = Vec::new();
+    let mut predicted_kinds_b: Vec<Kind> = Vec::new();
+    let mut predicted_kinds_y: Vec<Kind> = Vec::new();
+
+    let mut predicted_fragment_ordinals_b = Vec::new();
+    let mut predicted_fragment_ordinals_y = Vec::new();
+
+    let mut predicted_charges_b = Vec::new();
+    let mut predicted_charges_y = Vec::new();
+
+    let mut predicted_intensities_b = Vec::new();
+    let mut predicted_intensities_y = Vec::new();
 
     for (key, _) in observed_map.iter() {
 
         let (kind, charge, fragment_ordinal) = key;
 
         let predicted_intensity = predicted_map.get(key).unwrap_or(&0.0);
+
         let kind = match kind {
             0 => Kind::B,
             1 => Kind::Y,
             _ => panic!("Invalid kind"),
         };
 
-        predicted_kinds.push(kind);
-        predicted_fragment_ordinals.push(*fragment_ordinal);
-        predicted_charges.push(*charge);
-        predicted_intensities.push(*predicted_intensity);
+        if kind == Kind::B {
+            predicted_kinds_b.push(kind);
+            predicted_charges_b.push(*charge);
+            predicted_fragment_ordinals_b.push(*fragment_ordinal);
+            predicted_intensities_b.push(*predicted_intensity);
+        } else {
+            predicted_kinds_y.push(kind);
+            predicted_charges_y.push(*charge);
+            predicted_fragment_ordinals_y.push(*fragment_ordinal);
+            predicted_intensities_y.push(*predicted_intensity);
+        }
     }
+
+    // invert the order of y fragments
+    predicted_kinds_y.reverse();
+    predicted_charges_y.reverse();
+    predicted_fragment_ordinals_y.reverse();
+    predicted_intensities_y.reverse();
 
     let fragments_predicted = PyFragments {
         inner: Fragments {
-            charges: predicted_charges,
-            kinds: predicted_kinds,
-            fragment_ordinals: predicted_fragment_ordinals,
-            intensities: predicted_intensities,
+            // concat the two lists
+            charges: predicted_charges_b.iter().chain(predicted_charges_y.iter()).cloned().collect(),
+            kinds: predicted_kinds_b.iter().chain(predicted_kinds_y.iter()).cloned().collect(),
+            fragment_ordinals: predicted_fragment_ordinals_b.iter().chain(predicted_fragment_ordinals_y.iter()).cloned().collect(),
+            intensities: predicted_intensities_b.iter().chain(predicted_intensities_y.iter()).cloned().collect(),
             mz_calculated: fragments_observed.inner.mz_calculated.clone(),
             mz_experimental: fragments_observed.inner.mz_experimental.clone(),
         }
