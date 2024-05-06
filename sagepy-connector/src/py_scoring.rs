@@ -931,7 +931,7 @@ pub fn associate_psm_with_prosit_predicted_intensities(
 ) -> PyPeptideSpectrumMatch {
 
     let fragments_observed = &psm.fragments_observed.unwrap();
-    let observed_map = py_fragments_to_map(fragments_observed);
+    let observed_map = py_fragments_to_map(fragments_observed, true);
     let predicted_map = flat_prosit_array_to_py_fragments(flat_intensities);
 
     let mut predicted_kinds: Vec<Kind> = Vec::new();
@@ -943,7 +943,7 @@ pub fn associate_psm_with_prosit_predicted_intensities(
 
         let (kind, fragment_ordinal, charge) = key;
 
-        let predicted_intensity = predicted_map.get(key).unwrap();
+        let predicted_intensity = predicted_map.get(key).unwrap_or(&0.0);
         let kind = match kind {
             0 => Kind::B,
             1 => Kind::Y,

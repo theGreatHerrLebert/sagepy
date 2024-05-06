@@ -122,16 +122,26 @@ pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
     }
 }
 
-pub fn py_fragments_to_map(fragments: &PyFragments) -> HashMap<(u32, i32, i32), f32> {
+pub fn py_fragments_to_map(fragments: &PyFragments, normalize: bool) -> HashMap<(u32, i32, i32), f32> {
     let mut fragments_map: HashMap<(u32, i32, i32), f32> = HashMap::new();
+
+    let max_intensity = fragments.inner.intensities.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+
     for i in 0..fragments.inner.mz_calculated.len() {
         let kind = match fragments.inner.kinds[i] {
             Kind::B => 0,
             Kind::Y => 1,
             _ => panic!("Invalid ion kind"),
         };
+
+        let intensity = if normalize {
+            fragments.inner.intensities[i] / max_intensity
+        } else {
+            fragments.inner.intensities[i]
+        };
+
         fragments_map.insert((kind, fragments.inner.fragment_ordinals[i],
-                              fragments.inner.charges[i]), fragments.inner.intensities[i]);
+                              fragments.inner.charges[i]), intensity);
     }
     fragments_map
 }
