@@ -25,7 +25,7 @@ pub fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>) -> Option<f32> {
     let magnitude_vec2: f32 = vec2.iter().map(|x| x.powi(2)).sum::<f32>().sqrt();
 
     if magnitude_vec1 == 0.0 || magnitude_vec2 == 0.0 {
-        return None;
+        return Some(0.0);
     }
 
     Some(dot_product / (magnitude_vec1 * magnitude_vec2))
