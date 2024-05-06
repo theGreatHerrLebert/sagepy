@@ -924,6 +924,7 @@ impl PyPeptideSpectrumMatch {
     }
 }
 
+#[pyfunction]
 pub fn associate_psm_with_prosit_predicted_intensities(
     psm: PyPeptideSpectrumMatch,
     flat_intensities: Vec<f32>,
@@ -942,7 +943,7 @@ pub fn associate_psm_with_prosit_predicted_intensities(
 
         let (kind, fragment_ordinal, charge) = key;
 
-        let predicted_intensity = predicted_map.get(key).unwrap_or(&0.0);
+        let predicted_intensity = predicted_map.get(key).unwrap();
         let kind = match kind {
             0 => Kind::B,
             1 => Kind::Y,
@@ -1002,6 +1003,7 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyFeature>()?;
     m.add_class::<PyScorer>()?;
     m.add_class::<PyPeptideSpectrumMatch>()?;
+    m.add_function(wrap_pyfunction!(associate_psm_with_prosit_predicted_intensities, m)?)?;
     m.add_function(wrap_pyfunction!(associate_fragment_ions_with_prosit_predicted_intensities_par, m)?)?;
     Ok(())
 }
