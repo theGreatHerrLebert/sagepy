@@ -123,6 +123,11 @@ impl PyProcessedSpectrum {
     }
 
     #[getter]
+    pub fn collision_energies(&self) -> Vec<Option<f32>> {
+        self.collision_energies.clone()
+    }
+
+    #[getter]
     pub fn total_ion_current(&self) -> f32 {
         self.inner.total_ion_current
     }

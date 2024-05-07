@@ -245,6 +245,10 @@ class ProcessedSpectrum:
     def total_ion_current(self):
         return self.__processed_spectrum_ptr.total_ion_current
 
+    @property
+    def collision_energies(self):
+        return self.__processed_spectrum_ptr.collision_energies
+
     def get_py_ptr(self):
         return self.__processed_spectrum_ptr
 
@@ -256,6 +260,7 @@ class ProcessedSpectrum:
                 f"ion_injection_time: {np.round(self.ion_injection_time, 2)}, "
                 f"num_precursors: {len(self.precursors)}, "
                 f"num_peaks: {len(self.peaks)}, "
+                f"collision_energies: {self.collision_energies},"
                 f"total_ion_current: {self.total_ion_current})")
 
 
