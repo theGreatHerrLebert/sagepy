@@ -29,12 +29,13 @@ class PeptideSpectrumMatch:
                  intensity_ms2: Union[None, float],
                  q_value: Union[None, float],
                  collision_energy: Union[None, float],
+                 collision_energy_calibrated: Union[None, float],
                  fragments: Union[None, 'Fragments'] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed, sequence, charge,
             retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
-            intensity_ms1, intensity_ms2, q_value, collision_energy, fragments.get_py_ptr()
+            intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr()
         )
 
     @property
@@ -128,6 +129,14 @@ class PeptideSpectrumMatch:
     @collision_energy.setter
     def collision_energy(self, value):
         self.__py_ptr.collision_energy = value
+
+    @property
+    def collision_energy_calibrated(self):
+        return self.__py_ptr.collision_energy_calibrated
+
+    @collision_energy_calibrated.setter
+    def collision_energy_calibrated(self, value):
+        self.__py_ptr.collision_energy_calibrated = value
 
     @property
     def cosine_similarity(self):

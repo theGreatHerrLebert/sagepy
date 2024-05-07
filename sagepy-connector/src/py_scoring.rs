@@ -565,6 +565,7 @@ impl PyScorer {
                             Some(intensity_ms2),
                             None,
                             Some(collision_energy as f64),
+                            None,
                         );
                         psms.push((psm, fragments));
                     }
@@ -750,6 +751,7 @@ impl PyPeptideSpectrumMatch {
         intensity_ms2: Option<f32>,
         q_value: Option<f64>,
         collision_energy: Option<f64>,
+        collision_energy_calibrated: Option<f64>,
         fragments_observed: Option<PyFragments>,
         fragments_predicted: Option<PyFragments>,
     ) -> Self {
@@ -773,6 +775,7 @@ impl PyPeptideSpectrumMatch {
                 intensity_ms2,
                 q_value,
                 collision_energy,
+                collision_energy_calibrated,
             ),
             fragments_observed,
             fragments_predicted,
@@ -914,6 +917,16 @@ impl PyPeptideSpectrumMatch {
     #[setter]
     pub fn set_collision_energy(&mut self, collision_energy: f64) {
         self.inner.collision_energy = Some(collision_energy);
+    }
+
+    #[getter]
+    pub fn collision_energy_calibrated(&self) -> Option<f64> {
+        self.inner.collision_energy_calibrated
+    }
+
+    #[setter]
+    pub fn set_collision_energy_calibrated(&mut self, collision_energy_calibrated: f64) {
+        self.inner.collision_energy_calibrated = Some(collision_energy_calibrated);
     }
 
     #[getter]
