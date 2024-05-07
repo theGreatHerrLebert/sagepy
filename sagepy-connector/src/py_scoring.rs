@@ -911,6 +911,11 @@ impl PyPeptideSpectrumMatch {
         self.inner.collision_energy
     }
 
+    #[setter]
+    pub fn set_collision_energy(&mut self, collision_energy: f64) {
+        self.inner.collision_energy = Some(collision_energy);
+    }
+
     #[getter]
     pub fn cosine_similarity(&self) -> Option<f32> {
         match (&self.fragments_observed, &self.fragments_predicted) {

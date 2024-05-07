@@ -125,6 +125,10 @@ class PeptideSpectrumMatch:
     def collision_energy(self):
         return self.__py_ptr.collision_energy
 
+    @collision_energy.setter
+    def collision_energy(self, value):
+        self.__py_ptr.collision_energy = value
+
     @property
     def cosine_similarity(self):
         return self.__py_ptr.cosine_similarity
