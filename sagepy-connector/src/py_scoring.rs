@@ -566,6 +566,7 @@ impl PyScorer {
                             None,
                             Some(collision_energy as f64),
                             None,
+                            None,
                         );
                         psms.push((psm, fragments));
                     }
@@ -754,6 +755,7 @@ impl PyPeptideSpectrumMatch {
         collision_energy_calibrated: Option<f64>,
         fragments_observed: Option<PyFragments>,
         fragments_predicted: Option<PyFragments>,
+        re_score: Option<f64>,
     ) -> Self {
 
         PyPeptideSpectrumMatch {
@@ -776,6 +778,7 @@ impl PyPeptideSpectrumMatch {
                 q_value,
                 collision_energy,
                 collision_energy_calibrated,
+                re_score,
             ),
             fragments_observed,
             fragments_predicted,
@@ -807,14 +810,24 @@ impl PyPeptideSpectrumMatch {
         self.inner.hyper_score
     }
 
-    #[getter]
-    pub fn rank(&self) -> u32 {
-        self.inner.rank
-    }
-
     #[setter]
     pub fn set_hyper_score(&mut self, hyper_score: f64) {
         self.inner.hyper_score = hyper_score;
+    }
+
+    #[getter]
+    pub fn re_score(&self) -> Option<f64> {
+        self.inner.re_score
+    }
+
+    #[setter]
+    pub fn set_re_score(&mut self, re_score: f64) {
+        self.inner.re_score = Some(re_score);
+    }
+
+    #[getter]
+    pub fn rank(&self) -> u32 {
+        self.inner.rank
     }
 
     #[getter]
