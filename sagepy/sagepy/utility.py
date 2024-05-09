@@ -5,8 +5,6 @@ from numpy.typing import NDArray
 
 import sagepy_connector
 
-from sagepy.core.scoring import PeptideSpectrumMatch
-
 psc = sagepy_connector.py_utility
 
 
@@ -61,7 +59,7 @@ def py_fragments_to_fragments_map(fragments, normalize: bool = True) -> Dict[Tup
     return psc.py_fragments_to_fragments_map(fragments.get_py_ptr(), normalize)
 
 
-def psms_to_json(psms: List[PeptideSpectrumMatch], num_threads: int = 4) -> List[str]:
+def psms_to_json(psms, num_threads: int = 4) -> List[str]:
     """ Convert a list of PeptideSpectrumMatch objects to a JSON string.
 
     Args:
