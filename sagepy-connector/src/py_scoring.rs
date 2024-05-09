@@ -1052,7 +1052,7 @@ impl PyPeptideSpectrumMatch {
     }
 
     pub fn to_json(&self) -> String {
-        serde_json::to_string(&self.inner).unwrap()
+        serde_json::to_string(&self).unwrap()
     }
 }
 
