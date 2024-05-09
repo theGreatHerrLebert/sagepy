@@ -1,6 +1,7 @@
 from typing import Dict, Tuple, List
 
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray
 
 import sagepy_connector
@@ -70,3 +71,83 @@ def psms_to_json(psms, num_threads: int = 4) -> List[str]:
         a JSON string
     """
     return psc.psms_to_json(psms, num_threads)
+
+
+def peptide_spectrum_match_list_to_pandas(psms, re_score: bool = False) -> pd.DataFrame:
+    """Convert a list of peptide spectrum matches to a pandas dataframe
+
+    Args:
+        psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+
+    Returns:
+        pd.DataFrame: The pandas dataframe
+    """
+    row_list = []
+    for match in psms:
+        if match.retention_time_predicted is not None:
+            delta_rt = match.retention_time_predicted - match.retention_time_observed
+        else:
+            delta_rt = None
+
+        if re_score:
+            score = match.re_score
+        else:
+            score = match.hyper_score
+
+        row_list.append({
+            "spec_idx": match.spec_idx,
+            "match_idx": match.peptide_idx,
+            "proteins": match.proteins,
+            "decoy": match.decoy,
+            "score": score,
+            "re_score": match.re_score,
+            "hyper_score": match.hyper_score,
+            "rank": match.rank,
+            "mono_mz_calculated": match.mono_mz_calculated,
+            "mono_mass_observed": match.mono_mass_observed,
+            "mono_mass_calculated": match.mono_mass_calculated,
+            "delta_mass": match.mono_mass_calculated - match.mono_mass_observed,
+            "isotope_error": match.isotope_error,
+            "average_ppm": match.average_ppm,
+            "delta_next": match.delta_next,
+            "delta_best": match.delta_best,
+            "matched_peaks": match.matched_peaks,
+            "longest_b": match.longest_b,
+            "longest_y": match.longest_y,
+            "longest_y_pct": match.longest_y_pct,
+            "missed_cleavages": match.missed_cleavages,
+            "matched_intensity_pct": match.matched_intensity_pct,
+            "scored_candidates": match.scored_candidates,
+            "poisson": match.poisson,
+            "sequence": match.sequence,
+            "charge": match.charge,
+            "retention_time_observed": match.retention_time_observed,
+            "retention_time_predicted": match.retention_time_predicted,
+            "delta_rt": delta_rt,
+            "inverse_mobility_observed": match.inverse_mobility_observed,
+            "inverse_mobility_predicted": match.inverse_mobility_predicted,
+            "delta_ims": match.inverse_mobility_predicted - match.inverse_mobility_observed,
+            "intensity_ms1": match.intensity_ms1,
+            "intensity_ms2": match.intensity_ms2,
+            "q_value": match.q_value,
+            "collision_energy": match.collision_energy,
+            "cosine_similarity": match.cosine_similarity,
+        })
+
+    return pd.DataFrame(row_list)
+
+
+def get_features(ds: pd.DataFrame) -> (NDArray, NDArray):
+    features = [
+        "score", "delta_rt", "delta_ims", "cosine_similarity", "delta_mass",
+        "rank", "isotope_error", "average_ppm", "delta_next", "delta_best",
+        "matched_peaks", "longest_b", "longest_y", "longest_y_pct", "missed_cleavages",
+        "matched_intensity_pct", "scored_candidates", "poisson", "charge",
+        "intensity_ms1", "intensity_ms2", "collision_energy"
+    ]
+
+    X = ds[features].to_numpy().astype(np.float32)
+    Y = ds["decoy"].to_numpy()
+    Y = np.array([0 if x else 1 for x in Y]).astype(np.float32)
+
+    return X, Y
