@@ -10,7 +10,7 @@ use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::py_ion_series::PyKind;
 use crate::py_utility::{cosine_similarity, flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
 
@@ -1052,7 +1052,17 @@ impl PyPeptideSpectrumMatch {
     }
 
     pub fn to_json(&self) -> String {
-        serde_json::to_string(&self).unwrap()
+        serde_json::to_string(&self.inner).unwrap()
+    }
+}
+
+#[pyfunction]
+pub fn psm_from_json(json: &str) -> PyPeptideSpectrumMatch {
+    let psm: PeptideSpectrumMatch = serde_json::from_str(json).unwrap();
+    PyPeptideSpectrumMatch {
+        inner: psm,
+        fragments_observed: None,
+        fragments_predicted: None,
     }
 }
 
@@ -1159,5 +1169,6 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPeptideSpectrumMatch>()?;
     m.add_function(wrap_pyfunction!(associate_psm_with_prosit_predicted_intensities, m)?)?;
     m.add_function(wrap_pyfunction!(associate_fragment_ions_with_prosit_predicted_intensities_par, m)?)?;
+    m.add_function(wrap_pyfunction!(psm_from_json, m)?)?;
     Ok(())
 }

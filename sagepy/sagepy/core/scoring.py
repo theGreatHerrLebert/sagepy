@@ -231,6 +231,11 @@ class PeptideSpectrumMatch:
         instance.__py_ptr = py_ptr
         return instance
 
+    @staticmethod
+    def from_json(json_str: str) -> 'PeptideSpectrumMatch':
+        psm = psc.psm_from_json(json_str)
+        return PeptideSpectrumMatch.from_py_ptr(psm)
+
     def get_py_ptr(self) -> psc.PyPeptideSpectrumMatch:
         return self.__py_ptr
 
