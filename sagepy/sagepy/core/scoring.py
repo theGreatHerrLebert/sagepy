@@ -273,8 +273,6 @@ class PeptideSpectrumMatch:
                f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
                f"q_value: {self.q_value}, collision_energy: {self.collision_energy}, "
                f"collision_energy_calibrated: {self.collision_energy_calibrated}, "
-               f"fragments_observed: {self.fragments_observed if self.fragments_predicted is not None else None}, "
-               f"fragments_predicted: {self.fragments_predicted if self.fragments_observed is not None else None}, "
                f"re_score: {self.re_score})")
 
 
@@ -850,7 +848,7 @@ def associate_fragment_ions_with_prosit_predicted_intensities_pandas(
     return pd.DataFrame(row_list)
 
 
-def peptide_spectrum_match_list_to_pandas(psms: List[PeptideSpectrumMatch]) -> pd.DataFrame:
+def peptide_spectrum_match_list_to_pandas(psms: List[PeptideSpectrumMatch], re_score: bool = False) -> pd.DataFrame:
     """Convert a list of peptide spectrum matches to a pandas dataframe
 
     Args:
@@ -861,22 +859,44 @@ def peptide_spectrum_match_list_to_pandas(psms: List[PeptideSpectrumMatch]) -> p
     """
     row_list = []
     for match in psms:
+        if match.retention_time_predicted is not None:
+            delta_rt = match.retention_time_predicted - match.retention_time_observed
+        else:
+            delta_rt = None
+
+        if re_score:
+            score = match.re_score
+        else:
+            score = match.hyper_score
+
         row_list.append({
             "spec_idx": match.spec_idx,
             "match_idx": match.peptide_idx,
             "proteins": match.proteins,
             "decoy": match.decoy,
-            "score": match.hyper_score,
+            "score": score,
             "rank": match.rank,
             "mono_mz_calculated": match.mono_mz_calculated,
             "mono_mass_observed": match.mono_mass_observed,
             "mono_mass_calculated": match.mono_mass_calculated,
             "delta_mass": match.mono_mass_calculated - match.mono_mass_observed,
+            "isotope_error": match.isotope_error,
+            "average_ppm": match.average_ppm,
+            "delta_next": match.delta_next,
+            "delta_best": match.delta_best,
+            "matched_peaks": match.matched_peaks,
+            "longest_b": match.longest_b,
+            "longest_y": match.longest_y,
+            "longest_y_pct": match.longest_y_pct,
+            "missed_cleavages": match.missed_cleavages,
+            "matched_intensity_pct": match.matched_intensity_pct,
+            "scored_candidates": match.scored_candidates,
+            "poisson": match.poisson,
             "sequence": match.sequence,
             "charge": match.charge,
             "retention_time_observed": match.retention_time_observed,
             "retention_time_predicted": match.retention_time_predicted,
-            "delta_rt": match.retention_time_predicted - match.retention_time_observed,
+            "delta_rt": delta_rt,
             "inverse_mobility_observed": match.inverse_mobility_observed,
             "inverse_mobility_predicted": match.inverse_mobility_predicted,
             "delta_ims": match.inverse_mobility_predicted - match.inverse_mobility_observed,
@@ -886,4 +906,5 @@ def peptide_spectrum_match_list_to_pandas(psms: List[PeptideSpectrumMatch]) -> p
             "collision_energy": match.collision_energy,
             "cosine_similarity": match.cosine_similarity,
         })
+
     return pd.DataFrame(row_list)
