@@ -580,7 +580,8 @@ impl PyScorer {
                             Some(collision_energy as f64),
                             None,
                             None,
-                            None
+                            None,
+                            None,
                         );
                         psms.push((psm, fragments));
                     }
@@ -783,6 +784,7 @@ impl PyPeptideSpectrumMatch {
         fragments_predicted: Option<PyFragments>,
         re_score: Option<f64>,
         cosine_similarity: Option<f32>,
+        file_name: Option<String>,
     ) -> Self {
 
         PyPeptideSpectrumMatch {
@@ -819,6 +821,7 @@ impl PyPeptideSpectrumMatch {
                 collision_energy_calibrated,
                 re_score,
                 cosine_similarity,
+                file_name,
             ),
             fragments_observed,
             fragments_predicted,
@@ -1050,6 +1053,16 @@ impl PyPeptideSpectrumMatch {
     #[setter]
     pub fn set_cosine_similarity(&mut self, cosine_similarity: Option<f32>) {
         self.inner.cosine_similarity = cosine_similarity;
+    }
+
+    #[getter]
+    pub fn file_name(&self) -> Option<String> {
+        self.inner.file_name.clone()
+    }
+
+    #[setter]
+    pub fn set_file_name(&mut self, file_name: String) {
+        self.inner.file_name = Some(file_name);
     }
 
     pub fn to_json(&self) -> String {

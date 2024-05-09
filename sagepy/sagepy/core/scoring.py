@@ -45,6 +45,8 @@ class PeptideSpectrumMatch:
                  collision_energy_calibrated: Union[None, float],
                  fragments: Union[None, 'Fragments'] = None,
                  re_score: Union[None, float] = None,
+                 cosine_similarity: Union[None, float] = None,
+                 file_name: Union[None, str] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed,
@@ -53,7 +55,7 @@ class PeptideSpectrumMatch:
             sequence, charge,
             retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
             intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr(),
-            re_score,
+            re_score, cosine_similarity, file_name,
         )
 
     @property
@@ -215,6 +217,14 @@ class PeptideSpectrumMatch:
     @property
     def cosine_similarity(self):
         return self.__py_ptr.cosine_similarity
+
+    @property
+    def file_name(self):
+        return self.__py_ptr.file_name
+
+    @file_name.setter
+    def file_name(self, value):
+        self.__py_ptr.file_name = value
 
     @property
     def fragments_observed(self) -> Union[None, 'Fragments']:
