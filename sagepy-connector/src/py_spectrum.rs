@@ -243,21 +243,23 @@ impl PyRawSpectrum {
         self.inner.intensity.clone().into_pyarray(py).to_owned()
     }
 
-    pub fn filter_top_n(&self, n: usize) -> PyProcessedSpectrum {
+    pub fn filter_top_n(&self, n: usize) -> PyRawSpectrum {
         let mut mz_intensity = self.inner.mz.iter().zip(self.inner.intensity.iter()).map(|(m, i)| Peak { mass: *m, intensity: *i }).collect::<Vec<_>>();
         mz_intensity.sort_by(|a, b| b.intensity.partial_cmp(&a.intensity).unwrap());
         let mut peaks = mz_intensity.into_iter().take(n).collect::<Vec<_>>();
         peaks.sort_by(|a, b| a.mass.partial_cmp(&b.mass).unwrap());
-        PyProcessedSpectrum {
-            inner: ProcessedSpectrum {
-                level: self.inner.ms_level,
-                id: self.inner.id.clone(),
+        PyRawSpectrum {
+            inner: RawSpectrum {
                 file_id: self.inner.file_id,
+                ms_level: self.inner.ms_level,
+                id: self.inner.id.clone(),
+                precursors: self.inner.precursors.clone(),
+                representation: self.inner.representation,
                 scan_start_time: self.inner.scan_start_time,
                 ion_injection_time: self.inner.ion_injection_time,
-                precursors: self.inner.precursors.clone(),
-                peaks,
                 total_ion_current: self.inner.total_ion_current,
+                mz: peaks.iter().map(|p| p.mass).collect(),
+                intensity: peaks.iter().map(|p| p.intensity).collect(),
             },
             collision_energies: self.collision_energies.clone(),
         }
