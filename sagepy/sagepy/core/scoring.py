@@ -9,20 +9,6 @@ from .ion_series import IonType
 from .mass import Tolerance
 from .database import PeptideIx, IndexedDatabase
 
-"""
-isotope_error: Option<f32>,
-        average_ppm: Option<f32>,
-        delta_next: Option<f64>,
-        delta_best: Option<f64>,
-        matched_peaks: Option<u32>,
-        longest_b: Option<u32>,
-        longest_y: Option<u32>,
-        longest_y_pct: Option<f32>,
-        missed_cleavages: Option<u8>,
-        matched_intensity_pct: Option<f32>,
-        scored_candidates: Option<u32>,
-        poisson: Option<f64>,
-"""
 
 class PeptideSpectrumMatch:
     def __init__(self,
@@ -235,6 +221,8 @@ class PeptideSpectrumMatch:
 
     @property
     def fragments_predicted(self) -> Union[None, 'Fragments']:
+        if self.__py_ptr.fragments_predicted is None:
+            return None
         return Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
 
     @classmethod
@@ -273,6 +261,8 @@ class PeptideSpectrumMatch:
                f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
                f"q_value: {self.q_value}, collision_energy: {self.collision_energy}, "
                f"collision_energy_calibrated: {self.collision_energy_calibrated}, "
+               f"fragments_observed: {self.fragments_observed if self.fragments_predicted is not None else None}, "
+               f"fragments_predicted: {self.fragments_predicted if self.fragments_observed is not None else None}, "
                f"re_score: {self.re_score})")
 
 
