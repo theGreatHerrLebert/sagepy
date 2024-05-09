@@ -5,6 +5,7 @@ import sagepy_connector
 from .spectrum import ProcessedSpectrum
 
 psc = sagepy_connector.py_scoring
+psc_utils = sagepy_connector.py_utility
 from .ion_series import IonType
 from .mass import Tolerance
 from .database import PeptideIx, IndexedDatabase
@@ -917,7 +918,7 @@ def json_bin_to_psms(json_bin: bytes) -> List[PeptideSpectrumMatch]:
     Returns:
         a list of PeptideSpectrumMatch objects
     """
-    return [PeptideSpectrumMatch.from_json(json_str) for json_str in psc.json_bin_to_psms(json_bin)]
+    return [PeptideSpectrumMatch.from_json(json_str) for json_str in psc_utils.json_bin_to_psms(json_bin)]
 
 
 def psms_to_json(psms, num_threads: int = 4) -> List[str]:
