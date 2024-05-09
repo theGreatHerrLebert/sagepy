@@ -10,11 +10,12 @@ use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
+use serde::Serialize;
 use crate::py_ion_series::PyKind;
 use crate::py_utility::{cosine_similarity, flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct PyFragments {
     pub inner: Fragments,
 }
@@ -736,7 +737,7 @@ impl PyScorer {
 }
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct PyPeptideSpectrumMatch {
     pub inner: PeptideSpectrumMatch,
     pub fragments_observed: Option<PyFragments>,
@@ -1048,6 +1049,10 @@ impl PyPeptideSpectrumMatch {
             }
             _ => None,
         }
+    }
+
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(&self.inner).unwrap()
     }
 }
 
