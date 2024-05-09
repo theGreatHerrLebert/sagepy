@@ -555,6 +555,18 @@ impl PyScorer {
                             score,
                             feature.rank,
                             Some(feature.expmass),
+                            Some(feature.isotope_error),
+                            Some(feature.average_ppm),
+                            Some(feature.delta_next),
+                            Some(feature.delta_best),
+                            Some(feature.matched_peaks),
+                            Some(feature.longest_b),
+                            Some(feature.longest_y),
+                            Some(feature.longest_y_pct),
+                            Some(feature.missed_cleavages),
+                            Some(feature.matched_intensity_pct),
+                            Some(feature.scored_candidates),
+                            Some(feature.poisson),
                             Some(sage_sequence_to_unimod_sequence(sequence, &peptide.modifications)),
                             Some(charge),
                             Some(feature.rt),
@@ -742,6 +754,18 @@ impl PyPeptideSpectrumMatch {
         hyper_score: f64,
         rank: u32,
         mono_mass_observed: Option<f32>,
+        isotope_error: Option<f32>,
+        average_ppm: Option<f32>,
+        delta_next: Option<f64>,
+        delta_best: Option<f64>,
+        matched_peaks: Option<u32>,
+        longest_b: Option<u32>,
+        longest_y: Option<u32>,
+        longest_y_pct: Option<f32>,
+        missed_cleavages: Option<u8>,
+        matched_intensity_pct: Option<f32>,
+        scored_candidates: Option<u32>,
+        poisson: Option<f64>,
         sequence: Option<String>,
         charge: Option<u8>,
         retention_time_observed: Option<f32>,
@@ -767,6 +791,18 @@ impl PyPeptideSpectrumMatch {
                 hyper_score,
                 rank,
                 mono_mass_observed,
+                isotope_error,
+                average_ppm,
+                delta_next,
+                delta_best,
+                matched_peaks,
+                longest_b,
+                longest_y,
+                longest_y_pct,
+                missed_cleavages,
+                matched_intensity_pct,
+                scored_candidates,
+                poisson,
                 sequence,
                 charge,
                 retention_time_observed,
@@ -843,6 +879,66 @@ impl PyPeptideSpectrumMatch {
     #[getter]
     pub fn mono_mass_observed(&self) -> Option<f32> {
         self.inner.mono_mass_observed
+    }
+
+    #[getter]
+    pub fn isotope_error(&self) -> Option<f32> {
+        self.inner.isotope_error
+    }
+
+    #[getter]
+    pub fn average_ppm(&self) -> Option<f32> {
+        self.inner.average_ppm
+    }
+
+    #[getter]
+    pub fn delta_next(&self) -> Option<f64> {
+        self.inner.delta_next
+    }
+
+    #[getter]
+    pub fn delta_best(&self) -> Option<f64> {
+        self.inner.delta_best
+    }
+
+    #[getter]
+    pub fn matched_peaks(&self) -> Option<u32> {
+        self.inner.matched_peaks
+    }
+
+    #[getter]
+    pub fn longest_b(&self) -> Option<u32> {
+        self.inner.longest_b
+    }
+
+    #[getter]
+    pub fn longest_y(&self) -> Option<u32> {
+        self.inner.longest_y
+    }
+
+    #[getter]
+    pub fn longest_y_pct(&self) -> Option<f32> {
+        self.inner.longest_y_pct
+    }
+
+    #[getter]
+    pub fn missed_cleavages(&self) -> Option<u8> {
+        self.inner.missed_cleavages
+    }
+
+    #[getter]
+    pub fn matched_intensity_pct(&self) -> Option<f32> {
+        self.inner.matched_intensity_pct
+    }
+
+    #[getter]
+    pub fn scored_candidates(&self) -> Option<u32> {
+        self.inner.scored_candidates
+    }
+
+    #[getter]
+    pub fn poisson(&self) -> Option<f64> {
+        self.inner.poisson
     }
 
     #[getter]

@@ -9,6 +9,20 @@ from .ion_series import IonType
 from .mass import Tolerance
 from .database import PeptideIx, IndexedDatabase
 
+"""
+isotope_error: Option<f32>,
+        average_ppm: Option<f32>,
+        delta_next: Option<f64>,
+        delta_best: Option<f64>,
+        matched_peaks: Option<u32>,
+        longest_b: Option<u32>,
+        longest_y: Option<u32>,
+        longest_y_pct: Option<f32>,
+        missed_cleavages: Option<u8>,
+        matched_intensity_pct: Option<f32>,
+        scored_candidates: Option<u32>,
+        poisson: Option<f64>,
+"""
 
 class PeptideSpectrumMatch:
     def __init__(self,
@@ -19,6 +33,18 @@ class PeptideSpectrumMatch:
                  hyper_score: float,
                  rank: int,
                  mono_mass_observed: Union[None, float],
+                 isotope_error: Union[None, int],
+                 average_ppm: Union[None, float],
+                 delta_next: Union[None, float],
+                 delta_best: Union[None, float],
+                 matched_peaks: Union[None, int],
+                 longest_b: Union[None, int],
+                 longest_y: Union[None, int],
+                 longest_y_pct: Union[None, float],
+                 missed_cleavages: Union[None, int],
+                 matched_intensity_pct: Union[None, float],
+                 scored_candidates: Union[None, int],
+                 poisson: Union[None, float],
                  sequence: Union[None, str],
                  charge: Union[None, int],
                  retention_time_observed: Union[None, float],
@@ -34,7 +60,10 @@ class PeptideSpectrumMatch:
                  re_score: Union[None, float] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
-            spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed, sequence, charge,
+            spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed,
+            isotope_error, average_ppm, delta_next, delta_best, matched_peaks, longest_b, longest_y,
+            longest_y_pct, missed_cleavages, matched_intensity_pct, scored_candidates, poisson,
+            sequence, charge,
             retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
             intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr(),
             re_score,
@@ -81,16 +110,64 @@ class PeptideSpectrumMatch:
         return self.__py_ptr.charge
 
     @property
+    def mono_mass_observed(self):
+        return self.__py_ptr.mono_mass_observed
+
+    @property
+    def isotope_error(self):
+        return self.__py_ptr.isotope_error
+
+    @property
+    def average_ppm(self):
+        return self.__py_ptr.average_ppm
+
+    @property
+    def delta_next(self):
+        return self.__py_ptr.delta_next
+
+    @property
+    def delta_best(self):
+        return self.__py_ptr.delta_best
+
+    @property
+    def matched_peaks(self):
+        return self.__py_ptr.matched_peaks
+
+    @property
+    def longest_b(self):
+        return self.__py_ptr.longest_b
+
+    @property
+    def longest_y(self):
+        return self.__py_ptr.longest_y
+
+    @property
+    def longest_y_pct(self):
+        return self.__py_ptr.longest_y_pct
+
+    @property
+    def missed_cleavages(self):
+        return self.__py_ptr.missed_cleavages
+
+    @property
+    def matched_intensity_pct(self):
+        return self.__py_ptr.matched_intensity_pct
+
+    @property
+    def scored_candidates(self):
+        return self.__py_ptr.scored_candidates
+
+    @property
+    def poisson(self):
+        return self.__py_ptr.poisson
+
+    @property
     def sequence(self):
         return self.__py_ptr.peptide_sequence
 
     @property
     def mono_mz_calculated(self):
         return self.__py_ptr.mono_mz_calculated
-
-    @property
-    def mono_mass_observed(self):
-        return self.__py_ptr.mono_mass_observed
 
     @property
     def mono_mass_calculated(self):
@@ -179,11 +256,26 @@ class PeptideSpectrumMatch:
         return None, None
 
     def __repr__(self):
-        return f"PeptideSpectrumMatch({self.spec_idx}, {self.peptide_idx}, {self.proteins}, {self.decoy}, " \
-               f"{self.hyper_score}, {self.rank} {self.charge}, {self.sequence}, {self.mono_mass_observed}, " \
-               f"{self.mono_mass_calculated}, {self.retention_time_observed}, {self.retention_time_predicted}, " \
-               f"{self.inverse_mobility_observed}, {self.inverse_mobility_predicted}, {self.intensity_ms1}, " \
-               f"{self.intensity_ms2}, {self.q_value}, {self.collision_energy}, {self.cosine_similarity})"
+       return (f"PeptideSpectrumMatch(spec_idx: {self.spec_idx}, match_idx: {self.peptide_idx}, "
+               f"proteins: {self.proteins}, decoy: {self.decoy}, hyper_score: {self.hyper_score}, "
+               f"rank: {self.rank}, mono_mass_observed: {self.mono_mass_observed}, "
+               f"isotope_error: {self.isotope_error}, average_ppm: {self.average_ppm}, "
+               f"delta_next: {self.delta_next}, delta_best: {self.delta_best}, "
+               f"matched_peaks: {self.matched_peaks}, longest_b: {self.longest_b}, "
+               f"longest_y: {self.longest_y}, longest_y_pct: {self.longest_y_pct}, "
+               f"missed_cleavages: {self.missed_cleavages}, matched_intensity_pct: {self.matched_intensity_pct}, "
+               f"scored_candidates: {self.scored_candidates}, poisson: {self.poisson}, "
+               f"sequence: {self.sequence}, charge: {self.charge}, "
+               f"retention_time_observed: {self.retention_time_observed}, "
+               f"retention_time_predicted: {self.retention_time_predicted}, "
+               f"inverse_mobility_observed: {self.inverse_mobility_observed}, "
+               f"inverse_mobility_predicted: {self.inverse_mobility_predicted}, "
+               f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
+               f"q_value: {self.q_value}, collision_energy: {self.collision_energy}, "
+               f"collision_energy_calibrated: {self.collision_energy_calibrated}, "
+               f"fragments_observed: {self.fragments_observed}, "
+               f"fragments_predicted: {self.fragments_predicted}, "
+               f"re_score: {self.re_score})")
 
 
 class Fragments:
