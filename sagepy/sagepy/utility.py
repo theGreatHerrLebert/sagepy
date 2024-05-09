@@ -70,7 +70,7 @@ def psms_to_json(psms, num_threads: int = 4) -> List[str]:
     Returns:
         a JSON string
     """
-    return psc.psms_to_json(psms, num_threads)
+    return psc.psms_to_json([psm.get_py_ptr() for psm in psms], num_threads)
 
 
 def peptide_spectrum_match_list_to_pandas(psms, re_score: bool = False) -> pd.DataFrame:
