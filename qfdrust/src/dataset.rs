@@ -168,6 +168,7 @@ pub struct PeptideSpectrumMatch {
     pub collision_energy: Option<f64>,
     pub collision_energy_calibrated: Option<f64>,
     pub re_score: Option<f64>,
+    pub cosine_similarity: Option<f32>,
 }
 
 impl PeptideSpectrumMatch {
@@ -203,6 +204,7 @@ impl PeptideSpectrumMatch {
         collision_energy: Option<f64>,
         collision_energy_calibrated: Option<f64>,
         re_score: Option<f64>,
+        cosine_similarity: Option<f32>,
     ) -> PeptideSpectrumMatch {
 
         let peptide_sequence = match &sequence {
@@ -254,6 +256,7 @@ impl PeptideSpectrumMatch {
             collision_energy,
             collision_energy_calibrated,
             re_score,
+            cosine_similarity,
         }
     }
     pub fn associate_with_prosit_predicted_intensities(&self, flat_intensities: Vec<f64>) -> Option<PeptideProductIonSeriesCollection> {

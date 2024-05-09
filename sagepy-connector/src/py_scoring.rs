@@ -580,6 +580,7 @@ impl PyScorer {
                             Some(collision_energy as f64),
                             None,
                             None,
+                            None
                         );
                         psms.push((psm, fragments));
                     }
@@ -781,6 +782,7 @@ impl PyPeptideSpectrumMatch {
         fragments_observed: Option<PyFragments>,
         fragments_predicted: Option<PyFragments>,
         re_score: Option<f64>,
+        cosine_similarity: Option<f32>,
     ) -> Self {
 
         PyPeptideSpectrumMatch {
@@ -816,6 +818,7 @@ impl PyPeptideSpectrumMatch {
                 collision_energy,
                 collision_energy_calibrated,
                 re_score,
+                cosine_similarity,
             ),
             fragments_observed,
             fragments_predicted,
@@ -1041,14 +1044,12 @@ impl PyPeptideSpectrumMatch {
 
     #[getter]
     pub fn cosine_similarity(&self) -> Option<f32> {
-        match (&self.fragments_observed, &self.fragments_predicted) {
-            (Some(observed), Some(predicted)) => {
-                let observed_intensities = observed.intensities();
-                let predicted_intensities = predicted.intensities();
-                cosine_similarity(&observed_intensities, &predicted_intensities)
-            }
-            _ => None,
-        }
+        self.inner.cosine_similarity
+    }
+
+    #[setter]
+    pub fn set_cosine_similarity(&mut self, cosine_similarity: Option<f32>) {
+        self.inner.cosine_similarity = cosine_similarity;
     }
 
     pub fn to_json(&self) -> String {
@@ -1131,11 +1132,20 @@ pub fn associate_psm_with_prosit_predicted_intensities(
         }
     };
 
-    PyPeptideSpectrumMatch {
+    let observed_intensities = fragments_observed.intensities();
+    let predicted_intensities = fragments_predicted.intensities();
+    let cosim = cosine_similarity(&observed_intensities, &predicted_intensities);
+
+
+    let mut psm = PyPeptideSpectrumMatch {
         inner: psm.inner,
         fragments_observed: Some(fragments_observed.clone()),
         fragments_predicted: Some(fragments_predicted),
-    }
+    };
+
+    psm.set_cosine_similarity(cosim);
+
+    psm
 }
 
 #[pyfunction]
