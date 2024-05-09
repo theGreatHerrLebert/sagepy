@@ -249,9 +249,6 @@ class ProcessedSpectrum:
     def collision_energies(self):
         return self.__processed_spectrum_ptr.collision_energies
 
-    def filter_top_n_peaks(self, n: int) -> 'ProcessedSpectrum':
-        return ProcessedSpectrum.from_py_processed_spectrum(self.__processed_spectrum_ptr.filter_top_n_peaks(n))
-
     def get_py_ptr(self):
         return self.__processed_spectrum_ptr
 
@@ -342,6 +339,9 @@ class RawSpectrum:
 
     def get_py_ptr(self):
         return self.__raw_spectrum_ptr
+
+    def filter_top_n_peaks(self, n: int) -> 'RawSpectrum':
+        return RawSpectrum.from_py_raw_spectrum(self.__raw_spectrum_ptr.filter_top_n_peaks(n))
 
     def __repr__(self):
         return (f"RawSpectrum(ms_level: {self.ms_level}, "
