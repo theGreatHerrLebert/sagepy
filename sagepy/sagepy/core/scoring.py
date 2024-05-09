@@ -273,8 +273,8 @@ class PeptideSpectrumMatch:
                f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
                f"q_value: {self.q_value}, collision_energy: {self.collision_energy}, "
                f"collision_energy_calibrated: {self.collision_energy_calibrated}, "
-               f"fragments_observed: {self.fragments_observed}, "
-               f"fragments_predicted: {self.fragments_predicted}, "
+               f"fragments_observed: {self.fragments_observed if self.fragments_predicted is not None else None}, "
+               f"fragments_predicted: {self.fragments_predicted if self.fragments_observed is not None else None}, "
                f"re_score: {self.re_score})")
 
 
