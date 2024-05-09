@@ -73,6 +73,18 @@ def psms_to_json(psms, num_threads: int = 4) -> List[str]:
     return psc.psms_to_json([psm.get_py_ptr() for psm in psms], num_threads)
 
 
+def psms_to_json_bin(psms) -> bytes:
+    """ Convert a list of PeptideSpectrumMatch objects to a binary JSON string.
+
+    Args:
+        psms: a list of PeptideSpectrumMatch objects
+
+    Returns:
+        a binary JSON string
+    """
+    return psc.psms_to_json_bin([psm.get_py_ptr() for psm in psms])
+
+
 def peptide_spectrum_match_list_to_pandas(psms, re_score: bool = False) -> pd.DataFrame:
     """Convert a list of peptide spectrum matches to a pandas dataframe
 

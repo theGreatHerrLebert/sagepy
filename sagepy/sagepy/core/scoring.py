@@ -906,3 +906,15 @@ def peptide_spectrum_match_list_to_pandas(psms: List[PeptideSpectrumMatch], re_s
         })
 
     return pd.DataFrame(row_list)
+
+
+def json_bin_to_psms(json_bin: bytes) -> List[PeptideSpectrumMatch]:
+    """ Convert a binary JSON string to a list of PeptideSpectrumMatch objects.
+
+    Args:
+        json_bin: a binary JSON string
+
+    Returns:
+        a list of PeptideSpectrumMatch objects
+    """
+    return [PeptideSpectrumMatch.from_json(json_str) for json_str in psc.json_bin_to_psms(json_bin)]

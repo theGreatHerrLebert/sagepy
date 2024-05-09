@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use std::collections::{BTreeMap, HashMap};
+use qfdrust::dataset::PeptideSpectrumMatch;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 use sage_core::ion_series::Kind;
@@ -162,10 +163,28 @@ pub fn psms_to_json(psms: Vec<PyPeptideSpectrumMatch>, num_threads: usize) -> Ve
     })
 }
 
+#[pyfunction]
+pub fn psms_to_json_bin(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<u8> {
+    let inner_psms = psms.iter().map(|psm| psm.inner.clone()).collect::<Vec<_>>();
+    bincode::serialize(&inner_psms).unwrap()
+}
+
+#[pyfunction]
+pub fn json_bin_to_psms(json_bin: Vec<u8>) -> Vec<PyPeptideSpectrumMatch> {
+    let inner_psms: Vec<PeptideSpectrumMatch> = bincode::deserialize(&json_bin).unwrap();
+    inner_psms.iter().map(|psm| PyPeptideSpectrumMatch {
+        inner: psm.clone(),
+        fragments_observed: None,
+        fragments_predicted: None,
+    }).collect()
+}
+
 #[pymodule]
 pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(flat_prosit_array_to_fragments_map, m)?)?;
     m.add_function(wrap_pyfunction!(py_fragments_to_fragments_map, m)?)?;
     m.add_function(wrap_pyfunction!(psms_to_json, m)?)?;
+    m.add_function(wrap_pyfunction!(psms_to_json_bin, m)?)?;
+    m.add_function(wrap_pyfunction!(json_bin_to_psms, m)?)?;
     Ok(())
 }
