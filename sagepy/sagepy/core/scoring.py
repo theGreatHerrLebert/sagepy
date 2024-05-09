@@ -243,6 +243,9 @@ class PeptideSpectrumMatch:
             return Fragments.from_py_fragments(maybe_fragment), flat_intensities
         return None, None
 
+    def to_json(self) -> str:
+        return self.__py_ptr.to_json()
+
     def __repr__(self):
        return (f"PeptideSpectrumMatch(spec_idx: {self.spec_idx}, match_idx: {self.peptide_idx}, "
                f"proteins: {self.proteins}, decoy: {self.decoy}, hyper_score: {self.hyper_score}, "
