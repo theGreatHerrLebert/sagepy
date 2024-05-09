@@ -77,6 +77,7 @@ def peptide_spectrum_match_list_to_pandas(psms, re_score: bool = False) -> pd.Da
     """Convert a list of peptide spectrum matches to a pandas dataframe
 
     Args:
+        re_score:
         psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
 
     Returns:
