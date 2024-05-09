@@ -1,8 +1,10 @@
 use pyo3::prelude::*;
 use std::collections::{BTreeMap, HashMap};
+use rayon::prelude::*;
+use rayon::ThreadPoolBuilder;
 use sage_core::ion_series::Kind;
 use sage_core::scoring::Fragments;
-use crate::py_scoring::{PyFragments};
+use crate::py_scoring::{PyFragments, PyPeptideSpectrumMatch};
 
 /// Calculates the cosine similarity between two vectors.
 ///
@@ -147,6 +149,17 @@ pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
     PyFragments {
         inner: fragments,
     }
+}
+
+#[pyfunction]
+pub fn psms_to_json(psms: Vec<PyPeptideSpectrumMatch>, num_threads: usize) -> Vec<String> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            serde_json::to_string(&psm.inner).unwrap()
+        }).collect()
+    })
 }
 
 #[pymodule]

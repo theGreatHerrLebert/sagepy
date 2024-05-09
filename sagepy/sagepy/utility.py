@@ -1,9 +1,12 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import numpy as np
 from numpy.typing import NDArray
 
 import sagepy_connector
+
+from sagepy.core.scoring import PeptideSpectrumMatch
+
 psc = sagepy_connector.py_utility
 
 
@@ -56,3 +59,16 @@ def py_fragments_to_fragments_map(fragments, normalize: bool = True) -> Dict[Tup
         a fragment map (ion_type, charge, ordinal) -> intensity
     """
     return psc.py_fragments_to_fragments_map(fragments.get_py_ptr(), normalize)
+
+
+def psms_to_json(psms: List[PeptideSpectrumMatch], num_threads: int = 4) -> List[str]:
+    """ Convert a list of PeptideSpectrumMatch objects to a JSON string.
+
+    Args:
+        psms: a list of PeptideSpectrumMatch objects
+        num_threads: the number of threads to use
+
+    Returns:
+        a JSON string
+    """
+    return psc.psms_to_json(psms, num_threads)
