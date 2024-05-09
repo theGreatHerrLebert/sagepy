@@ -2,6 +2,7 @@ use std::collections::{BTreeMap};
 use itertools::multizip;
 use rustms::chemistry::formula::calculate_mz;
 use rustms::proteomics::peptide::{FragmentType, PeptideProductIonSeriesCollection, PeptideSequence};
+use serde::Serialize;
 use crate::utility;
 
 #[derive(Clone, Debug)]
@@ -132,7 +133,7 @@ impl MatchDataset {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct PeptideSpectrumMatch {
     pub spec_idx: String,
     pub peptide_idx: u32,
