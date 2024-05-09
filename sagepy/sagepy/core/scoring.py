@@ -931,7 +931,7 @@ def psms_to_json(psms, num_threads: int = 4) -> List[str]:
     Returns:
         a JSON string
     """
-    return psc.psms_to_json([psm.get_py_ptr() for psm in psms], num_threads)
+    return psc_utils.psms_to_json([psm.get_py_ptr() for psm in psms], num_threads)
 
 
 def psms_to_json_bin(psms) -> bytes:
@@ -943,4 +943,4 @@ def psms_to_json_bin(psms) -> bytes:
     Returns:
         a binary JSON string
     """
-    return psc.psms_to_json_bin([psm.get_py_ptr() for psm in psms])
+    return psc_utils.psms_to_json_bin([psm.get_py_ptr() for psm in psms])
