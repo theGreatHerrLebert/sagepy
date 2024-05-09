@@ -918,3 +918,28 @@ def json_bin_to_psms(json_bin: bytes) -> List[PeptideSpectrumMatch]:
         a list of PeptideSpectrumMatch objects
     """
     return [PeptideSpectrumMatch.from_json(json_str) for json_str in psc.json_bin_to_psms(json_bin)]
+
+
+def psms_to_json(psms, num_threads: int = 4) -> List[str]:
+    """ Convert a list of PeptideSpectrumMatch objects to a JSON string.
+
+    Args:
+        psms: a list of PeptideSpectrumMatch objects
+        num_threads: the number of threads to use
+
+    Returns:
+        a JSON string
+    """
+    return psc.psms_to_json([psm.get_py_ptr() for psm in psms], num_threads)
+
+
+def psms_to_json_bin(psms) -> bytes:
+    """ Convert a list of PeptideSpectrumMatch objects to a binary JSON string.
+
+    Args:
+        psms: a list of PeptideSpectrumMatch objects
+
+    Returns:
+        a binary JSON string
+    """
+    return psc.psms_to_json_bin([psm.get_py_ptr() for psm in psms])
