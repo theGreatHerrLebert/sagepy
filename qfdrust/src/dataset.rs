@@ -7,7 +7,7 @@ use crate::utility;
 
 #[derive(Clone, Debug)]
 pub struct Match {
-    pub match_idx: u32,
+    pub match_idx: String,
     pub spectrum_idx: String,
     pub match_identity_candidates: Option<Vec<String>>,
     pub decoy: bool,
@@ -48,7 +48,7 @@ impl MatchDataset {
         MatchDataset::new(map)
     }
 
-    pub fn from_vectors(spectrum_idx: Vec<String>, match_idx: Vec<u32>, decoy: Vec<bool>, score: Vec<f32>) -> MatchDataset {
+    pub fn from_vectors(spectrum_idx: Vec<String>, match_idx: Vec<String>, decoy: Vec<bool>, score: Vec<f32>) -> MatchDataset {
         let mut map: BTreeMap<String, Vec<Match>> = BTreeMap::new();
         for (spec_idx, match_idx, score, d) in multizip((spectrum_idx, match_idx, score, decoy)) {
             let entry = map.entry(spec_idx.clone()).or_insert(Vec::new());
@@ -64,9 +64,9 @@ impl MatchDataset {
         MatchDataset::new(map)
     }
 
-    pub fn to_vectors(&self) -> (Vec<String>, Vec<u32>, Vec<bool>, Vec<f32>, Vec<f64>) {
+    pub fn to_vectors(&self) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
         let mut spectrum_idx: Vec<String> = Vec::new();
-        let mut match_idx: Vec<u32> = Vec::new();
+        let mut match_idx: Vec<String> = Vec::new();
         let mut decoy: Vec<bool> = Vec::new();
         let mut score: Vec<f32> = Vec::new();
         let mut q_value: Vec<f64> = Vec::new();
@@ -74,7 +74,7 @@ impl MatchDataset {
         for (spec_idx, matches) in &self.matches {
             for m in matches {
                 spectrum_idx.push(spec_idx.clone());
-                match_idx.push(m.match_idx);
+                match_idx.push(m.match_idx.clone());
                 decoy.push(m.decoy);
                 score.push(m.score);
                 q_value.push(m.q_value.unwrap_or(1.0));
@@ -354,10 +354,10 @@ fn get_candidate_psm_match(ds: &MatchDataset) -> Vec<&Match> {
 
 fn get_candidates_peptide_psm_only_match(ds: &MatchDataset) -> Vec<&Match> {
     let candidates = get_candidate_psm_match(ds);
-    let mut peptide_map: BTreeMap<(u32, bool), &Match> = BTreeMap::new();
+    let mut peptide_map: BTreeMap<(String, bool), &Match> = BTreeMap::new();
 
     for psm in candidates {
-        let key = (psm.match_idx, psm.decoy);
+        let key = (psm.match_idx.clone(), psm.decoy);
         let entry = peptide_map.entry(key);
         let best_psm = entry.or_insert(psm);
         if psm.score > best_psm.score || (psm.score == best_psm.score && rand::random()) {
@@ -378,10 +378,10 @@ fn get_candidates_peptide_peptide_only_match(ds: &MatchDataset) -> Vec<&Match> {
     let best_targets = ds.get_best_target_matches();
     let best_decoys = ds.get_best_decoy_matches();
 
-    let mut peptide_map: BTreeMap<u32, (Option<&Match>, Option<&Match>)> = BTreeMap::new();
+    let mut peptide_map: BTreeMap<String, (Option<&Match>, Option<&Match>)> = BTreeMap::new();
 
     for psm in best_targets.iter().chain(best_decoys.iter()) {
-        let key = psm.match_idx;
+        let key = psm.match_idx.clone();
         let entry = peptide_map.entry(key);
         let (best_target, best_decoy) = entry.or_insert((None, None));
         if psm.decoy {
@@ -428,10 +428,10 @@ fn get_candidates_peptide_peptide_only_match(ds: &MatchDataset) -> Vec<&Match> {
 
 fn get_candidates_peptide_psm_peptide_match(ds: &MatchDataset) -> Vec<&Match> {
     let best_psms = ds.get_best_matches();
-    let mut peptide_map: BTreeMap<u32, (Option<&Match>, Option<&Match>)> = BTreeMap::new();
+    let mut peptide_map: BTreeMap<String, (Option<&Match>, Option<&Match>)> = BTreeMap::new();
 
     for psm in best_psms {
-        let key = psm.match_idx;
+        let key = psm.match_idx.clone();
         let entry = peptide_map.entry(key);
         let (best_target, best_decoy) = entry.or_insert((None, None));
         if psm.decoy {
@@ -484,7 +484,7 @@ fn tdc_psm_match(ds: &MatchDataset) -> Vec<Match> {
     candidates.iter().zip(q_values.iter()).map(|(psm, q)| {
         Match {
             spectrum_idx: psm.spectrum_idx.clone(),
-            match_idx: psm.match_idx,
+            match_idx: psm.match_idx.clone(),
             match_identity_candidates: psm.match_identity_candidates.clone(),
             decoy: psm.decoy,
             score: psm.score,
@@ -501,7 +501,7 @@ fn tdc_peptide_psm_only_match(ds: &MatchDataset) -> Vec<Match> {
     candidates.iter().zip(q_values.iter()).map(|(psm, q)| {
         Match {
             spectrum_idx: psm.spectrum_idx.clone(),
-            match_idx: psm.match_idx,
+            match_idx: psm.match_idx.clone(),
             match_identity_candidates: psm.match_identity_candidates.clone(),
             decoy: psm.decoy,
             score: psm.score,
@@ -518,7 +518,7 @@ fn tdc_peptide_peptide_only_match(ds: &MatchDataset) -> Vec<Match> {
     candidates.iter().zip(q_values.iter()).map(|(psm, q)| {
         Match {
             spectrum_idx: psm.spectrum_idx.clone(),
-            match_idx: psm.match_idx,
+            match_idx: psm.match_idx.clone(),
             match_identity_candidates: psm.match_identity_candidates.clone(),
             decoy: psm.decoy,
             score: psm.score,
@@ -535,7 +535,7 @@ fn tdc_peptide_psm_peptide_match(ds: &MatchDataset) -> Vec<Match> {
     candidates.iter().zip(q_values.iter()).map(|(psm, q)| {
         Match {
             spectrum_idx: psm.spectrum_idx.clone(),
-            match_idx: psm.match_idx,
+            match_idx: psm.match_idx.clone(),
             match_identity_candidates: psm.match_identity_candidates.clone(),
             decoy: psm.decoy,
             score: psm.score,
@@ -544,7 +544,7 @@ fn tdc_peptide_psm_peptide_match(ds: &MatchDataset) -> Vec<Match> {
     }).collect()
 }
 
-pub fn target_decoy_competition(method: TDCMethod, spectra_idx: Vec<String>, match_idx: Vec<u32>, is_decoy: Vec<bool>, scores: Vec<f32>) -> (Vec<String>, Vec<u32>, Vec<bool>, Vec<f32>, Vec<f64>) {
+pub fn target_decoy_competition(method: TDCMethod, spectra_idx: Vec<String>, match_idx: Vec<String>, is_decoy: Vec<bool>, scores: Vec<f32>) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
     let ds = MatchDataset::from_vectors(spectra_idx, match_idx, is_decoy, scores);
 
     let result = match method {

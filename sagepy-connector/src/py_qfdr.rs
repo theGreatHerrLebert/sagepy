@@ -24,9 +24,9 @@ impl PyTDCMethod {
 pub fn target_decoy_competition(
     method: &PyTDCMethod,
     spectra_idx: Vec<String>,
-    match_idx: Vec<u32>,
+    match_idx: Vec<String>,
     target: Vec<bool>,
-    scores: Vec<f32>) -> (Vec<String>, Vec<u32>, Vec<bool>, Vec<f32>, Vec<f64>) {
+    scores: Vec<f32>) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
 
     let method = method.inner.clone();
 

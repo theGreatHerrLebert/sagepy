@@ -962,7 +962,8 @@ def psms_to_json_bin(psms) -> bytes:
     return psc_utils.psms_to_json_bin([psm.get_py_ptr() for psm in psms])
 
 
-def merge_psm_dicts(left_psms: Dict[str, List[PeptideSpectrumMatch]], right_psms: Dict[str, List[PeptideSpectrumMatch]],
+def merge_psm_dicts(left_psms: Dict[str, List[PeptideSpectrumMatch]],
+                    right_psms: Dict[str, List[PeptideSpectrumMatch]],
                     max_hits: int = 5) -> Dict[str, List[PeptideSpectrumMatch]]:
     """ Merge two dictionaries of peptide spectrum matches.
 

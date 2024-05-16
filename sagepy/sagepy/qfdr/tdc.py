@@ -27,10 +27,10 @@ class TDCMethod:
 
 def target_decoy_competition(
         spectra_idx: List[str],
-        match_idx: List[int],
+        match_idx: List[str],
         decoy: List[bool],
         scores: List[float],
-        method: str = "peptide_psm_peptide") -> Tuple[List[str], List[int], List[bool], List[float], List[float]]:
+        method: str = "peptide_psm_peptide") -> Tuple[List[str], List[str], List[bool], List[float], List[float]]:
     """ Perform target-decoy competition.
 
     Args:
