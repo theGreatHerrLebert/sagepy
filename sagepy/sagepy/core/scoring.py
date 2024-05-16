@@ -892,7 +892,7 @@ def peptide_spectrum_match_list_to_pandas(
         if use_sequence_as_match_idx:
             match_idx = match.sequence
         else:
-            match_idx = match.peptide_idx
+            match_idx = str(match.peptide_idx)
 
         row_list.append({
             "spec_idx": match.spec_idx,
