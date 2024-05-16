@@ -863,11 +863,16 @@ def associate_fragment_ions_with_prosit_predicted_intensities_pandas(
     return pd.DataFrame(row_list)
 
 
-def peptide_spectrum_match_list_to_pandas(psms: List[PeptideSpectrumMatch], re_score: bool = False) -> pd.DataFrame:
+def peptide_spectrum_match_list_to_pandas(
+        psms: List[PeptideSpectrumMatch],
+        re_score: bool = False,
+        use_sequence_as_match_idx: bool = True) -> pd.DataFrame:
     """Convert a list of peptide spectrum matches to a pandas dataframe
 
     Args:
         psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        re_score (bool, optional): Should re-score be used. Defaults to False.
+        use_sequence_as_match_idx (bool, optional): Should the sequence be used as the match index. Defaults to True.
 
     Returns:
         pd.DataFrame: The pandas dataframe
@@ -884,9 +889,14 @@ def peptide_spectrum_match_list_to_pandas(psms: List[PeptideSpectrumMatch], re_s
         else:
             score = match.hyper_score
 
+        if use_sequence_as_match_idx:
+            match_idx = match.sequence
+        else:
+            match_idx = match.peptide_idx
+
         row_list.append({
             "spec_idx": match.spec_idx,
-            "match_idx": match.peptide_idx,
+            "match_idx": match_idx,
             "proteins": match.proteins,
             "decoy": match.decoy,
             "score": score,
