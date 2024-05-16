@@ -490,7 +490,7 @@ impl PyScorer {
         db: &PyIndexedDatabase,
         spectra: Vec<PyProcessedSpectrum>,
         num_threads: usize,
-    ) -> Vec<PyPeptideSpectrumMatch> {
+    ) -> BTreeMap<String, Vec<PyPeptideSpectrumMatch>> {
         let scorer = Scorer {
             db: &db.inner,
             precursor_tol: self.precursor_tolerance.inner.clone(),
@@ -611,7 +611,17 @@ impl PyScorer {
                 .then(a.decoy.cmp(&b.decoy))
         });
 
-        result
+        let mut ret_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>> = BTreeMap::new();
+
+        for psm in result {
+            let key = psm.inner.spec_idx.clone();
+            if !ret_map.contains_key(&key) {
+                ret_map.insert(key.clone(), Vec::new());
+            }
+            ret_map.get_mut(&key).unwrap().push(psm);
+        }
+
+        ret_map
     }
 
     pub fn score_chimera_fast(
@@ -1184,6 +1194,41 @@ pub fn associate_fragment_ions_with_prosit_predicted_intensities_par(
     result
 }
 
+#[pyfunction]
+pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, right_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, max_hits: usize) -> BTreeMap<String, Vec<PyPeptideSpectrumMatch>> {
+
+    let mut result_map = left_map.clone();
+
+    for (key, right_psms) in right_map {
+        // easiest case, just insert the right psms
+        if !result_map.contains_key(&key) {
+            result_map.insert(key.clone(), right_psms);
+        }
+
+        // if instead the key is already present, we need to merge the two lists in the following way
+        // 1. merge both lists, sort by score and keep only the max_hits best hits
+        // 2. if two hits have the same peptide sequence, wee need to add the protein information of the right hit to the left hit and the other way around
+        // 3. we need to append the resulting list to the result map
+        else if result_map.contains_key(&key) {
+
+            let mut left_psms = result_map.get(&key).unwrap().clone();
+            let mut right_psms = right_psms;
+
+            // 1. merge lists, sort by score and keep only the max_hits best hits
+            left_psms.append(&mut right_psms);
+            left_psms.sort_by(|a, b| b.inner.hyper_score.partial_cmp(&a.inner.hyper_score).unwrap());
+            left_psms.truncate(max_hits);
+
+            // 2. TODO: merge protein information
+
+            // 3. append to result map
+            result_map.insert(key.clone(), left_psms.clone());
+        }
+    }
+
+    result_map
+}
+
 #[pymodule]
 pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyFragments>()?;
@@ -1193,5 +1238,6 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(associate_psm_with_prosit_predicted_intensities, m)?)?;
     m.add_function(wrap_pyfunction!(associate_fragment_ions_with_prosit_predicted_intensities_par, m)?)?;
     m.add_function(wrap_pyfunction!(psm_from_json, m)?)?;
+    m.add_function(wrap_pyfunction!(merge_psm_maps, m)?)?;
     Ok(())
 }

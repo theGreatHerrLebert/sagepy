@@ -1,4 +1,4 @@
-from typing import Optional, List, Union, Tuple
+from typing import Optional, List, Union, Tuple, Dict
 
 import pandas as pd
 import sagepy_connector
@@ -469,12 +469,18 @@ class Scorer:
         return result
 
     def score_collection_psm(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
-                             num_threads: int = 4) -> List[PeptideSpectrumMatch]:
+                             num_threads: int = 4) -> Dict[str, List[PeptideSpectrumMatch]]:
+
         py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(),
                                                                        [spec.get_py_ptr() for spec in
                                                                         spectrum_collection],
                                                                        num_threads)
-        return [PeptideSpectrumMatch.from_py_ptr(psm) for psm in py_psms]
+
+        ret_dict = {}
+        for key, values in py_psms.items():
+            ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
+
+        return ret_dict
 
     def score_collection_psm_pandas(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
                                     num_threads: int = 4) -> pd.DataFrame:
@@ -954,3 +960,21 @@ def psms_to_json_bin(psms) -> bytes:
         a binary JSON string
     """
     return psc_utils.psms_to_json_bin([psm.get_py_ptr() for psm in psms])
+
+
+def merge_psm_dicts(left_psms: Dict[str, List[PeptideSpectrumMatch]], right_psms: Dict[str, List[PeptideSpectrumMatch]],
+                    max_hits: int = 5) -> Dict[str, List[PeptideSpectrumMatch]]:
+    """ Merge two dictionaries of peptide spectrum matches.
+
+    Args:
+        left_psms: the left dictionary of peptide spectrum matches
+        right_psms: the right dictionary of peptide spectrum matches
+        max_hits: the maximum number of hits
+
+    Returns:
+        a dictionary of peptide spectrum matches
+    """
+    left_map = {key: [psm.get_py_ptr() for psm in value] for key, value in left_psms.items()}
+    right_map = {key: [psm.get_py_ptr() for psm in value] for key, value in right_psms.items()}
+    result = psc.merge_psm_maps(left_map, right_map, max_hits)
+    return {key: [PeptideSpectrumMatch.from_py_ptr(psm) for psm in value] for key, value in result.items()}
