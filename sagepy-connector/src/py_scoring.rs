@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch};
 use qfdrust::utility::sage_sequence_to_unimod_sequence;
@@ -1217,9 +1217,10 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, r
             // 1. merge lists, sort by score and keep only the max_hits best hits
             left_psms.append(&mut right_psms);
             left_psms.sort_by(|a, b| b.inner.hyper_score.partial_cmp(&a.inner.hyper_score).unwrap());
-            left_psms.truncate(max_hits);
 
-            // 2. TODO: merge protein information
+            // 2. de-duplicate
+            left_psms = de_duplicate_psm_map(left_psms);
+            left_psms.truncate(max_hits);
 
             // 3. append to result map
             result_map.insert(key.clone(), left_psms.clone());
@@ -1227,6 +1228,33 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, r
     }
 
     result_map
+}
+
+fn de_duplicate_psm_map(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<PyPeptideSpectrumMatch> {
+
+    let mut seen: HashMap<(String, String), (HashSet<String>, PyPeptideSpectrumMatch)> = HashMap::new();
+
+    for psm in psms {
+        let key = (psm.inner.spec_idx.clone(), psm.inner.peptide_sequence.clone().unwrap().sequence);
+        let value_set: HashSet<_> = psm.inner.proteins.iter().cloned().collect();
+
+        if seen.contains_key(&key) {
+            let (seen_set, _) = seen.get_mut(&key).unwrap();
+            seen_set.extend(value_set);
+        } else {
+            seen.insert(key, (value_set, psm));
+        }
+    }
+
+    let mut result: Vec<PyPeptideSpectrumMatch> = Vec::new();
+
+    for (_, (proteins, psm)) in seen {
+        let mut psm = psm;
+        psm.inner.proteins = proteins.into_iter().collect();
+        result.push(psm);
+    }
+
+    result
 }
 
 #[pymodule]
