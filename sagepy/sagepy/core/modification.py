@@ -19,6 +19,30 @@ class SAGE_KNOWN_MODS:
         return "C", 57.0215
 
     @staticmethod
+    def phospho_serine_static():
+        return "S", 79.9663
+
+    @staticmethod
+    def phospho_threonine_static():
+        return "T", 79.9663
+
+    @staticmethod
+    def phospho_tyrosine_static():
+        return "Y", 79.9663
+
+    @staticmethod
+    def phospho_serine_variable():
+        return "S", [79.9663]
+
+    @staticmethod
+    def phospho_threonine_variable():
+        return "T", [79.9663]
+
+    @staticmethod
+    def phospho_tyrosine_variable():
+        return "Y", [79.9663]
+
+    @staticmethod
     def methionine_variable():
         return "M", [15.9949]
 
