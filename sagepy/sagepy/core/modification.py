@@ -43,7 +43,15 @@ class SAGE_KNOWN_MODS:
         return "]", 111.0
 
     def __repr__(self):
-        return f"SAGE_KNOWN_MODS({self.n_terminal_static()}, {self.lysine_static()}, {self.cysteine_static()}, {self.methionine_variable()}, {self.q_variable()}, {self.glutamic_acid_n_terminal_variable()}, {self.peptide_c_terminal_variable()}, {self.protein_n_terminus_variable()}, {self.protein_c_terminal_variable()})"
+        return (f"SAGE_KNOWN_MODS({self.n_terminal_static()}, "
+                f"{self.lysine_static()}, "
+                f"{self.cysteine_static()}, "
+                f"{self.methionine_variable()}, "
+                f"{self.q_variable()}, "
+                f"{self.glutamic_acid_n_terminal_variable()}, "
+                f"{self.peptide_c_terminal_variable()}, "
+                f"{self.protein_n_terminus_variable()}, "
+                f"{self.protein_c_terminal_variable()})")
 
 
 # TODO: need to re-implement based on constant modification list
