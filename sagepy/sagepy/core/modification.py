@@ -60,7 +60,7 @@ class SAGE_KNOWN_MODS:
 
     @staticmethod
     def protein_n_terminus_variable():
-        return "[", 42.010565
+        return "[", 42.0
 
     @staticmethod
     def protein_c_terminal_variable():
