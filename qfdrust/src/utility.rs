@@ -47,9 +47,20 @@ pub fn sage_sequence_to_unimod_sequence(sequence: String, modifications: &Vec<f3
     let mut unimod_sequence = String::new();
 
     for (idx, aa) in sequence.chars().enumerate() {
-        unimod_sequence.push(aa);
+
         if modifications[idx] != 0.0 {
-            unimod_sequence.push_str(&mass_to_unimod(modifications[idx]));
+            // Check for N-terminal modifications, need to be pushed to the string BEFORE the amino acid
+            if mass_to_unimod(modifications[idx]) == "[UNIMOD:1]" {
+                unimod_sequence.push_str(&mass_to_unimod(modifications[idx]));
+                unimod_sequence.push(aa);
+                // All other modifications can be pushed after the amino acid
+            } else {
+                unimod_sequence.push(aa);
+                unimod_sequence.push_str(&mass_to_unimod(modifications[idx]));
+            }
+            // If no modification is present, just push the amino acid
+        } else {
+            unimod_sequence.push(aa);
         }
     }
     unimod_sequence
