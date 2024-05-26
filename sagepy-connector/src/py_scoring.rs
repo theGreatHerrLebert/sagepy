@@ -10,7 +10,7 @@ use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use crate::py_ion_series::PyKind;
 use crate::py_utility::{cosine_similarity, flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
 
