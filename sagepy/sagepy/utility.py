@@ -1,5 +1,6 @@
 from typing import Dict, Tuple, List
 
+from numba import jit
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
@@ -9,19 +10,27 @@ import sagepy_connector
 psc = sagepy_connector.py_utility
 
 
+@jit(nopython=True)
 def calculate_ppm_error(measured_value, reference_value):
     ppm_error = ((measured_value - reference_value) / reference_value) * 1_000_000
     return ppm_error
 
 
-def calculate_ppms(measured_values, reference_values) -> NDArray:
-    return np.array([calculate_ppm_error(x, y) for x, y in zip(measured_values, reference_values)])
+@jit(nopython=True)
+def calculate_ppms(measured_values, reference_values):
+    n = len(measured_values)
+    ppm_errors = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        ppm_errors[i] = calculate_ppm_error(measured_values[i], reference_values[i])
+    return ppm_errors
 
 
+@jit(nopython=True)
 def mean_ppm(mz_observed, mz_calculated) -> float:
     return np.mean(calculate_ppms(mz_observed, mz_calculated))
 
 
+@jit(nopython=True)
 def median_ppm(mz_observed, mz_calculated) -> float:
     return np.median(calculate_ppms(mz_observed, mz_calculated))
 
