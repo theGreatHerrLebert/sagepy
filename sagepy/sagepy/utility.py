@@ -9,6 +9,23 @@ import sagepy_connector
 psc = sagepy_connector.py_utility
 
 
+def calculate_ppm_error(measured_value, reference_value):
+    ppm_error = ((measured_value - reference_value) / reference_value) * 1_000_000
+    return ppm_error
+
+
+def calculate_ppms(measured_values, reference_values) -> NDArray:
+    return np.array([calculate_ppm_error(x, y) for x, y in zip(measured_values, reference_values)])
+
+
+def mean_ppm(mz_observed, mz_calculated) -> float:
+    return np.mean(calculate_ppms(mz_observed, mz_calculated))
+
+
+def median_ppm(mz_observed, mz_calculated) -> float:
+    return np.median(calculate_ppms(mz_observed, mz_calculated))
+
+
 def mass_to_mod(mass: float) -> str:
     """ Convert a mass to a UNIMOD modification annotation.
 
@@ -129,6 +146,8 @@ def peptide_spectrum_match_list_to_pandas(
             "q_value": match.q_value,
             "collision_energy": match.collision_energy,
             "cosine_similarity": match.cosine_similarity,
+            "mean_ppm": mean_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated),
+            "median_ppm": median_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated),
         })
 
     return pd.DataFrame(row_list)
