@@ -170,6 +170,12 @@ pub struct PeptideSpectrumMatch {
     pub re_score: Option<f64>,
     pub cosine_similarity: Option<f32>,
     pub file_name: Option<String>,
+    pub fragment_charges: Option<Vec<u8>>,
+    pub fragment_ion_types: Option<Vec<String>>,
+    pub fragment_ordinals: Option<Vec<u32>>,
+    pub fragment_intensities: Option<Vec<f32>>,
+    pub fragment_mz_calculated: Option<Vec<f32>>,
+    pub fragment_mz_observed: Option<Vec<f32>>,
 }
 
 impl PeptideSpectrumMatch {
@@ -207,6 +213,12 @@ impl PeptideSpectrumMatch {
         re_score: Option<f64>,
         cosine_similarity: Option<f32>,
         file_name: Option<String>,
+        fragment_charges: Option<Vec<u8>>,
+        fragment_ion_types: Option<Vec<String>>,
+        fragment_ordinals: Option<Vec<u32>>,
+        fragment_intensities: Option<Vec<f32>>,
+        fragment_mz_calculated: Option<Vec<f32>>,
+        fragment_mz_observed: Option<Vec<f32>>,
     ) -> PeptideSpectrumMatch {
 
         let peptide_sequence = match &sequence {
@@ -260,6 +272,12 @@ impl PeptideSpectrumMatch {
             re_score,
             cosine_similarity,
             file_name,
+            fragment_charges,
+            fragment_ion_types,
+            fragment_ordinals,
+            fragment_intensities,
+            fragment_mz_calculated,
+            fragment_mz_observed,
         }
     }
     pub fn associate_with_prosit_predicted_intensities(&self, flat_intensities: Vec<f64>) -> Option<PeptideProductIonSeriesCollection> {
