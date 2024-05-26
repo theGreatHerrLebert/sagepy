@@ -547,6 +547,12 @@ impl PyScorer {
                         }
 
                         hash_set.insert(key);
+                        let maybe_charges = fragments.clone().map(|f| f.charges);
+                        let maybe_kinds = fragments.clone().map(|f| f.kinds.iter().map(|k| kind_to_string(*k)).collect());
+                        let maybe_fragment_ordinals = fragments.clone().map(|f| f.fragment_ordinals);
+                        let maybe_intensities = fragments.clone().map(|f| f.intensities);
+                        let maybe_mz_calculated = fragments.clone().map(|f| f.mz_calculated);
+                        let maybe_mz_experimental = fragments.clone().map(|f| f.mz_experimental);
 
                         let psm = PeptideSpectrumMatch::new(
                             spectrum.inner.id.clone(),
@@ -582,6 +588,12 @@ impl PyScorer {
                             None,
                             None,
                             None,
+                            maybe_charges,
+                            maybe_kinds,
+                            maybe_fragment_ordinals,
+                            maybe_intensities,
+                            maybe_mz_calculated,
+                            maybe_mz_experimental,
                         );
                         psms.push((psm, fragments));
                     }
@@ -797,6 +809,13 @@ impl PyPeptideSpectrumMatch {
         file_name: Option<String>,
     ) -> Self {
 
+        let maybe_charges = fragments_observed.clone().map(|f| f.inner.charges);
+        let maybe_kinds = fragments_observed.clone().map(|f| f.inner.kinds.iter().map(|k| kind_to_string(*k)).collect());
+        let maybe_fragment_ordinals = fragments_observed.clone().map(|f| f.inner.fragment_ordinals);
+        let maybe_intensities = fragments_observed.clone().map(|f| f.inner.intensities);
+        let maybe_mz_calculated = fragments_observed.clone().map(|f| f.inner.mz_calculated);
+        let maybe_mz_experimental = fragments_observed.clone().map(|f| f.inner.mz_experimental);
+
         PyPeptideSpectrumMatch {
             inner: PeptideSpectrumMatch::new(
                 spec_idx,
@@ -832,6 +851,12 @@ impl PyPeptideSpectrumMatch {
                 re_score,
                 cosine_similarity,
                 file_name,
+                maybe_charges,
+                maybe_kinds,
+                maybe_fragment_ordinals,
+                maybe_intensities,
+                maybe_mz_calculated,
+                maybe_mz_experimental,
             ),
             fragments_observed,
             fragments_predicted,
@@ -1228,6 +1253,17 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, r
     }
 
     result_map
+}
+
+fn kind_to_string(kind: Kind) -> String {
+    match kind {
+        Kind::B => "b".to_string(),
+        Kind::Y => "y".to_string(),
+        Kind::Z => "z".to_string(),
+        Kind::A => "a".to_string(),
+        Kind::C => "c".to_string(),
+        Kind::X => "x".to_string(),
+    }
 }
 
 fn de_duplicate_psm_map(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<PyPeptideSpectrumMatch> {
