@@ -60,11 +60,11 @@ class SAGE_KNOWN_MODS:
 
     @staticmethod
     def protein_n_terminus_variable():
-        return "[", 42.0,
+        return "[", [42.0]
 
     @staticmethod
     def protein_c_terminal_variable():
-        return "]", 111.0
+        return "]", [111.0]
 
     def __repr__(self):
         return (f"SAGE_KNOWN_MODS({self.n_terminal_static()}, "

@@ -80,4 +80,3 @@ def target_decoy_competition_pandas(
         'score': scores,
         'q_value': q_values
     }).sort_values('q_value')
-
