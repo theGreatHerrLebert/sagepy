@@ -43,29 +43,6 @@ impl PyCompetitionPeptideIx {
     }
 }
 
-// TODO: check if this needs to be available in python
-/*
-#[pyfunction]
-pub fn py_picked_peptide(db: &PyIndexedDatabase, features: Vec<PyFeature>) -> usize {
-    let features = features.clone().into_iter().map(|f| f.inner).collect::<Vec<_>>();
-    picked_peptide(&db.inner, &features)
-}
-
-#[pyfunction]
-pub fn py_picked_protein(db: &PyIndexedDatabase, features: Vec<PyFeature>) -> usize {
-    let features = features.clone().into_iter().map(|f| f.inner).collect::<Vec<_>>();
-    picked_protein(&db.inner, &features)
-}
-
-#[pyfunction]
-pub fn py_picked_precursor(peaks: &PyDict) -> usize {
-    let mut peaks = peaks
-        .extract::<HashMap<(u32, bool), (crate::lfq::Peak, Vec<f64>)>>()
-        .unwrap();
-    picked_precursor(&mut peaks)
-}
-*/
-
 #[pymodule]
 pub fn fdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyCompetitionPeptideIx>()?;

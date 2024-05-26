@@ -996,7 +996,31 @@ impl PyPeptideSpectrumMatch {
         self.inner.charge
     }
     #[getter]
-    pub fn fragments_observed(&self) -> Option<PyFragments> {
+    pub fn fragments_observed(&mut self) -> Option<PyFragments> {
+        if self.fragments_observed.is_none() {
+            if self.inner.fragment_charges.is_none() {
+                return None;
+            } else {
+                let charges = self.inner.fragment_charges.as_ref().unwrap();
+                let kinds = self.inner.fragment_ion_types.as_ref().unwrap();
+                let fragment_ordinals = self.inner.fragment_ordinals.as_ref().unwrap();
+                let intensities = self.inner.fragment_intensities.as_ref().unwrap();
+                let mz_calculated = self.inner.fragment_mz_calculated.as_ref().unwrap();
+                let mz_experimental = self.inner.fragment_mz_observed.as_ref().unwrap();
+
+                let fragments = Fragments {
+                    charges: charges.clone(),
+                    kinds: kinds.into_iter().map(|k| string_to_kind(k)).collect(),
+                    fragment_ordinals: fragment_ordinals.clone(),
+                    intensities: intensities.clone(),
+                    mz_calculated: mz_calculated.clone(),
+                    mz_experimental: mz_experimental.clone(),
+                };
+
+                self.fragments_observed = Some(PyFragments { inner: fragments });
+            }
+        }
+
         self.fragments_observed.clone()
     }
 
@@ -1263,6 +1287,18 @@ fn kind_to_string(kind: Kind) -> String {
         Kind::A => "a".to_string(),
         Kind::C => "c".to_string(),
         Kind::X => "x".to_string(),
+    }
+}
+
+fn string_to_kind(kind: &str) -> Kind {
+    match kind {
+        "b" => Kind::B,
+        "y" => Kind::Y,
+        "z" => Kind::Z,
+        "a" => Kind::A,
+        "c" => Kind::C,
+        "x" => Kind::X,
+        _ => panic!("Invalid kind"),
     }
 }
 
