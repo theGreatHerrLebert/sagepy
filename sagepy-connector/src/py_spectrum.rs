@@ -425,6 +425,11 @@ impl PyPrecursor {
         self.inner.mz
     }
 
+    pub fn calibrate_mz_ppm(&mut self, ppm: f32) {
+        let ppm_error = self.inner.mz * ppm / 1e6;
+        self.inner.mz += ppm_error;
+    }
+
     #[getter]
     pub fn intensity(&self) -> Option<f32> {
         self.inner.intensity
