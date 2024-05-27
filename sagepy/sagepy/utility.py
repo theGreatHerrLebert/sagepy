@@ -117,6 +117,11 @@ def peptide_spectrum_match_list_to_pandas(
         else:
             match_idx = str(match.peptide_idx)
 
+        if match.inverse_mobility_predicted is not None:
+            delta_ims = match.inverse_mobility_predicted - match.inverse_mobility_observed
+        else:
+            delta_ims = None
+
         row_list.append({
             "spec_idx": match.spec_idx,
             "match_idx": match_idx,
@@ -149,7 +154,7 @@ def peptide_spectrum_match_list_to_pandas(
             "delta_rt": delta_rt,
             "inverse_mobility_observed": match.inverse_mobility_observed,
             "inverse_mobility_predicted": match.inverse_mobility_predicted,
-            "delta_ims": match.inverse_mobility_predicted - match.inverse_mobility_observed,
+            "delta_ims": delta_ims,
             "intensity_ms1": match.intensity_ms1,
             "intensity_ms2": match.intensity_ms2,
             "q_value": match.q_value,
