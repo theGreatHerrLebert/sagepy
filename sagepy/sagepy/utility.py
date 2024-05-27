@@ -163,6 +163,8 @@ def peptide_spectrum_match_list_to_pandas(
             "cosine_similarity": match.cosine_similarity,
             "mean_ppm": mean_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated),
             "median_ppm": median_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated),
+            "fragments_observed": match.fragments_observed,
+            "fragments_predicted": match.fragments_predicted,
         })
 
     return pd.DataFrame(row_list)
