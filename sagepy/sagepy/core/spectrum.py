@@ -113,6 +113,9 @@ class Precursor:
     def mz(self):
         return self.__precursor_ptr.mz
 
+    def calibrate_mz_ppm(self, ppm: float):
+        self.__precursor_ptr.calibrate_mz_ppm(ppm)
+
     @property
     def intensity(self):
         return self.__precursor_ptr.intensity
