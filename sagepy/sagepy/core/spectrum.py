@@ -252,7 +252,10 @@ class ProcessedSpectrum:
     def collision_energies(self):
         return self.__processed_spectrum_ptr.collision_energies
 
-    def calibrate_mz_ppm(self, ppm: float):
+    def calibrate_mz_ppm(self, ppm: float, calibrate_precursors: bool = True):
+        if calibrate_precursors:
+            for precursor in self.precursors:
+                precursor.calibrate_mz_ppm(ppm)
         self.__processed_spectrum_ptr.calibrate_mz_ppm(ppm)
 
     def get_py_ptr(self):
