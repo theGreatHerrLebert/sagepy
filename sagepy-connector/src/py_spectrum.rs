@@ -122,6 +122,13 @@ impl PyProcessedSpectrum {
             .collect()
     }
 
+    pub fn calibrate_mz_ppm(&mut self, ppm: f32) {
+        for peak in self.inner.peaks.iter_mut() {
+            let ppm_error = peak.mass * ppm / 1e6;
+            peak.mass += ppm_error;
+        }
+    }
+
     #[getter]
     pub fn collision_energies(&self) -> Vec<Option<f32>> {
         self.collision_energies.clone()
