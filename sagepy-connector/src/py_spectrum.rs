@@ -124,8 +124,9 @@ impl PyProcessedSpectrum {
 
     pub fn calibrate_mz_ppm(&mut self, ppm: f32) {
         for peak in self.inner.peaks.iter_mut() {
-            let ppm_error = peak.mass * ppm / 1e6;
-            peak.mass += ppm_error;
+            let ppm_mass = peak.mass / 1e6;
+            let ppm_error = ppm_mass * ppm;
+            peak.mass -= ppm_error;
         }
     }
 
@@ -433,8 +434,9 @@ impl PyPrecursor {
     }
 
     pub fn calibrate_mz_ppm(&mut self, ppm: f32) {
-        let ppm_error = self.inner.mz * ppm / 1e6;
-        self.inner.mz += ppm_error;
+        let mz_ppm = self.inner.mz / 1e6;
+        let ppm_error = mz_ppm * ppm;
+        self.inner.mz -= ppm_error;
     }
 
     #[getter]

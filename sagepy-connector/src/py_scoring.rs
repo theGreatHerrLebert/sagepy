@@ -594,6 +594,7 @@ impl PyScorer {
                             maybe_intensities,
                             maybe_mz_calculated,
                             maybe_mz_experimental,
+                            None,
                         );
                         psms.push((psm, fragments));
                     }
@@ -807,6 +808,7 @@ impl PyPeptideSpectrumMatch {
         re_score: Option<f64>,
         cosine_similarity: Option<f32>,
         file_name: Option<String>,
+        mz_calibration_ppm: Option<f32>,
     ) -> Self {
 
         let maybe_charges = fragments_observed.clone().map(|f| f.inner.charges);
@@ -857,6 +859,7 @@ impl PyPeptideSpectrumMatch {
                 maybe_intensities,
                 maybe_mz_calculated,
                 maybe_mz_experimental,
+                mz_calibration_ppm,
             ),
             fragments_observed,
             fragments_predicted,
@@ -1126,6 +1129,16 @@ impl PyPeptideSpectrumMatch {
 
     pub fn to_json(&self) -> String {
         serde_json::to_string(&self.inner).unwrap()
+    }
+
+    #[getter]
+    pub fn mz_calibration_ppm(&self) -> Option<f32> {
+        self.inner.mz_calibration_ppm
+    }
+
+    #[setter]
+    pub fn set_mz_calibration_ppm(&mut self, mz_calibration_ppm: f32) {
+        self.inner.mz_calibration_ppm = Some(mz_calibration_ppm);
     }
 }
 

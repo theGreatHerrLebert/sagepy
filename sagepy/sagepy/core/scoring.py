@@ -53,6 +53,7 @@ class PeptideSpectrumMatch:
                  fragment_intensities: Union[None, List[float]] = None,
                  fragment_mz_calculated: Union[None, List[float]] = None,
                  fragment_mz_experimental: Union[None, List[float]] = None,
+                 mz_calibration_ppm: Union[None, float] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed,
@@ -63,7 +64,7 @@ class PeptideSpectrumMatch:
             intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr(),
             re_score, cosine_similarity, file_name,
             fragment_charges, fragment_ion_types, fragment_ordinals, fragment_intensities, fragment_mz_calculated,
-            fragment_mz_experimental,
+            fragment_mz_experimental, mz_calibration_ppm
         )
 
     @property
@@ -243,6 +244,14 @@ class PeptideSpectrumMatch:
         if self.__py_ptr.fragments_predicted is None:
             return None
         return Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
+
+    @property
+    def mz_calibration_ppm(self):
+        return self.__py_ptr.mz_calibration_ppm
+
+    @mz_calibration_ppm.setter
+    def mz_calibration_ppm(self, value):
+        self.__py_ptr.mz_calibration_ppm = value
 
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):

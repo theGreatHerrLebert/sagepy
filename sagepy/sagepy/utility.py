@@ -4,6 +4,7 @@ from numba import jit
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
+from sagepy.qfdr.tdc import target_decoy_competition_pandas
 
 import sagepy_connector
 
@@ -181,3 +182,39 @@ def get_features(ds: pd.DataFrame) -> (NDArray, NDArray):
     Y = np.array([0 if x else 1 for x in Y]).astype(np.float32)
 
     return X, Y
+
+
+def apply_mz_calibration(psm, fragments: pd.DataFrame, use_median: bool = True,
+                         target_q: float = 0.01) -> float:
+    """Apply a mass calibration to a set of peptide spectrum matches
+
+    Args:
+        psm: The peptide spectrum matches
+        fragments: The fragments
+        use_median: Whether to use the median ppm error
+        target_q: The target q-value
+
+    Returns:
+        float: The ppm error
+    """
+
+    psms = []
+    for _, item in psm.items():
+        psms.extend(item)
+
+    P = peptide_spectrum_match_list_to_pandas(psms)
+    TDC = target_decoy_competition_pandas(P)
+    TDC = TDC[TDC.q_value <= target_q]
+
+    B = pd.merge(P, TDC, on=["spec_idx", "match_idx"])
+
+    ppm_error = 0.0
+
+    if use_median:
+        ppm_error = np.median(B.median_ppm)
+    else:
+        ppm_error = np.mean(B.mean_ppm)
+
+    fragments.apply(lambda row: row.processed_spec.calibrate_mz_ppm(ppm_error), axis=1)
+
+    return ppm_error
