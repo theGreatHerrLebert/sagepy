@@ -1276,16 +1276,19 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, r
             let mut left_psms = result_map.get(&key).unwrap().clone();
             let mut right_psms = right_psms;
 
-            // 1. merge lists, sort by score and keep only the max_hits best hits
+            // 1. merge lists
             left_psms.append(&mut right_psms);
-            left_psms.sort_by(|a, b| b.inner.hyper_score.partial_cmp(&a.inner.hyper_score).unwrap());
 
             // 2. de-duplicate
             left_psms = de_duplicate_psm_map(left_psms);
+
+            // 3. sort by score
+            left_psms.sort_by(|a, b| b.inner.hyper_score.partial_cmp(&a.inner.hyper_score).unwrap());
+
+            // 4. truncate to max_hits
             left_psms.truncate(max_hits);
 
-            // 3. append to result map
-            result_map.insert(key.clone(), left_psms.clone());
+            result_map.insert(key.clone(), left_psms);
         }
     }
 
