@@ -179,8 +179,8 @@ def get_features(ds: pd.DataFrame) -> (NDArray, NDArray):
         "intensity_ms1", "intensity_ms2", "collision_energy"
     ]
 
-    ds["intensity_ms1"] = np.log(ds["intensity_ms1"] + 1)
-    ds["intensity_ms2"] = np.log(ds["intensity_ms2"] + 1)
+    ds["intensity_ms1"] = ds["intensity_ms1"].apply(lambda x: np.log(x + 1))
+    ds["intensity_ms2"] = ds["intensity_ms2"].apply(lambda x: np.log(x + 1))
 
     X = ds[features].to_numpy().astype(np.float32)
     Y = ds["decoy"].to_numpy()
