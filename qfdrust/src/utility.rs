@@ -50,7 +50,7 @@ pub fn sage_sequence_to_unimod_sequence(sequence: String, modifications: &Vec<f3
 
         if modifications[idx] != 0.0 {
             // Check for N-terminal modifications, need to be pushed to the string BEFORE the amino acid
-            if mass_to_unimod(modifications[idx]) == "[UNIMOD:1]" {
+            if (mass_to_unimod(modifications[idx]) == "[UNIMOD:1]") && (idx == 0) {
                 unimod_sequence.push_str(&mass_to_unimod(modifications[idx]));
                 unimod_sequence.push(aa);
                 // All other modifications can be pushed after the amino acid

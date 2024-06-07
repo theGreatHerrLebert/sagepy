@@ -175,9 +175,12 @@ def get_features(ds: pd.DataFrame) -> (NDArray, NDArray):
         "score", "delta_rt", "delta_ims", "cosine_similarity", "delta_mass",
         "rank", "isotope_error", "average_ppm", "delta_next", "delta_best",
         "matched_peaks", "longest_b", "longest_y", "longest_y_pct", "missed_cleavages",
-        "matched_intensity_pct", "scored_candidates", "poisson", "charge",
+        "matched_intensity_pct", "poisson", "charge",
         "intensity_ms1", "intensity_ms2", "collision_energy"
     ]
+
+    ds["intensity_ms1"] = np.log(ds["intensity_ms1"] + 1)
+    ds["intensity_ms2"] = np.log(ds["intensity_ms2"] + 1)
 
     X = ds[features].to_numpy().astype(np.float32)
     Y = ds["decoy"].to_numpy()
