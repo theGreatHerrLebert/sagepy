@@ -1321,15 +1321,34 @@ fn string_to_kind(kind: &str) -> Kind {
 
 fn de_duplicate_psm_map(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<PyPeptideSpectrumMatch> {
 
+    // key is (spec_idx, peptide_sequence), value is (proteins, psm)
     let mut seen: HashMap<(String, String), (HashSet<String>, PyPeptideSpectrumMatch)> = HashMap::new();
 
     for psm in psms {
         let key = (psm.inner.spec_idx.clone(), psm.inner.peptide_sequence.clone().unwrap().sequence);
         let value_set: HashSet<_> = psm.inner.proteins.iter().cloned().collect();
 
+        // if the key is present, we need to merge the proteins and deal with the decoy status
         if seen.contains_key(&key) {
-            let (seen_set, _) = seen.get_mut(&key).unwrap();
-            seen_set.extend(value_set);
+            let (seen_set, seen_psm) = seen.get_mut(&key).unwrap();
+
+            // if seen psm is decoy, we want to replace it with the new psm if it is not decoy
+            if seen_psm.inner.decoy && !psm.inner.decoy {
+                *seen_psm = psm.clone();
+                seen_set.clear();
+                seen_set.extend(value_set);
+            }
+
+            // if seen psm is not decoy, we want to keep it and add the new psm if it is not decoy
+            else if !seen_psm.inner.decoy && psm.inner.decoy {
+                continue;
+            }
+
+            // this is the case where both psms are decoy or both are not decoy
+            else {
+                seen_set.extend(value_set);
+            }
+            // if the key is not present, we insert the new psm
         } else {
             seen.insert(key, (value_set, psm));
         }
