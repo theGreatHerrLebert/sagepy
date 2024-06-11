@@ -1319,6 +1319,7 @@ fn string_to_kind(kind: &str) -> Kind {
     }
 }
 
+// TODO: TEST
 fn de_duplicate_psm_map(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<PyPeptideSpectrumMatch> {
 
     // key is (spec_idx, peptide_sequence), value is (proteins, psm)
@@ -1348,6 +1349,7 @@ fn de_duplicate_psm_map(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<PyPeptideSpect
             else {
                 seen_set.extend(value_set);
             }
+
             // if the key is not present, we insert the new psm
         } else {
             seen.insert(key, (value_set, psm));
