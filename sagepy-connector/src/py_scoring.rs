@@ -1340,7 +1340,7 @@ fn de_duplicate_psm_map(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<PyPeptideSpect
                 seen_set.extend(value_set);
             }
 
-            // if seen psm is not decoy, we want to keep it and add the new psm if it is not decoy
+            // if seen psm is not decoy, we want to keep it and add the new psm only if it is not decoy
             else if !seen_psm.inner.decoy && psm.inner.decoy {
                 continue;
             }
