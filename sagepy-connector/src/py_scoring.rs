@@ -1283,8 +1283,15 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, r
             // 2. de-duplicate
             left_psms = de_duplicate_psm_map(left_psms);
 
-            // 3. sort by score
-            left_psms.sort_by(|a, b| b.inner.hyper_score.partial_cmp(&a.inner.hyper_score).unwrap());
+            // 3. sort first by score descending and decoy, decoy == False first
+            left_psms.sort_by(
+                |a, b| {
+                    let a = &a.inner;
+                    let b = &b.inner;
+                    b.hyper_score.partial_cmp(&a.hyper_score).unwrap()
+                        .then(a.decoy.cmp(&b.decoy))
+                }
+            );
 
             // 4. truncate to max_hits
             left_psms.truncate(max_hits);
