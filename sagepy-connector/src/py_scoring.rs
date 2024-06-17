@@ -1,4 +1,5 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
+use itertools::Itertools;
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch};
 use qfdrust::utility::sage_sequence_to_unimod_sequence;
@@ -1260,40 +1261,110 @@ pub fn associate_fragment_ions_with_prosit_predicted_intensities_par(
 #[pyfunction]
 pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, right_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, max_hits: usize) -> BTreeMap<String, Vec<PyPeptideSpectrumMatch>> {
 
-    let mut result_map = left_map.clone();
+    // generate correct peptide status and protein ids
+    let peptide_map = get_peptide_map(left_map.clone(), right_map.clone());
 
-    for (key, right_psms) in right_map {
-        // easiest case, just insert the right psms
-        if !result_map.contains_key(&key) {
-            result_map.insert(key.clone(), right_psms);
+    // update left and right map with decoy status and protein ids from the peptide map
+    let left_map = update_psm_map(left_map, peptide_map.clone());
+    let right_map = update_psm_map(right_map, peptide_map);
+
+    // merge the two maps
+    let mut merged_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>> = BTreeMap::new();
+
+    for (key, psms) in left_map.iter().chain(right_map.iter()) {
+        if !merged_map.contains_key(key) {
+            merged_map.insert(key.clone(), Vec::new());
         }
+        merged_map.get_mut(key).unwrap().extend(psms.clone());
+    }
 
-        // if instead the key is already present, we need to merge the two lists in the following way
-        // 1. merge both lists, sort by score and keep only the max_hits best hits
-        // 2. if two hits have the same peptide sequence, wee need to add the protein information of the right hit to the left hit and the other way around
-        // 3. we need to append the resulting list to the result map
-        else if result_map.contains_key(&key) {
+    // remove duplicates
+    merged_map = remove_duplicates(merged_map);
 
-            let mut left_psms = result_map.get(&key).unwrap().clone();
-            let mut right_psms = right_psms;
+    // clip the number of hits
+    for (_, psms) in merged_map.iter_mut() {
+        psms.truncate(max_hits);
+    }
 
-            // 1. merge lists
-            left_psms.append(&mut right_psms);
+    merged_map
+}
 
-            // 2. de-duplicate
-            left_psms = de_duplicate_psm_map(left_psms);
+fn update_psm_map(psm_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, peptide_map: BTreeMap<String, (bool, Vec<String>)>) -> BTreeMap<String, Vec<PyPeptideSpectrumMatch>> {
+    let mut new_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>> = BTreeMap::new();
 
-            // 3. sort by score
-            left_psms.sort_by(|a, b| b.inner.hyper_score.partial_cmp(&a.inner.hyper_score).unwrap());
+    for (key, psms) in psm_map {
+        let mut new_psms: Vec<PyPeptideSpectrumMatch> = Vec::new();
+        for psm in psms {
+            let sequence = psm.clone().inner.peptide_sequence.unwrap().sequence;
+            let (decoy, proteins) = peptide_map.get(&sequence).unwrap();
+            let mut new_psm = psm.clone();
+            new_psm.inner.decoy = *decoy;
+            new_psm.inner.proteins = proteins.clone();
+            new_psms.push(new_psm);
+        }
+        new_map.insert(key, new_psms);
+    }
 
-            // 4. truncate to max_hits
-            left_psms.truncate(max_hits);
+    new_map
+}
 
-            result_map.insert(key.clone(), left_psms);
+fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>) -> BTreeMap<String, Vec<PyPeptideSpectrumMatch>> {
+    let mut new_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>> = BTreeMap::new();
+
+    for (key, psms) in psm_map {
+        let mut new_psms: Vec<PyPeptideSpectrumMatch> = Vec::new();
+        let mut seen: HashSet<String> = HashSet::new();
+        // sort the psms by hyperscore descending
+        for psm in psms.iter().sorted_by(|a, b| b.inner.hyper_score.partial_cmp(&a.inner.hyper_score).unwrap()) {
+            let sequence = psm.clone().inner.peptide_sequence.unwrap().sequence;
+            if !seen.contains(&sequence) {
+                seen.insert(sequence.clone());
+                new_psms.push(psm.clone());
+            }
+        }
+        new_map.insert(key, new_psms);
+    }
+
+    new_map
+}
+
+fn get_peptide_map(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, right_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>) -> BTreeMap<String, (bool, Vec<String>)> {
+
+    let mut peptide_map: BTreeMap<String, (bool, HashSet<String>)> = BTreeMap::new();
+
+    let psms = left_map.into_iter().chain(right_map.into_iter()).collect::<Vec<_>>();
+
+    for (_, psms) in psms {
+        for psm in psms {
+            let key = psm.inner.peptide_sequence.unwrap().sequence;
+            let decoy = psm.inner.decoy;
+            let proteins = psm.inner.proteins;
+
+            // if the peptide is already in the map
+            if peptide_map.contains_key(&key) {
+                let (current_decoy, current_proteins) = peptide_map.get_mut(&key).unwrap();
+                // if decoy of the current peptide is false and the new decoy is also false, add the proteins to the current proteins
+                if !decoy && !*current_decoy {
+                    current_proteins.extend(proteins);
+                }
+                // if both are decoy, merge the proteins
+                else if decoy && *current_decoy {
+                    current_proteins.extend(proteins);
+                }
+                // if new is not decoy but current is decoy, replace the current proteins with the new proteins and set the decoy to false
+                else if !decoy && *current_decoy {
+                    *current_proteins = proteins.into_iter().collect();
+                    *current_decoy = false;
+                }
+            // if it is not in the map, add it
+            } else {
+                peptide_map.insert(key, (decoy, proteins.into_iter().collect()));
+            }
         }
     }
 
-    result_map
+    // return the peptide map by converting the hashset to a vector
+    peptide_map.into_iter().map(|(k, (d, p))| (k, (d, p.into_iter().collect()))).collect()
 }
 
 fn kind_to_string(kind: Kind) -> String {
@@ -1317,54 +1388,6 @@ fn string_to_kind(kind: &str) -> Kind {
         "x" => Kind::X,
         _ => panic!("Invalid kind"),
     }
-}
-
-// TODO: TEST
-fn de_duplicate_psm_map(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<PyPeptideSpectrumMatch> {
-
-    // key is (spec_idx, peptide_sequence), value is (proteins, psm)
-    let mut seen: HashMap<(String, String), (HashSet<String>, PyPeptideSpectrumMatch)> = HashMap::new();
-
-    for psm in psms {
-        let key = (psm.inner.spec_idx.clone(), psm.inner.peptide_sequence.clone().unwrap().sequence);
-        let value_set: HashSet<_> = psm.inner.proteins.iter().cloned().collect();
-
-        // if the key is present, we need to merge the proteins and deal with the decoy status
-        if seen.contains_key(&key) {
-            let (seen_set, seen_psm) = seen.get_mut(&key).unwrap();
-
-            // if seen psm is decoy, we want to replace it with the new psm if it is not decoy
-            if seen_psm.inner.decoy && !psm.inner.decoy {
-                *seen_psm = psm.clone();
-                seen_set.clear();
-                seen_set.extend(value_set);
-            }
-
-            // if seen psm is not decoy, we want to keep it and add the new psm only if it is not decoy
-            else if !seen_psm.inner.decoy && psm.inner.decoy {
-                continue;
-            }
-
-            // this is the case where both psms are decoy or both are not decoy
-            else {
-                seen_set.extend(value_set);
-            }
-
-            // if the key is not present, we insert the new psm
-        } else {
-            seen.insert(key, (value_set, psm));
-        }
-    }
-
-    let mut result: Vec<PyPeptideSpectrumMatch> = Vec::new();
-
-    for (_, (proteins, psm)) in seen {
-        let mut psm = psm;
-        psm.inner.proteins = proteins.into_iter().collect();
-        result.push(psm);
-    }
-
-    result
 }
 
 #[pymodule]
