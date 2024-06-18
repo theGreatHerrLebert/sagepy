@@ -1296,6 +1296,12 @@ fn update_psm_map(psm_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, peptid
         let mut new_psms: Vec<PyPeptideSpectrumMatch> = Vec::new();
         for psm in psms {
             let sequence = psm.clone().inner.peptide_sequence.unwrap().sequence;
+
+            // if the peptide is not in the map, skip the psm
+            if peptide_map.get(&sequence).is_none() {
+                continue;
+            }
+
             let (decoy, proteins) = peptide_map.get(&sequence).unwrap();
             let mut new_psm = psm.clone();
             new_psm.inner.decoy = *decoy;
