@@ -811,6 +811,7 @@ impl PyPeptideSpectrumMatch {
         cosine_similarity: Option<f32>,
         file_name: Option<String>,
         mz_calibration_ppm: Option<f32>,
+        projected_rt: Option<f32>,
     ) -> Self {
 
         let maybe_charges = fragments_observed.clone().map(|f| f.inner.charges);
@@ -862,6 +863,7 @@ impl PyPeptideSpectrumMatch {
                 maybe_mz_calculated,
                 maybe_mz_experimental,
                 mz_calibration_ppm,
+                projected_rt,
             ),
             fragments_observed,
             fragments_predicted,
@@ -1141,6 +1143,16 @@ impl PyPeptideSpectrumMatch {
     #[setter]
     pub fn set_mz_calibration_ppm(&mut self, mz_calibration_ppm: f32) {
         self.inner.mz_calibration_ppm = Some(mz_calibration_ppm);
+    }
+
+    #[getter]
+    pub fn projected_rt(&self) -> Option<f32> {
+        self.inner.projected_rt
+    }
+
+    #[setter]
+    pub fn set_projected_rt(&mut self, projected_rt: f32) {
+        self.inner.projected_rt = Some(projected_rt);
     }
 }
 

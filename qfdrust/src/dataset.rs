@@ -177,6 +177,7 @@ pub struct PeptideSpectrumMatch {
     pub fragment_mz_calculated: Option<Vec<f32>>,
     pub fragment_mz_observed: Option<Vec<f32>>,
     pub mz_calibration_ppm: Option<f32>,
+    pub projected_rt: Option<f32>,
 }
 
 impl PeptideSpectrumMatch {
@@ -221,6 +222,7 @@ impl PeptideSpectrumMatch {
         fragment_mz_calculated: Option<Vec<f32>>,
         fragment_mz_observed: Option<Vec<f32>>,
         mz_calibration_ppm: Option<f32>,
+        projected_rt: Option<f32>,
     ) -> PeptideSpectrumMatch {
 
         let peptide_sequence = match &sequence {
@@ -281,6 +283,7 @@ impl PeptideSpectrumMatch {
             fragment_mz_calculated,
             fragment_mz_observed,
             mz_calibration_ppm,
+            projected_rt,
         }
     }
     pub fn associate_with_prosit_predicted_intensities(&self, flat_intensities: Vec<f64>) -> Option<PeptideProductIonSeriesCollection> {

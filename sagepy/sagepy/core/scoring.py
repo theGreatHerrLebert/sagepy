@@ -54,6 +54,7 @@ class PeptideSpectrumMatch:
                  fragment_mz_calculated: Union[None, List[float]] = None,
                  fragment_mz_experimental: Union[None, List[float]] = None,
                  mz_calibration_ppm: Union[None, float] = None,
+                 projected_rt: Union[None, float] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed,
@@ -64,7 +65,7 @@ class PeptideSpectrumMatch:
             intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr(),
             re_score, cosine_similarity, file_name,
             fragment_charges, fragment_ion_types, fragment_ordinals, fragment_intensities, fragment_mz_calculated,
-            fragment_mz_experimental, mz_calibration_ppm
+            fragment_mz_experimental, mz_calibration_ppm, projected_rt
         )
 
     @property
@@ -253,6 +254,14 @@ class PeptideSpectrumMatch:
     def mz_calibration_ppm(self, value):
         self.__py_ptr.mz_calibration_ppm = value
 
+    @property
+    def projected_rt(self):
+        return self.__py_ptr.projected_rt
+
+    @projected_rt.setter
+    def projected_rt(self, value):
+        self.__py_ptr.projected_rt = value
+
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
         instance = cls.__new__(cls)
@@ -299,7 +308,12 @@ class PeptideSpectrumMatch:
                f"collision_energy_calibrated: {self.collision_energy_calibrated}, "
                f"fragments_observed: {self.fragments_observed if self.fragments_predicted is not None else None}, "
                f"fragments_predicted: {self.fragments_predicted if self.fragments_observed is not None else None}, "
-               f"re_score: {self.re_score})")
+               f"re_score: {self.re_score if self.re_score is not None else None}, "
+               f"cosine_similarity: {self.cosine_similarity if self.cosine_similarity is not None else None}, "
+               f"file_name: {self.file_name if self.file_name is not None else None}, "
+               f"mz_calibration_ppm: {self.mz_calibration_ppm if self.mz_calibration_ppm is not None else None}, "
+               f"projected_rt: {self.projected_rt if self.projected_rt is not None else None})"
+               )
 
 
 class Fragments:
