@@ -179,6 +179,7 @@ def get_features(ds: pd.DataFrame) -> (NDArray, NDArray):
         "matched_intensity_pct", "poisson", "charge",
         "intensity_ms1", "intensity_ms2", "collision_energy"
     ]
+    ds = ds.copy()
 
     ds["intensity_ms1"] = ds["intensity_ms1"].apply(lambda x: np.log(x + 1))
     ds["intensity_ms2"] = ds["intensity_ms2"].apply(lambda x: np.log(x + 1))
