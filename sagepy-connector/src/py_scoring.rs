@@ -596,6 +596,7 @@ impl PyScorer {
                             maybe_mz_calculated,
                             maybe_mz_experimental,
                             None,
+                            None,
                         );
                         psms.push((psm, fragments));
                     }
