@@ -103,8 +103,8 @@ def peptide_spectrum_match_list_to_pandas(
     """
     row_list = []
     for match in psms:
-        if match.retention_time_predicted is not None:
-            delta_rt = match.retention_time_predicted - match.retention_time_observed
+        if match.retention_time_predicted is not None and match.projected_rt is not None:
+            delta_rt = match.retention_time_predicted - match.projected_rt
         else:
             delta_rt = None
 
@@ -165,6 +165,7 @@ def peptide_spectrum_match_list_to_pandas(
             "median_ppm": median_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated),
             "fragments_observed": match.fragments_observed,
             "fragments_predicted": match.fragments_predicted,
+            "projected_rt": match.projected_rt,
         })
 
     return pd.DataFrame(row_list)
