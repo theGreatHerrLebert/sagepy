@@ -156,6 +156,8 @@ class SageSearchConfiguration:
                  max_variable_mods: int = 2,
                  decoy_tag: str = 'rev_',
                  generate_decoys: bool = True,
+                 shuffle_decoys: Union[bool, None] = None,
+                 shuffle_include_ends: Union[bool, None] = None,
                  ):
         """SageSearchConfiguration class
 
@@ -174,6 +176,8 @@ class SageSearchConfiguration:
             max_variable_mods (int, optional): The maximum number of variable modifications. Defaults to 2.
             decoy_tag (str, optional): The decoy tag. Defaults to 'rev_'.
             generate_decoys (bool, optional): Whether to generate decoys. Defaults to True.
+            shuffle_decoys (Union[bool, None], optional): Whether to shuffle decoys. Defaults to None.
+            shuffle_include_ends (Union[bool, None], optional): Whether to shuffle include ends. Defaults to None.
         """
         self.__py_parameter_ptr = psc.PyParameters(
             find_next_power_of_2(bucket_size),
@@ -190,6 +194,8 @@ class SageSearchConfiguration:
             generate_decoys,
             fasta,
             ion_kinds,
+            shuffle_decoys,
+            shuffle_include_ends
         )
 
     @classmethod
