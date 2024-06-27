@@ -157,7 +157,7 @@ class SageSearchConfiguration:
                  decoy_tag: str = 'rev_',
                  generate_decoys: bool = True,
                  shuffle_decoys: Union[bool, None] = None,
-                 shuffle_include_ends: Union[bool, None] = None,
+                 keep_ends: Union[bool, None] = None,
                  ):
         """SageSearchConfiguration class
 
@@ -177,7 +177,7 @@ class SageSearchConfiguration:
             decoy_tag (str, optional): The decoy tag. Defaults to 'rev_'.
             generate_decoys (bool, optional): Whether to generate decoys. Defaults to True.
             shuffle_decoys (Union[bool, None], optional): Whether to shuffle decoys. Defaults to None.
-            shuffle_include_ends (Union[bool, None], optional): Whether to shuffle include ends. Defaults to None.
+            keep_ends (Union[bool, None], optional): Whether to include start and end amino acid for permutation strategy. Defaults to None.
         """
         self.__py_parameter_ptr = psc.PyParameters(
             find_next_power_of_2(bucket_size),
@@ -195,7 +195,7 @@ class SageSearchConfiguration:
             fasta,
             ion_kinds,
             shuffle_decoys,
-            shuffle_include_ends
+            keep_ends
         )
 
     @classmethod

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import sagepy_connector
 
@@ -89,6 +89,10 @@ class Peptide:
     @property
     def semi_enzymatic(self):
         return self.__peptide_ptr.semi_enzymatic
+
+    @property
+    def reverse(self, keep_ends: Union[bool, None]) -> 'Peptide':
+        return Peptide.from_py_peptide(self.__peptide_ptr.reverse(keep_ends))
 
     def get_py_ptr(self):
         return self.__peptide_ptr

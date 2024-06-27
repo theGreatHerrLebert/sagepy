@@ -108,9 +108,9 @@ impl PyPeptide {
         self.inner.semi_enzymatic
     }
 
-    pub fn reverse(&self) -> PyPeptide {
+    pub fn reverse(&self, kee_ends: Option<bool>) -> PyPeptide {
         PyPeptide {
-            inner: self.inner.reverse(),
+            inner: self.inner.reverse(kee_ends),
         }
     }
 }
