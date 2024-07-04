@@ -90,9 +90,11 @@ class Peptide:
     def semi_enzymatic(self):
         return self.__peptide_ptr.semi_enzymatic
 
-    @property
     def reverse(self, keep_ends: Union[bool, None]) -> 'Peptide':
         return Peptide.from_py_peptide(self.__peptide_ptr.reverse(keep_ends))
+
+    def shuffle(self, keep_ends: Union[bool, None]) -> 'Peptide':
+        return Peptide.from_py_peptide(self.__peptide_ptr.shuffle(keep_ends))
 
     def get_py_ptr(self):
         return self.__peptide_ptr
