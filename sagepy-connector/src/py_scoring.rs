@@ -1374,6 +1374,18 @@ fn get_peptide_map(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, righ
                     current_proteins.extend(proteins);
                 }
 
+                // if new is not decoy, set the peptide to the new peptide and the proteins to the new proteins
+                else if !decoy && *current_decoy {
+                    *current_decoy = decoy;
+                    *current_proteins = proteins.into_iter().collect();
+                }
+
+                // if the new is decoy but the current is not decoy, do nothing
+                else if decoy && !*current_decoy {
+                    continue;
+                }
+
+                /*
                 // if new is not decoy but current is decoy, remove this peptide from the map since no overlap between decoy and target should exist
                 else if !decoy && *current_decoy {
                     peptide_map.remove(&key);
@@ -1383,6 +1395,7 @@ fn get_peptide_map(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, righ
                 else if decoy && !*current_decoy {
                     peptide_map.remove(&key);
                 }
+                 */
 
             // if the peptide is not in the map, add it
             } else {
