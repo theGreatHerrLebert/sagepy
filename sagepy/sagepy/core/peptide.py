@@ -91,9 +91,25 @@ class Peptide:
         return self.__peptide_ptr.semi_enzymatic
 
     def reverse(self, keep_ends: Union[bool, None]) -> 'Peptide':
+        """Reverse the peptide sequence.
+
+        Args:
+            keep_ends (Union[bool, None]): Whether to keep the N- and C-terminal amino acids in place.
+
+        Returns:
+            Peptide: The reversed peptide.
+        """
         return Peptide.from_py_peptide(self.__peptide_ptr.reverse(keep_ends))
 
     def shuffle(self, keep_ends: Union[bool, None]) -> 'Peptide':
+        """Shuffle the peptide sequence.
+
+        Args:
+            keep_ends (Union[bool, None]): Whether to keep the N- and C-terminal amino acids in place.
+
+        Returns:
+            Peptide: The shuffled peptide.
+        """
         return Peptide.from_py_peptide(self.__peptide_ptr.shuffle(keep_ends))
 
     def get_py_ptr(self):
