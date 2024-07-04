@@ -108,9 +108,15 @@ impl PyPeptide {
         self.inner.semi_enzymatic
     }
 
-    pub fn reverse(&self, kee_ends: Option<bool>) -> PyPeptide {
+    pub fn reverse(&self, keep_ends: Option<bool>) -> PyPeptide {
         PyPeptide {
-            inner: self.inner.reverse(kee_ends),
+            inner: self.inner.reverse(keep_ends.unwrap_or(true)),
+        }
+    }
+
+    pub fn shuffle(&self, keep_ends: Option<bool>) -> PyPeptide {
+        PyPeptide {
+            inner: self.inner.shuffle(keep_ends.unwrap_or(true)),
         }
     }
 }
