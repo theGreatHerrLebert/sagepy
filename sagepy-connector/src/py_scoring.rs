@@ -10,10 +10,31 @@ use sage_core::ion_series::Kind;
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
-use sage_core::scoring::{Feature, Scorer, Fragments};
-use serde::{Serialize};
+use sage_core::scoring::{Feature, Scorer, Fragments, ScoreType};
+use serde::{Deserialize, Serialize};
 use crate::py_ion_series::PyKind;
 use crate::py_utility::{cosine_similarity, flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
+
+#[pyclass]
+#[derive(Clone, Serialize, Deserialize)]
+pub struct PyScoreType {
+    pub inner: ScoreType,
+}
+
+#[pymethods]
+impl PyScoreType {
+    #[new]
+    pub fn new(name: &str) -> Self {
+        PyScoreType {
+            inner: ScoreType::from_str(name),
+        }
+    }
+
+    #[getter]
+    pub fn name(&self) -> String {
+        self.inner.to_str().to_string()
+    }
+}
 
 #[pyclass]
 #[derive(Clone, Serialize)]
@@ -377,6 +398,7 @@ pub struct PyScorer {
     pub report_psms: usize,
     pub wide_window: bool,
     pub annotate_matches: bool,
+    pub score_type: Option<PyScoreType>,
 }
 
 #[pymethods]
@@ -397,6 +419,7 @@ impl PyScorer {
         wide_window: bool,
         annotate_matches: bool,
         max_fragment_charge: Option<u8>,
+        score_type: Option<PyScoreType>,
     ) -> Self {
         PyScorer {
             precursor_tolerance,
@@ -413,6 +436,7 @@ impl PyScorer {
             report_psms,
             wide_window,
             annotate_matches,
+            score_type,
         }
     }
 
@@ -433,6 +457,7 @@ impl PyScorer {
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
+            score_type: self.score_type.clone().map(|s| s.inner),
         };
         let features = scorer.score(&spectrum.inner);
         features
@@ -463,6 +488,7 @@ impl PyScorer {
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
+            score_type: self.score_type.clone().map(|s| s.inner),
         };
         // Configure the global thread pool to the desired number of threads
         let pool = ThreadPoolBuilder::new()
@@ -508,6 +534,7 @@ impl PyScorer {
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
+            score_type: self.score_type.clone().map(|s| s.inner),
         };
 
         let pool = ThreadPoolBuilder::new()
@@ -661,6 +688,7 @@ impl PyScorer {
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
+            score_type: self.score_type.clone().map(|s| s.inner),
         };
         let features = scorer.score_chimera_fast(&query.inner);
         features
@@ -690,6 +718,7 @@ impl PyScorer {
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
+            score_type: self.score_type.clone().map(|s| s.inner),
         };
         let features = scorer.score_standard(&query.inner);
         features

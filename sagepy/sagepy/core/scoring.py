@@ -11,6 +11,23 @@ from .mass import Tolerance
 from .database import PeptideIx, IndexedDatabase
 
 
+class ScoreType:
+    def __init__(self, name: str):
+        self.__py_ptr = psc.PyScoreType(name)
+
+    @classmethod
+    def from_py_ptr(cls, py_ptr: psc.PyScoreType):
+        instance = cls.__new__(cls)
+        instance.__py_ptr = py_ptr
+        return instance
+
+    def get_py_ptr(self) -> psc.PyScoreType:
+        return self.__py_ptr
+
+    def __repr__(self):
+        return f"ScoreType({self.__py_ptr.to_str()})"
+
+
 class PeptideSpectrumMatch:
     def __init__(self,
                  spec_idx: str,
@@ -383,7 +400,9 @@ class Scorer:
             report_psms: int = 1,
             wide_window: bool = False,
             annotate_matches: bool = False,
-            max_fragment_charge: Optional[int] = 1):
+            score_type: ScoreType = ScoreType("openms"),
+            max_fragment_charge: Optional[int] = 1,
+    ):
         """Scorer class
 
         Args:
@@ -399,6 +418,8 @@ class Scorer:
             chimera (bool, optional): Should chimera be used. Defaults to False.
             report_psms (int, optional): The number of PSMs to report. Defaults to 1.
             wide_window (bool, optional): Should wide window be used. Defaults to False.
+            annotate_matches (bool, optional): Should matches be annotated. Defaults to False.
+            score_type (ScoreType, optional): The score type. Defaults to ScoreType("openms").
             max_fragment_charge (Optional[int], optional): The maximum fragment charge. Defaults to 1.
         """
         self.__scorer_ptr = psc.PyScorer(precursor_tolerance.get_py_ptr(),
@@ -406,7 +427,8 @@ class Scorer:
                                          min_matched_peaks,
                                          min_isotope_err, max_isotope_err, min_precursor_charge,
                                          max_precursor_charge, min_fragment_mass, max_fragment_mass,
-                                         chimera, report_psms, wide_window, annotate_matches, max_fragment_charge)
+                                         chimera, report_psms, wide_window, annotate_matches, max_fragment_charge,
+                                         score_type.get_py_ptr())
 
     @classmethod
     def from_py_scorer(cls, scorer: psc.PyScorer):
