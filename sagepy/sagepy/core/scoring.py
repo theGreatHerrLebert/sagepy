@@ -13,6 +13,9 @@ from .database import PeptideIx, IndexedDatabase
 
 class ScoreType:
     def __init__(self, name: str):
+        name = name.lower()
+        names = {"openms", "sage", "happy"}
+        assert name in names, f"Invalid score type: {name}, allowed values are: {names}"
         self.__py_ptr = psc.PyScoreType(name)
 
     @classmethod
