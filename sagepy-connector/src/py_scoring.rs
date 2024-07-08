@@ -1466,6 +1466,7 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyFeature>()?;
     m.add_class::<PyScorer>()?;
     m.add_class::<PyPeptideSpectrumMatch>()?;
+    m.add_class::<PyScoreType>()?;
     m.add_function(wrap_pyfunction!(associate_psm_with_prosit_predicted_intensities, m)?)?;
     m.add_function(wrap_pyfunction!(associate_fragment_ions_with_prosit_predicted_intensities_par, m)?)?;
     m.add_function(wrap_pyfunction!(psm_from_json, m)?)?;
