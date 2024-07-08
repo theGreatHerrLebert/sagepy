@@ -30,8 +30,7 @@ impl PyScoreType {
         }
     }
 
-    #[getter]
-    pub fn name(&self) -> String {
+    pub fn to_str(&self) -> String {
         self.inner.to_str().to_string()
     }
 }
