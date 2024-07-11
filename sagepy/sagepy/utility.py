@@ -177,9 +177,9 @@ def peptide_spectrum_match_list_to_pandas(
     return pd.DataFrame(row_list)
 
 
-def get_features(ds: pd.DataFrame, target_score: Optional[str] = None) -> (NDArray, NDArray):
+def get_features(ds: pd.DataFrame, score: Optional[str] = None) -> (NDArray, NDArray):
 
-    score = target_score if target_score is not None else "score"
+    score = score if score is not None else "score"
 
     features = [
         f"{score}", "delta_rt", "delta_ims", "cosine_similarity", "delta_mass",
