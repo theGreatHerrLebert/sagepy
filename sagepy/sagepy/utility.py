@@ -123,6 +123,11 @@ def peptide_spectrum_match_list_to_pandas(
         else:
             delta_ims = None
 
+        if match.delta_score is not None:
+            delta_score = match.delta_score
+        else:
+            delta_score = None
+
         row_list.append({
             "spec_idx": match.spec_idx,
             "match_idx": match_idx,
@@ -166,6 +171,7 @@ def peptide_spectrum_match_list_to_pandas(
             "fragments_observed": match.fragments_observed,
             "fragments_predicted": match.fragments_predicted,
             "projected_rt": match.projected_rt,
+            "delta_score": delta_score
         })
 
     return pd.DataFrame(row_list)
