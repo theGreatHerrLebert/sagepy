@@ -124,7 +124,7 @@ def peptide_spectrum_match_list_to_pandas(
             delta_ims = None
 
         if match.beta_score is not None:
-            beta_score = match.delta_score
+            beta_score = match.beta_score
         else:
             beta_score = None
 
