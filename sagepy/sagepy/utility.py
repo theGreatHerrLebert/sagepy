@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 
 from numba import jit
 import numpy as np
@@ -177,9 +177,12 @@ def peptide_spectrum_match_list_to_pandas(
     return pd.DataFrame(row_list)
 
 
-def get_features(ds: pd.DataFrame) -> (NDArray, NDArray):
+def get_features(ds: pd.DataFrame, target_score: Optional[str] = None) -> (NDArray, NDArray):
+
+    score = target_score if target_score is not None else "score"
+
     features = [
-        "score", "delta_rt", "delta_ims", "cosine_similarity", "delta_mass",
+        f"{score}", "delta_rt", "delta_ims", "cosine_similarity", "delta_mass",
         "rank", "isotope_error", "average_ppm", "delta_next", "delta_best",
         "matched_peaks", "longest_b", "longest_y", "longest_y_pct", "missed_cleavages",
         "matched_intensity_pct", "poisson", "charge",
