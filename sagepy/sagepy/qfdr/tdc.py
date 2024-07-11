@@ -53,14 +53,14 @@ def target_decoy_competition(
 def target_decoy_competition_pandas(
         df: pd.DataFrame,
         method: str = "peptide_psm_peptide",
-        target: Optional[str] = None,
+        score: Optional[str] = None,
 ) -> pd.DataFrame:
     """ Perform target-decoy competition on a pandas DataFrame.
 
     Args:
         df: a pandas DataFrame
         method: the method to use, allowed values are: psm, peptide_psm_only, peptide_peptide_only, peptide_psm_peptide
-        target: the target column name
+        score: the target column name
 
     Returns:
         a pandas DataFrame with q-values
@@ -69,13 +69,13 @@ def target_decoy_competition_pandas(
     assert 'match_idx' in df.columns, "match_idx column not found"
     assert 'decoy' in df.columns, "decoy column not found"
 
-    if target is not None:
-        assert target in df.columns, f"{target} column not found"
+    if score is not None:
+        assert score in df.columns, f"{score} column not found"
 
     else:
         assert 'score' in df.columns, "score column not found"
 
-    score = df['score'] if target is None else df[target]
+    score = df['score'] if score is None else df[score]
 
     spec_idx, match_idx, target, scores = (df['spec_idx'].tolist(),
                                            df['match_idx'].tolist(), df['decoy'].tolist(), score.tolist())
