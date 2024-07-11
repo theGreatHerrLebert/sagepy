@@ -75,6 +75,7 @@ class PeptideSpectrumMatch:
                  fragment_mz_experimental: Union[None, List[float]] = None,
                  mz_calibration_ppm: Union[None, float] = None,
                  projected_rt: Union[None, float] = None,
+                 beta_score: Union[None, float] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed,
@@ -85,7 +86,7 @@ class PeptideSpectrumMatch:
             intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr(),
             re_score, cosine_similarity, file_name,
             fragment_charges, fragment_ion_types, fragment_ordinals, fragment_intensities, fragment_mz_calculated,
-            fragment_mz_experimental, mz_calibration_ppm, projected_rt
+            fragment_mz_experimental, mz_calibration_ppm, projected_rt, beta_score
         )
 
     @property
@@ -282,6 +283,14 @@ class PeptideSpectrumMatch:
     def projected_rt(self, value):
         self.__py_ptr.projected_rt = value
 
+    @property
+    def beta_score(self):
+        return self.__py_ptr.beta_score
+
+    @beta_score.setter
+    def beta_score(self, value):
+        self.__py_ptr.beta_score = value
+
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
         instance = cls.__new__(cls)
@@ -332,7 +341,8 @@ class PeptideSpectrumMatch:
                f"cosine_similarity: {self.cosine_similarity if self.cosine_similarity is not None else None}, "
                f"file_name: {self.file_name if self.file_name is not None else None}, "
                f"mz_calibration_ppm: {self.mz_calibration_ppm if self.mz_calibration_ppm is not None else None}, "
-               f"projected_rt: {self.projected_rt if self.projected_rt is not None else None})"
+               f"projected_rt: {self.projected_rt if self.projected_rt is not None else None}, "
+               f"beta_score: {self.beta_score if self.beta_score is not None else None})"
                )
 
 

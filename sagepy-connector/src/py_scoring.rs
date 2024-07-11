@@ -623,6 +623,7 @@ impl PyScorer {
                             maybe_mz_experimental,
                             None,
                             None,
+                            None,
                         );
                         psms.push((psm, fragments));
                     }
@@ -841,6 +842,7 @@ impl PyPeptideSpectrumMatch {
         file_name: Option<String>,
         mz_calibration_ppm: Option<f32>,
         projected_rt: Option<f32>,
+        beta_score: Option<f64>,
     ) -> Self {
 
         let maybe_charges = fragments_observed.clone().map(|f| f.inner.charges);
@@ -893,6 +895,7 @@ impl PyPeptideSpectrumMatch {
                 maybe_mz_experimental,
                 mz_calibration_ppm,
                 projected_rt,
+                beta_score,
             ),
             fragments_observed,
             fragments_predicted,
@@ -1182,6 +1185,16 @@ impl PyPeptideSpectrumMatch {
     #[setter]
     pub fn set_projected_rt(&mut self, projected_rt: f32) {
         self.inner.projected_rt = Some(projected_rt);
+    }
+
+    #[getter]
+    pub fn beta_score(&self) -> Option<f64> {
+        self.inner.beta_score
+    }
+
+    #[setter]
+    pub fn set_beta_score(&mut self, beta_score: f64) {
+        self.inner.beta_score = Some(beta_score);
     }
 }
 
