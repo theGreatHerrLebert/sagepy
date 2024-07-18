@@ -1002,7 +1002,7 @@ def prosit_intensities_to_fragments(
     Returns:
         a Fragments object
     """
-    return Fragments.from_py_fragments(psc_utils.prosit_intensities_to_py_fragments(flat_intensities))
+    return Fragments.from_py_fragments(psc.prosit_intensities_to_py_fragments(flat_intensities))
 
 
 def prosit_intensities_to_fragments_par(
@@ -1019,4 +1019,4 @@ def prosit_intensities_to_fragments_par(
         a Fragments List object
     """
 
-    return [Fragments.from_py_fragments(f) for f in psc_utils.prosit_intensities_to_py_fragments_par(flat_intensities, num_threads)]
+    return [Fragments.from_py_fragments(f) for f in psc.prosit_intensities_to_py_fragments_par(flat_intensities, num_threads)]
