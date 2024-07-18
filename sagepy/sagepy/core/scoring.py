@@ -983,3 +983,33 @@ def merge_psm_dicts(left_psms: Dict[str, List[PeptideSpectrumMatch]],
     right_map = {key: [psm.get_py_ptr() for psm in value] for key, value in right_psms.items()}
     result = psc.merge_psm_maps(left_map, right_map, max_hits)
     return {key: [PeptideSpectrumMatch.from_py_ptr(psm) for psm in value] for key, value in result.items()}
+
+
+def prosit_intensities_to_fragments(
+        flat_intensities: List[float],
+) -> Fragments:
+    """ Convert a list of intensities to a Fragments object.
+
+    Args:
+        flat_intensities: a list of intensities
+
+    Returns:
+        a Fragments object
+    """
+    return Fragments.from_py_fragments(psc_utils.prosit_intensities_to_py_fragments(flat_intensities))
+
+def prosit_intensities_to_fragments_par(
+        flat_intensities: List[float],
+        num_threads: int = 16,
+) -> List[Fragments]:
+    """ Convert a list of intensities to a Fragments object in parallel.
+
+    Args:
+        flat_intensities: a list of intensities
+        num_threads: the number of threads
+
+    Returns:
+        a Fragments List object
+    """
+
+    return [Fragments.from_py_fragments(f) for f in psc_utils.prosit_intensities_to_py_fragments_par(flat_intensities, num_threads)]
