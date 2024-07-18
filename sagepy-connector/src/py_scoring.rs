@@ -1209,6 +1209,90 @@ pub fn psm_from_json(json: &str) -> PyPeptideSpectrumMatch {
 }
 
 #[pyfunction]
+pub fn prosit_intensities_to_py_fragments(
+    flat_intensities: Vec<f32>,
+) -> PyFragments {
+    let fragments = flat_prosit_array_to_fragments_map(flat_intensities);
+
+    let mut predicted_kinds_b: Vec<Kind> = Vec::new();
+    let mut predicted_kinds_y: Vec<Kind> = Vec::new();
+
+    let mut predicted_fragment_ordinals_b = Vec::new();
+    let mut predicted_fragment_ordinals_y = Vec::new();
+
+    let mut predicted_charges_b = Vec::new();
+    let mut predicted_charges_y = Vec::new();
+
+    let mut predicted_intensities_b = Vec::new();
+    let mut predicted_intensities_y = Vec::new();
+
+    for (key, _) in fragments.iter() {
+
+        let (kind, charge, fragment_ordinal) = key;
+
+        let predicted_intensity = fragments.get(key).unwrap_or(&0.0);
+
+        let kind = match kind {
+            0 => Kind::B,
+            1 => Kind::Y,
+            _ => panic!("Invalid kind"),
+        };
+
+        if kind == Kind::B {
+            predicted_kinds_b.push(kind);
+            predicted_charges_b.push(*charge);
+            predicted_fragment_ordinals_b.push(*fragment_ordinal);
+            predicted_intensities_b.push(*predicted_intensity);
+        } else {
+            predicted_kinds_y.push(kind);
+            predicted_charges_y.push(*charge);
+            predicted_fragment_ordinals_y.push(*fragment_ordinal);
+            predicted_intensities_y.push(*predicted_intensity);
+        }
+    }
+
+    // invert the order of y fragments
+    predicted_kinds_y.reverse();
+    predicted_charges_y.reverse();
+    predicted_fragment_ordinals_y.reverse();
+    predicted_intensities_y.reverse();
+
+    let fragments = Fragments {
+        charges: predicted_charges_b.iter().chain(predicted_charges_y.iter()).cloned().collect(),
+        kinds: predicted_kinds_b.iter().chain(predicted_kinds_y.iter()).cloned().collect(),
+        fragment_ordinals: predicted_fragment_ordinals_b.iter().chain(predicted_fragment_ordinals_y.iter()).cloned().collect(),
+        intensities: predicted_intensities_b.iter().chain(predicted_intensities_y.iter()).cloned().collect(),
+        mz_calculated: Vec::new(),
+        mz_experimental: Vec::new(),
+    };
+
+    PyFragments {
+        inner: fragments
+    }
+}
+
+#[pyfunction]
+pub fn prosit_intensities_to_py_fragments_par(
+    flat_intensities: Vec<Vec<f32>>,
+    num_threads: usize
+) -> Vec<PyFragments> {
+    let pool = ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build()
+        .unwrap();
+
+    let result = pool.install(|| {
+        flat_intensities.par_iter()
+            .map(|intensities| {
+                prosit_intensities_to_py_fragments(intensities.clone())
+            })
+            .collect()
+    });
+
+    result
+}
+
+#[pyfunction]
 pub fn associate_psm_with_prosit_predicted_intensities(
     psm: PyPeptideSpectrumMatch,
     flat_intensities: Vec<f32>,
@@ -1481,6 +1565,8 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyScoreType>()?;
     m.add_function(wrap_pyfunction!(associate_psm_with_prosit_predicted_intensities, m)?)?;
     m.add_function(wrap_pyfunction!(associate_fragment_ions_with_prosit_predicted_intensities_par, m)?)?;
+    m.add_function(wrap_pyfunction!(prosit_intensities_to_py_fragments, m)?)?;
+    m.add_function(wrap_pyfunction!(prosit_intensities_to_py_fragments_par, m)?)?;
     m.add_function(wrap_pyfunction!(psm_from_json, m)?)?;
     m.add_function(wrap_pyfunction!(merge_psm_maps, m)?)?;
     Ok(())
