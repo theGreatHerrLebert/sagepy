@@ -998,6 +998,7 @@ def prosit_intensities_to_fragments(
     """
     return Fragments.from_py_fragments(psc_utils.prosit_intensities_to_py_fragments(flat_intensities))
 
+
 def prosit_intensities_to_fragments_par(
         flat_intensities: List[float],
         num_threads: int = 16,
