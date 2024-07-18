@@ -347,10 +347,16 @@ class PeptideSpectrumMatch:
 
 
 class Fragments:
-    def __int__(self, charges: List[int], ion_types: List[IonType], fragment_ordinals: List[int],
-                intensities: List[float], mz_calculated: List[float], mz_experimental: List[float]):
-        kinds = [x.get_py_ptr() for x in ion_types]
+    def __int__(self,
+                charges: List[int],
+                ion_types: List[IonType],
+                fragment_ordinals: List[int],
+                intensities: List[float],
+                mz_calculated: List[float],
+                mz_experimental: List[float]
+                ):
 
+        kinds = [x.get_py_ptr() for x in ion_types]
         self.__fragments_ptr = psc.PyFragments(charges, kinds, fragment_ordinals,
                                                intensities, mz_calculated, mz_experimental)
 

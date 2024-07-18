@@ -1,4 +1,4 @@
-from .scoring import Scorer
+from .scoring import Scorer, Fragments, IonType, PeptideSpectrumMatch, Feature
 from .database import IndexedDatabase, EnzymeBuilder, SageSearchConfiguration
 from .spectrum import RawSpectrum, ProcessedSpectrum, Precursor, SpectrumProcessor, Representation
 from .mass import Tolerance
