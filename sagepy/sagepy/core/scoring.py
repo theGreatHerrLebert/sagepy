@@ -347,7 +347,7 @@ class PeptideSpectrumMatch:
 
 
 class Fragments:
-    def __int__(self,
+    def __init__(self,
                 charges: List[int],
                 ion_types: List[IonType],
                 fragment_ordinals: List[int],
