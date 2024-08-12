@@ -6,7 +6,13 @@ A python interface to the core [SAGE](https://github.com/lazear/sage) search eng
 </p>
 
 ## Installation
-`sagepy` might eventually come to PyPI, but for now you need to follow these steps to install it:
+`sagepy` is now available via pip:
+```
+pip install sagepy
+```
+
+
+### Build from source
 
 1. Clone our fork of the SAGE repository:
 ```
