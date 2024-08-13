@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use rand::distributions::{Uniform, Distribution};
+use rand::prelude::*;
 
 /// Convert a mass to a Unimod string
 ///
@@ -196,10 +196,11 @@ fn _estimate_pi0(pval_list: &Vec<f64>) -> f64 {
     let min_pi0 = *pi0s_list.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
     let mut mse_list = vec![0.0; pi0s_list.len()];
 
-    let dist = Uniform::new(0, n_pval);
+    let dist = rand::distr::Uniform::new(0, n_pval).unwrap();
+
     for _ in 0..num_boot {
         let num_draw = std::cmp::min(n_pval, max_size);
-        let mut p_boot_list: Vec<f64> = (0..num_draw).map(|_| pval_list[dist.unwrap().sample(&mut rng)]).collect();
+        let mut p_boot_list: Vec<f64> = (0..num_draw).map(|_| pval_list[dist.sample(&mut rng)]).collect();
         p_boot_list.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
         for (idx, &lambda) in lambda_list.iter().enumerate() {
