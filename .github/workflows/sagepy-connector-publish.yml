@@ -18,8 +18,14 @@ jobs:
           - os: ubuntu-latest
             python-version: '3.11'
             publish: true
+          - os: ubuntu-latest
+            python-version: '3.12'
+            publish: true
           - os: windows-latest
             python-version: '3.11'
+            publish: true
+          - os: windows-latest
+            python-version: '3.12'
             publish: true
           - os: macos-13
             python-version: '3.11'
@@ -67,12 +73,12 @@ jobs:
 
       - name: Build with Maturin
         run: |
-          cd sagepy-connector
-          if [[ "${{ matrix.os }}" == "macos-13" && "${{ matrix.architecture }}" == "aarch64" ]]; then
+          if [ "${{ matrix.os }}" == "macos-13" ] && [ "${{ matrix.architecture }}" == "aarch64" ]; then
             maturin build --release --target aarch64-apple-darwin
           else
             maturin build --release
           fi
+        shell: bash
 
       - name: Publish
         if: matrix.publish
