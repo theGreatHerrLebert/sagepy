@@ -12,9 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11']
+        python-version: ['3.11', '3.12']
         include:
           - python-version: '3.11'
+            publish: true
+          - python-version: '3.12'
             publish: true
 
     steps:
