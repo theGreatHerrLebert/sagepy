@@ -64,12 +64,9 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Install Rust Target
+      - name: Install Rust Target for Apple Silicon
         if: matrix.os == 'macos-13' && matrix.architecture == 'aarch64'
         run: rustup target add aarch64-apple-darwin
-
-      - name: Change to sagepy-connector directory
-        run: cd sagepy-connector
 
       - name: Build with Maturin
         run: |
@@ -85,5 +82,4 @@ jobs:
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.SAGEPY_CONNECTOR_PYPI_API_TOKEN }}
         run: |
-          cd sagepy-connector
           maturin publish --no-sdist
