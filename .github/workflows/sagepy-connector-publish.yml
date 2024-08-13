@@ -54,21 +54,13 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Install Rust Target for Apple Silicon
-        if: matrix.os == 'macos-13'
-        run: rustup target add aarch64-apple-darwin
-
       - name: Change to sagepy-connector directory
         run: cd sagepy-connector
 
       - name: Build with Maturin
         run: |
-          if [ "${{ matrix.os }}" == "macos-13" ]; then
-            maturin build --release --target aarch64-apple-darwin
-          else
-            maturin build --release
-          fi
-        shell: bash
+          cd sagepy-connector
+          maturin build --release
 
       - name: Publish
         if: matrix.publish
