@@ -418,7 +418,7 @@ class Scorer:
             chimera: bool = False,
             report_psms: int = 1,
             wide_window: bool = False,
-            annotate_matches: bool = False,
+            annotate_matches: bool = True,
             score_type: ScoreType = ScoreType("openms"),
             max_fragment_charge: Optional[int] = 1,
     ):
@@ -437,7 +437,7 @@ class Scorer:
             chimera (bool, optional): Should chimera be used. Defaults to False.
             report_psms (int, optional): The number of PSMs to report. Defaults to 1.
             wide_window (bool, optional): Should wide window be used. Defaults to False.
-            annotate_matches (bool, optional): Should matches be annotated. Defaults to False.
+            annotate_matches (bool, optional): Should matches be annotated. Defaults to True.
             score_type (ScoreType, optional): The score type. Defaults to ScoreType("openms").
             max_fragment_charge (Optional[int], optional): The maximum fragment charge. Defaults to 1.
         """
@@ -553,39 +553,6 @@ class Scorer:
             ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
 
         return ret_dict
-
-    def score_collection_psm_pandas(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
-                                    num_threads: int = 4) -> pd.DataFrame:
-
-        py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(),
-                                                                       [spec.get_py_ptr() for spec in
-                                                                        spectrum_collection],
-                                                                       num_threads)
-        row_list = []
-        for match in py_psms:
-            row_list.append({
-                "spec_idx": match.spec_idx,
-                "match_idx": match.peptide_idx,
-                "proteins": match.proteins,
-                "decoy": match.decoy,
-                "score": match.hyper_score,
-                "rank": match.rank,
-                "mono_mz_calculated": match.mono_mz_calculated,
-                "mono_mass_observed": match.mono_mass_observed,
-                "mono_mass_calculated": match.mono_mass_calculated,
-                "sequence": match.peptide_sequence,
-                "charge": match.charge,
-                "retention_time_observed": match.retention_time_observed,
-                "retention_time_predicted": match.retention_time_predicted,
-                "inverse_mobility_observed": match.inverse_mobility_observed,
-                "inverse_mobility_predicted": match.inverse_mobility_predicted,
-                "intensity_ms1": match.intensity_ms1,
-                "intensity_ms2": match.intensity_ms2,
-                "q_value": match.q_value,
-                "collision_energy": match.collision_energy,
-            })
-
-        return pd.DataFrame(row_list)
 
     def _score_chimera_fast(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
         return [Feature.from_py_feature(f) for f in
