@@ -4,6 +4,9 @@ from numba import jit
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
+
+from sagepy.core import Tolerance, Precursor, Representation, SpectrumProcessor, ProcessedSpectrum, RawSpectrum, \
+    IndexedDatabase, SAGE_KNOWN_MODS, SageSearchConfiguration, validate_mods, validate_var_mods, EnzymeBuilder
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
 
 import sagepy_connector
@@ -234,3 +237,154 @@ def apply_mz_calibration(psm, fragments: pd.DataFrame, use_median: bool = True,
     fragments.apply(lambda row: row.processed_spec.calibrate_mz_ppm(ppm_error), axis=1)
 
     return ppm_error
+
+
+def create_query(
+        precursor_mz: float,
+        precursor_charge: Optional[int],
+        precursor_intensity: float,
+        isolation_window_lower: float,
+        isolation_window_upper: float,
+        collision_energy: float,
+        retention_time: float,
+        ion_injection_time: float,
+        total_ion_current: float,
+        fragment_mz: NDArray,
+        fragment_intensity: NDArray,
+        spec_id: str,
+        isolation_window_in_dalton: bool = True,
+        file_id: int = 0,
+        ms_level: int = 2,
+        take_top_n_peaks: int = 150,
+        min_fragment_mz: float = 100,
+        max_fragment_mz: float = 2000,
+) -> ProcessedSpectrum:
+    """Create a query spectrum
+
+    Args:
+        precursor_mz: The precursor m/z
+        precursor_charge: The precursor charge
+        precursor_intensity: The precursor intensity
+        isolation_window_lower: The lower isolation window
+        isolation_window_upper: The upper isolation window
+        collision_energy: The collision energy
+        retention_time: The retention time
+        ion_injection_time: The ion injection time
+        total_ion_current: The total ion current
+        fragment_mz: The fragment m/z
+        fragment_intensity: The fragment intensity
+        spec_id: The spectrum ID
+        isolation_window_in_dalton: Whether the isolation window is in Da
+        file_id: The file ID
+        ms_level: The MS level
+        take_top_n_peaks: The number of top peaks to take
+        min_fragment_mz: The minimum fragment m/z
+        max_fragment_mz: The maximum fragment m/z
+
+    Returns:
+        ProcessedSpectrum: The processed spectrum
+    """
+
+    # configure the spectrum processor
+    spec_processor = SpectrumProcessor(take_top_n_peaks, min_fragment_mz, max_fragment_mz)
+
+    # set selection window bounds
+    if isolation_window_in_dalton:
+        tolerance = Tolerance(da=(isolation_window_lower, isolation_window_upper))
+    else:
+        tolerance = Tolerance(ppm=(isolation_window_lower, isolation_window_upper))
+
+    # create the precursor that was fragmented
+    sage_precursor = Precursor(
+        mz=precursor_mz,
+        intensity=precursor_intensity,
+        charge=precursor_charge,
+        isolation_window=tolerance,
+        collision_energy=collision_energy,
+    )
+
+    # create the raw spectrum of fragment ions with precursor information
+    spec = RawSpectrum(
+        file_id=file_id,
+        ms_level=ms_level,
+        spec_id=spec_id,
+        representation=Representation(),
+        precursors=[sage_precursor],
+        scan_start_time=retention_time,
+        ion_injection_time=ion_injection_time,
+        total_ion_current=total_ion_current,
+        mz=fragment_mz.astype(np.float32),
+        intensity=fragment_intensity.astype(np.float32)
+    )
+
+    # process the spectrum
+    processed_spec = spec_processor.process(spec)
+
+    return processed_spec
+
+# TODO: need to add modification passing, needs to be refactored for the sagepy tool entirely
+def create_sage_database(
+    fasta_path: str,
+    missed_cleavages: int = 2,
+    min_len: int = 7,
+    max_len: int = 50,
+    cleave_at: str = 'KR',
+    restrict: str = 'P',
+    c_terminal: bool = True,
+    generate_decoys: bool = True,
+    bucket_size: int = 16384,
+) -> IndexedDatabase:
+    """Create a SAGE database
+
+    Args:
+        fasta_path: The path to the FASTA file
+        missed_cleavages: The number of missed cleavages
+        min_len: The minimum peptide length
+        max_len: The maximum peptide length
+        cleave_at: The cleavage sites
+        restrict: The restriction sites
+        c_terminal: Whether the enzyme is C-terminal
+        generate_decoys: Whether to generate decoys
+        bucket_size: The bucket size
+
+    Returns:
+        IndexedDatabase: The indexed database ready for searching
+    """
+
+    # Configure enzyme digestion
+    enzyme_builder = EnzymeBuilder(
+        missed_cleavages=missed_cleavages,
+        min_len=min_len,
+        max_len=max_len,
+        cleave_at=cleave_at,
+        restrict=restrict,
+        c_terminal=c_terminal,
+    )
+
+    # generate static cysteine modification TODO: refactor to pass in modifications
+    static_mods = {k: v for k, v in [SAGE_KNOWN_MODS.cysteine_static()]}
+
+    # generate variable methionine modification TODO: refactor to pass in modifications
+    variable_mods = {k: v for k, v in [SAGE_KNOWN_MODS.methionine_variable()]}
+
+    # Validate modifications
+    static = validate_mods(static_mods)
+    variab = validate_var_mods(variable_mods)
+
+    # Read FASTA file
+    with open(fasta_path, 'r') as infile:
+        fasta = infile.read()
+
+    # Set up SAGE configuration
+    sage_config = SageSearchConfiguration(
+        fasta=fasta,
+        static_mods=static,
+        variable_mods=variab,
+        enzyme_builder=enzyme_builder,
+        generate_decoys=generate_decoys,
+        bucket_size=bucket_size
+    )
+
+    # Generate and return the indexed database
+    indexed_db = sage_config.generate_indexed_database()
+    return indexed_db
