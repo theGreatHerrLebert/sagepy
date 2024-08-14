@@ -11,6 +11,9 @@ from sagepy.core.database import IndexedDatabase, EnzymeBuilder, SageSearchConfi
 from sagepy.core.modification import SAGE_KNOWN_MODS, validate_mods, validate_var_mods
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
 
+from pyteomics import mzml
+
+
 import sagepy_connector
 
 psc = sagepy_connector.py_utility
@@ -365,3 +368,79 @@ def create_sage_database(
     # Generate and return the indexed database
     indexed_db = sage_config.generate_indexed_database()
     return indexed_db
+
+
+def extract_mzml_data(file_path: str) -> pd.DataFrame:
+    """
+    Extract relevant data from an mzML file
+    Args:
+        file_path: Path to the mzML file
+
+    Returns:
+        pd.DataFrame: A pandas DataFrame with the extracted data
+
+    """
+    d = []
+
+    with mzml.read(file_path) as reader:
+        for i, spectrum in enumerate(reader):
+            # Check if the spectrum is an MS2 (DDA data usually has MS2 spectra)
+            if spectrum['ms level'] == 2:
+                precursor = spectrum['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]
+
+                spec_id = spectrum['id']
+                total_ion_current = spectrum['total ion current']
+                retention_time = spectrum['scanList']['scan'][0]['scan start time']
+                injection_time = spectrum['scanList']['scan'][0]['ion injection time']
+                collision_energy = spectrum['precursorList']['precursor'][0]['activation']['collision energy']
+
+                # Extract the relevant metadata
+                isolation_window = spectrum['precursorList']['precursor'][0]['isolationWindow']
+
+                lower = isolation_window['isolation window target m/z'] - isolation_window[
+                    'isolation window lower offset']
+                upper = isolation_window['isolation window target m/z'] + isolation_window[
+                    'isolation window upper offset']
+
+                precursor_mz = precursor['selected ion m/z']
+                precursor_charge = precursor['charge state']
+                precursor_intensity = precursor.get('peak intensity', None)
+
+                # Extract the fragment ion spectrum (m/z and intensity arrays)
+                fragment_mz = spectrum['m/z array']
+                fragment_intensity = spectrum['intensity array']
+
+                processed_spec = create_query(
+                    precursor_mz=precursor_mz,
+                    precursor_charge=precursor_charge,
+                    precursor_intensity=precursor_intensity,
+                    isolation_window_lower=lower,
+                    isolation_window_upper=upper,
+                    collision_energy=collision_energy,
+                    retention_time=retention_time,
+                    ion_injection_time=injection_time,
+                    total_ion_current=total_ion_current,
+                    fragment_mz=fragment_mz,
+                    fragment_intensity=fragment_intensity,
+                    spec_id=spec_id,
+                )
+
+                # Create a row dictionary with relevant data
+                row = {
+                    "spec_id": spec_id,
+                    "precursor_mz": precursor_mz,
+                    "precursor_charge": precursor_charge,
+                    "precursor_intensity": precursor_intensity,
+                    "retention_time": retention_time,
+                    "injection_time": injection_time,
+                    "collision_energy": collision_energy,
+                    "total_ion_current": total_ion_current,
+                    "processed_spec": processed_spec
+                }
+
+                # Append the row to the list
+                d.append(row)
+
+    # Convert the list of dictionaries to a pandas DataFrame
+    exp_data = pd.DataFrame(d)
+    return exp_data
