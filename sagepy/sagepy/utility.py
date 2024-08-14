@@ -41,31 +41,6 @@ def median_ppm(mz_observed, mz_calculated) -> float:
     return np.median(calculate_ppms(mz_observed, mz_calculated))
 
 
-def mass_to_mod(mass: float) -> str:
-    """ Convert a mass to a UNIMOD modification annotation.
-
-    Args:
-        mass: a mass in Da
-
-    Returns:
-        a UNIMOD modification annotation
-    """
-    maybe_key = int(np.round(mass))
-    # TODO: find a better way to do the map-back
-    mod_dict = {
-        42: '[UNIMOD:1]',
-        57: '[UNIMOD:4]',
-        80: '[UNIMOD:21]',
-        16: '[UNIMOD:35]',
-        119: '[UNIMOD:312]',
-    }
-    # try to translate to UNIMOD annotation
-    try:
-        return mod_dict[maybe_key]
-    except KeyError:
-        raise KeyError(f"Rounded mass not in dict: {maybe_key}")
-
-
 def prosit_intensities_to_fragments_map(intensities: NDArray) -> Dict[Tuple[int, int, int], float]:
     """ Convert a Prosit intensity array to a fragment map (ion_type, charge, ordinal) -> intensity.
 
