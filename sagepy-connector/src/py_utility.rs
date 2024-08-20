@@ -46,7 +46,7 @@ pub fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>) -> Option<f32> {
 /// * A f32 representing the angle similarity.
 ///
 #[pyfunction]
-pub fn cosim_to_angle_similarity(cosim: f32) -> f32 {
+pub fn cosim_to_spectral_angle(cosim: f32) -> f32 {
     let angle = (1.0 - cosim).acos();
     1.0 - angle / std::f32::consts::PI
 }
@@ -203,6 +203,6 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(psms_to_json, m)?)?;
     m.add_function(wrap_pyfunction!(psms_to_json_bin, m)?)?;
     m.add_function(wrap_pyfunction!(json_bin_to_psms, m)?)?;
-    m.add_function(wrap_pyfunction!(cosim_to_angle_similarity, m)?)?;
+    m.add_function(wrap_pyfunction!(cosim_to_spectral_angle, m)?)?;
     Ok(())
 }
