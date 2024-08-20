@@ -1,11 +1,12 @@
 use pyo3::prelude::*;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use qfdrust::dataset::PeptideSpectrumMatch;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 use sage_core::ion_series::Kind;
 use sage_core::scoring::Fragments;
 use crate::py_scoring::{PyFragments, PyPeptideSpectrumMatch};
+use crate::utilities::sage_sequence_to_unimod_sequence;
 
 /// Calculates the cosine similarity between two vectors.
 ///
@@ -196,6 +197,12 @@ pub fn json_bin_to_psms(json_bin: Vec<u8>) -> Vec<PyPeptideSpectrumMatch> {
     }).collect()
 }
 
+#[pyfunction]
+pub fn sage_sequence_to_unimod(sequence: String, modifications: Vec<f32>, expected_modifications: HashSet<String>) -> String {
+    let expected_modifications: HashSet<&str> = expected_modifications.iter().map(|s| s.as_str()).collect();
+    sage_sequence_to_unimod_sequence(sequence, &modifications, expected_modifications)
+}
+
 #[pymodule]
 pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(flat_prosit_array_to_fragments_map, m)?)?;
@@ -204,5 +211,6 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(psms_to_json_bin, m)?)?;
     m.add_function(wrap_pyfunction!(json_bin_to_psms, m)?)?;
     m.add_function(wrap_pyfunction!(cosim_to_spectral_angle, m)?)?;
+    m.add_function(wrap_pyfunction!(sage_sequence_to_unimod, m)?)?;
     Ok(())
 }

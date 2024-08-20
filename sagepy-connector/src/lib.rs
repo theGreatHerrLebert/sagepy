@@ -15,6 +15,7 @@ mod py_tmt;
 mod py_qfdr;
 mod py_utility;
 mod py_unimod;
+mod utilities;
 
 use py_enzyme::enzyme;
 use py_fasta::fasta;
