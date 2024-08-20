@@ -1,8 +1,25 @@
-from typing import Dict, Union, List, Tuple, Set
+from typing import Dict, Union, List
 from sagepy.core.modification import ModificationSpecificity
 
 from sagepy_connector import py_unimod as unimod
 from .modification import validate_mods, validate_var_mods
+
+
+def unimod_to_mass() -> Dict[str, float]:
+    """ Get a dict that maps Unimod IDs to mass values.
+
+    Returns:
+        A dict that maps Unimod IDs to mass values.
+    """
+    return unimod.unimod_modification_to_mass()
+
+def unimod_to_mass_numerical() -> Dict[int, float]:
+    """ Get a dict that maps Unimod IDs given as integer to mass values.
+
+    Returns:
+        A dict that maps Unimod IDs to mass values.
+    """
+    return unimod.unimod_modification_to_mass_numerical()
 
 
 def unimod_static_mods_to_sage_static_mods(
@@ -18,14 +35,14 @@ def unimod_static_mods_to_sage_static_mods(
     """
     mods_numeric = type(list(unimod_static_mods.values())[0]) is int
     if mods_numeric:
-        unimod_to_mass = unimod.unimod_modification_to_mass_numerical()
+        mod_to_mass = unimod.unimod_modification_to_mass_numerical()
     else:
-        unimod_to_mass = unimod.unimod_modification_to_mass()
+        mod_to_mass = unimod.unimod_modification_to_mass()
 
     sage_raw_dict = {}
 
     for key, value in unimod_static_mods.items():
-        mass = unimod_to_mass[value]
+        mass = mod_to_mass[value]
         sage_raw_dict[key] = mass
 
     return validate_mods(sage_raw_dict)
@@ -47,14 +64,14 @@ def unimod_variable_mods_to_sage_variable_mods(
     mods_numeric = type(list(unimod_variable_mods.values())[0]) is int
 
     if mods_numeric:
-        unimod_to_mass = unimod.unimod_modification_to_mass_numerical()
+        mod_to_mass = unimod.unimod_modification_to_mass_numerical()
     else:
-        unimod_to_mass = unimod.unimod_modification_to_mass()
+        mod_to_mass = unimod.unimod_modification_to_mass()
 
     sage_raw_dict: Dict[str, float] = {}
 
     for key, value in unimod_variable_mods.items():
-        mass = unimod_to_mass[value]
+        mass = mod_to_mass[value]
 
         if key in sage_raw_dict:
             sage_raw_dict[key].append(mass)
@@ -62,3 +79,21 @@ def unimod_variable_mods_to_sage_variable_mods(
             sage_raw_dict[key] = [mass]
 
     return validate_var_mods(sage_raw_dict)
+
+
+def unimod_mods_to_set(
+        unimod_mods: Union[Dict[str, str], Dict[str, int]]
+) -> set:
+    """ Translate a dict that maps modification names to Unimod IDs to a set of modification names.
+
+    Args:
+        unimod_mods: A dict that maps modification names to Unimod IDs.
+
+    Returns:
+        A set of modification names.
+    """
+
+    if isinstance(next(iter(unimod_mods.values())), int):
+        return {f"[UNIMOD:{value}]" for value in unimod_mods.values()}
+    else:
+        return set(unimod_mods.keys())
