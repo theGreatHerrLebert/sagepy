@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 use itertools::Itertools;
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch};
-use qfdrust::utility::sage_sequence_to_unimod_sequence;
+use crate::utilities::sage_sequence_to_unimod_sequence;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 use sage_core::ion_series::Kind;
@@ -397,6 +397,7 @@ pub struct PyScorer {
     pub report_psms: usize,
     pub wide_window: bool,
     pub annotate_matches: bool,
+    pub expected_mods: HashSet<String>,
     pub score_type: Option<PyScoreType>,
 }
 
@@ -417,6 +418,7 @@ impl PyScorer {
         report_psms: usize,
         wide_window: bool,
         annotate_matches: bool,
+        expected_mods: HashSet<String>,
         max_fragment_charge: Option<u8>,
         score_type: Option<PyScoreType>,
     ) -> Self {
@@ -436,6 +438,7 @@ impl PyScorer {
             wide_window,
             annotate_matches,
             score_type,
+            expected_mods,
         }
     }
 
@@ -601,7 +604,7 @@ impl PyScorer {
                             Some(feature.matched_intensity_pct),
                             Some(feature.scored_candidates),
                             Some(feature.poisson),
-                            Some(sage_sequence_to_unimod_sequence(sequence, &peptide.modifications)),
+                            Some(sage_sequence_to_unimod_sequence(sequence, &peptide.modifications, &self.expected_mods)),
                             Some(charge),
                             Some(feature.rt),
                             None,

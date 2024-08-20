@@ -199,8 +199,7 @@ pub fn json_bin_to_psms(json_bin: Vec<u8>) -> Vec<PyPeptideSpectrumMatch> {
 
 #[pyfunction]
 pub fn sage_sequence_to_unimod(sequence: String, modifications: Vec<f32>, expected_modifications: HashSet<String>) -> String {
-    let expected_modifications: HashSet<&str> = expected_modifications.iter().map(|s| s.as_str()).collect();
-    sage_sequence_to_unimod_sequence(sequence, &modifications, expected_modifications)
+    sage_sequence_to_unimod_sequence(sequence, &modifications, &expected_modifications)
 }
 
 #[pymodule]

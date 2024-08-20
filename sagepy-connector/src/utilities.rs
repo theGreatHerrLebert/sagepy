@@ -12,7 +12,7 @@ use std::collections::HashSet;
 ///
 /// * `String` - A string representing the Unimod sequence
 ///
-pub fn sage_sequence_to_unimod_sequence(sequence: String, modifications: &Vec<f32>, expected_modifications: HashSet<&str>) -> String {
+pub fn sage_sequence_to_unimod_sequence(sequence: String, modifications: &Vec<f32>, expected_modifications: &HashSet<String>) -> String {
 
     assert_eq!(sequence.len(), modifications.len(), "Sequence and modifications must be the same length");
 
@@ -39,7 +39,7 @@ pub fn sage_sequence_to_unimod_sequence(sequence: String, modifications: &Vec<f3
 
             // check if the expected modification is in the candidate modifications
             for modification in modifications {
-                if expected_modifications.contains(modification) {
+                if expected_modifications.contains(&modification.to_string()) {
                     unimod_sequence.push_str(modification);
                     found = true;
                 }
