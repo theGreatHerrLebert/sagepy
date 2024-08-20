@@ -12,7 +12,7 @@ import sagepy_connector
 
 from sagepy.core.ion_series import IonType
 from sagepy.core.modification import ModificationSpecificity
-from sagepy.core.unimod import unimod_variable_mods_to_sage_variable_mods
+from sagepy.core.unimod import unimod_variable_mods_to_sage_variable_mods, unimod_static_mods_to_sage_static_mods
 
 psc = sagepy_connector.py_database
 
@@ -185,7 +185,7 @@ class SageSearchConfiguration:
             variable_mods, _ = unimod_variable_mods_to_sage_variable_mods(variable_mods)
 
         if static_mods is not None:
-            static_mods, _ = unimod_variable_mods_to_sage_variable_mods(static_mods)
+            static_mods, _ = unimod_static_mods_to_sage_static_mods(static_mods)
 
         self.__py_parameter_ptr = psc.PyParameters(
             find_next_power_of_2(bucket_size),
