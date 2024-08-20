@@ -34,6 +34,23 @@ pub fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>) -> Option<f32> {
     Some(dot_product / (magnitude_vec1 * magnitude_vec2))
 }
 
+/// Converts a cosine similarity to an angle similarity.
+/// The angle similarity is calculated as 1 - angle / pi.
+///
+/// # Arguments
+///
+/// * `cosim` - A f32 representing the cosine similarity.
+///
+/// # Returns
+///
+/// * A f32 representing the angle similarity.
+///
+#[pyfunction]
+pub fn cosim_to_angle_similarity(cosim: f32) -> f32 {
+    let angle = (1.0 - cosim).acos();
+    1.0 - angle / std::f32::consts::PI
+}
+
 /// Reshape the flat prosit array into a 3D array of shape (29, 2, 3)
 ///
 /// # Arguments
@@ -186,5 +203,6 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(psms_to_json, m)?)?;
     m.add_function(wrap_pyfunction!(psms_to_json_bin, m)?)?;
     m.add_function(wrap_pyfunction!(json_bin_to_psms, m)?)?;
+    m.add_function(wrap_pyfunction!(cosim_to_angle_similarity, m)?)?;
     Ok(())
 }
