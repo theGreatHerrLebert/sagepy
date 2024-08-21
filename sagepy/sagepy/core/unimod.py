@@ -5,6 +5,24 @@ from sagepy_connector import py_unimod as unimod
 from .modification import validate_mods, validate_var_mods
 
 
+def modification_title_to_unimod_id() -> Dict[str, str]:
+    """ Get a dict that maps modification names to Unimod IDs.
+
+    Returns:
+        A dict that maps modification names to Unimod IDs.
+    """
+    return unimod.unimod_modification_to_ids()
+
+
+def modification_atomic_compositions() -> Dict[str, Dict[str, int]]:
+    """ Get a dict that maps modification names to atomic compositions.
+
+    Returns:
+        A dict that maps modification names to atomic compositions.
+    """
+    return unimod.unimod_modification_to_atomic_composition()
+
+
 def unimod_to_mass() -> Dict[str, float]:
     """ Get a dict that maps Unimod IDs to mass values.
 
@@ -12,6 +30,7 @@ def unimod_to_mass() -> Dict[str, float]:
         A dict that maps Unimod IDs to mass values.
     """
     return unimod.unimod_modification_to_mass()
+
 
 def unimod_to_mass_numerical() -> Dict[int, float]:
     """ Get a dict that maps Unimod IDs given as integer to mass values.
