@@ -11,7 +11,7 @@ def modification_title_to_unimod_id() -> Dict[str, str]:
     Returns:
         A dict that maps modification names to Unimod IDs.
     """
-    return unimod.unimod_modification_to_ids()
+    return unimod.title_to_unimod_ids()
 
 
 def modification_atomic_composition() -> Dict[str, Dict[str, int]]:
@@ -20,7 +20,7 @@ def modification_atomic_composition() -> Dict[str, Dict[str, int]]:
     Returns:
         A dict that maps modification names to atomic compositions.
     """
-    return unimod.unimod_modification_to_atomic_compositions()
+    return unimod.modification_atomic_compositions()
 
 
 def unimod_to_mass() -> Dict[str, float]:
