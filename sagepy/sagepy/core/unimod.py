@@ -61,6 +61,8 @@ def unimod_variable_mods_to_sage_variable_mods(
         A tuple containing a dict that maps ModificationSpecificity objects
         to lists of mass values and a set of modification names.
     """
+
+    # Check if the modification IDs are numeric or string
     mods_numeric = type(list(unimod_variable_mods.values())[0]) is int
 
     if mods_numeric:
@@ -68,7 +70,7 @@ def unimod_variable_mods_to_sage_variable_mods(
     else:
         mod_to_mass = unimod.unimod_modification_to_mass()
 
-    sage_raw_dict: Dict[str, float] = {}
+    sage_raw_dict: Dict[str, List[float]] = {}
 
     for key, value in unimod_variable_mods.items():
         mass = mod_to_mass[value]
@@ -96,4 +98,4 @@ def unimod_mods_to_set(
     if isinstance(next(iter(unimod_mods.values())), int):
         return {f"[UNIMOD:{value}]" for value in unimod_mods.values()}
     else:
-        return set(unimod_mods.keys())
+        return set(unimod_mods.values())
