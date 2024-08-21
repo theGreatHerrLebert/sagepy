@@ -47,7 +47,7 @@ pub fn sage_sequence_to_unimod_sequence(sequence: String, modifications: &Vec<f3
 
             // if the expected modification is not found, add a placeholder
             if !found {
-                unimod_sequence.push_str("[UNIMOD:X]");
+                unimod_sequence.push_str("[UNIMOD:?]");
             }
         }
     }
