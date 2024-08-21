@@ -14,13 +14,13 @@ def modification_title_to_unimod_id() -> Dict[str, str]:
     return unimod.unimod_modification_to_ids()
 
 
-def modification_atomic_compositions() -> Dict[str, Dict[str, int]]:
+def modification_atomic_composition() -> Dict[str, Dict[str, int]]:
     """ Get a dict that maps modification names to atomic compositions.
 
     Returns:
         A dict that maps modification names to atomic compositions.
     """
-    return unimod.unimod_modification_to_atomic_composition()
+    return unimod.unimod_modification_to_atomic_compositions()
 
 
 def unimod_to_mass() -> Dict[str, float]:
