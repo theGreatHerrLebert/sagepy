@@ -457,14 +457,24 @@ class Scorer:
 
         expected_modifications = variable_modifications.union(static_modifications)
 
-        self.__scorer_ptr = psc.PyScorer(precursor_tolerance.get_py_ptr(),
-                                         fragment_tolerance.get_py_ptr(),
-                                         min_matched_peaks,
-                                         min_isotope_err, max_isotope_err, min_precursor_charge,
-                                         max_precursor_charge, min_fragment_mass, max_fragment_mass,
-                                         chimera, report_psms, wide_window, annotate_matches, max_fragment_charge,
-                                         expected_modifications,
-                                         score_type.get_py_ptr())
+        self.__scorer_ptr = psc.PyScorer(
+            precursor_tolerance.get_py_ptr(),
+            fragment_tolerance.get_py_ptr(),
+            min_matched_peaks,
+            min_isotope_err,
+            max_isotope_err,
+            min_precursor_charge,
+            max_precursor_charge,
+            min_fragment_mass,
+            max_fragment_mass,
+            chimera,
+            report_psms,
+            wide_window,
+            annotate_matches,
+            expected_modifications,
+            max_fragment_charge,
+            score_type.get_py_ptr()
+        )
 
     @classmethod
     def from_py_scorer(cls, scorer: psc.PyScorer):
