@@ -423,7 +423,7 @@ class Scorer:
             score_type: ScoreType = ScoreType("openms"),
             max_fragment_charge: Optional[int] = 1,
             variable_modifications: Union[Dict[str, str], Dict[str, int]] = None,
-            fixed_modifications: Union[Dict[str, str], Dict[str, int]] = None,
+            static_modifications: Union[Dict[str, str], Dict[str, int]] = None,
     ):
         """Scorer class
 
@@ -450,12 +450,12 @@ class Scorer:
         else:
             variable_modifications = {}
 
-        if fixed_modifications is not None:
-            fixed_modifications = unimod_mods_to_set(fixed_modifications)
+        if static_modifications is not None:
+            static_modifications = unimod_mods_to_set(static_modifications)
         else:
-            fixed_modifications = {}
+            static_modifications = {}
 
-        expected_modifications = variable_modifications.union(fixed_modifications)
+        expected_modifications = variable_modifications.union(static_modifications)
 
         self.__scorer_ptr = psc.PyScorer(precursor_tolerance.get_py_ptr(),
                                          fragment_tolerance.get_py_ptr(),
