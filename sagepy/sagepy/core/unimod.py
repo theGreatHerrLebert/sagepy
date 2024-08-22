@@ -121,6 +121,9 @@ def unimod_mods_to_set(
         A set of modification names.
     """
 
+    if len(unimod_mods) == 0:
+        return set()
+
     if isinstance(next(iter(unimod_mods.values())), int):
         return {f"[UNIMOD:{value}]" for value in unimod_mods.values()}
     else:
