@@ -71,20 +71,31 @@ def py_fragments_to_fragments_map(fragments, normalize: bool = True) -> Dict[Tup
     return psc.py_fragments_to_fragments_map(fragments.get_py_ptr(), normalize)
 
 
-def peptide_spectrum_match_list_to_pandas(
-        psm_list: List[PeptideSpectrumMatch],
+def peptide_spectrum_match_collection_to_pandas(
+        psm_collection: Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]],
         re_score: bool = False,
-        use_sequence_as_match_idx: bool = True) -> pd.DataFrame:
+        use_sequence_as_match_idx: bool = True,
+) -> pd.DataFrame:
     """Convert a list of peptide spectrum matches to a pandas dataframe
 
     Args:
-        psm_list (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        psm_collection (Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]): The peptide spectrum matches
         re_score (bool, optional): Should re-score be used. Defaults to False.
         use_sequence_as_match_idx (bool, optional): Should the sequence be used as the match index. Defaults to True.
 
     Returns:
         pd.DataFrame: The pandas dataframe
     """
+
+    psm_list = []
+
+    if isinstance(psm_collection, dict):
+        for spec_id, psm_candidates in psm_collection.items():
+            psm_list.extend(psm_candidates)
+
+    else:
+        psm_list = psm_collection
+
     row_list = []
     for match in psm_list:
         if match.retention_time_predicted is not None and match.projected_rt is not None:
@@ -202,7 +213,7 @@ def apply_mz_calibration(psm, fragments: pd.DataFrame, use_median: bool = True,
     for _, item in psm.items():
         psms.extend(item)
 
-    P = peptide_spectrum_match_list_to_pandas(psms)
+    P = peptide_spectrum_match_collection_to_pandas(psms)
     TDC = target_decoy_competition_pandas(P)
     TDC = TDC[TDC.q_value <= target_q]
 
