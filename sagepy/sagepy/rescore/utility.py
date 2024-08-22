@@ -7,7 +7,7 @@ from numba import jit
 
 from sagepy.core import PeptideSpectrumMatch
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
-from sagepy.utility import peptide_spectrum_match_list_to_pandas
+from sagepy.utility import peptide_spectrum_match_collection_to_pandas
 
 
 @jit(nopython=True)
@@ -97,7 +97,7 @@ def generate_training_data(
         Tuple[NDArray, NDArray]: X_train and Y_train
     """
     # create pandas table from psms
-    PSM_pandas = peptide_spectrum_match_list_to_pandas(psm_list)
+    PSM_pandas = peptide_spectrum_match_collection_to_pandas(psm_list)
 
     # calculate q-values to get inital "good" hits
     PSM_q = target_decoy_competition_pandas(PSM_pandas, method=method)

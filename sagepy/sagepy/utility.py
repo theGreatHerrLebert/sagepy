@@ -9,7 +9,6 @@ from sagepy.core import PeptideSpectrumMatch
 from sagepy.core.spectrum import ProcessedSpectrum, RawSpectrum, Precursor, SpectrumProcessor, Representation
 from sagepy.core.mass import Tolerance
 from sagepy.core.database import IndexedDatabase, EnzymeBuilder, SageSearchConfiguration
-from sagepy.core.modification import SAGE_KNOWN_MODS, validate_mods, validate_var_mods
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
 
 from pyteomics import mzml

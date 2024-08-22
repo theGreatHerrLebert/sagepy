@@ -1,17 +1,17 @@
-from typing import List
-
 import numpy as np
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import StandardScaler
 
 from tqdm import tqdm
+from typing import Union, List, Dict
+
 from sagepy.core import PeptideSpectrumMatch
 from sagepy.rescore.utility import get_features, generate_training_data, split_psm_list
-from sagepy.utility import peptide_spectrum_match_list_to_pandas
+from sagepy.utility import peptide_spectrum_match_collection_to_pandas
 
 
 def rescore_lda(
-        psm_list: List[PeptideSpectrumMatch],
+        psm_collection: Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]],
         num_splits: int = 5,
         verbose: bool = True,
         balance: bool = True,
@@ -21,7 +21,7 @@ def rescore_lda(
 ) -> List[PeptideSpectrumMatch]:
     """ Re-score PSMs using Linear Discriminant Analysis (LDA).
     Args:
-        psm_list: List of PeptideSpectrumMatch objects
+        psm_collection: A collection of PSMs
         num_splits: Number of splits (folds) to use for cross-validation
         verbose: Whether to print progress
         balance: Whether to balance the dataset (equal number of target and decoy examples)
@@ -33,7 +33,16 @@ def rescore_lda(
         List[PeptideSpectrumMatch]: List of PeptideSpectrumMatch objects
     """
 
-    X_all, _ = get_features(peptide_spectrum_match_list_to_pandas(psm_list), score=score, replace_nan=replace_nan)
+    psm_list = []
+
+    if isinstance(psm_collection, dict):
+        for spec_id, psm_candidates in psm_collection.items():
+            psm_list.extend(psm_candidates)
+    else:
+        psm_list = psm_collection
+
+
+    X_all, _ = get_features(peptide_spectrum_match_collection_to_pandas(psm_list), score=score, replace_nan=replace_nan)
     scaler = StandardScaler()
     scaler.fit(X_all)
 
@@ -54,7 +63,7 @@ def rescore_lda(
         X_train, Y_train = generate_training_data(features, balance=balance, replace_nan=replace_nan)
 
         # get features for target that we want to re-score
-        X, _ = get_features(peptide_spectrum_match_list_to_pandas(target), replace_nan=replace_nan)
+        X, _ = get_features(peptide_spectrum_match_collection_to_pandas(target), replace_nan=replace_nan)
 
         # experimenting with different settings for LDA showed that shrinkage should be used, which tries to
         # keep model weights small and helps to prevent overfitting
