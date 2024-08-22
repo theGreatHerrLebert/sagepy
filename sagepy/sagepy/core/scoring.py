@@ -450,13 +450,13 @@ class Scorer:
             variable_modifications = unimod_mods_to_set(variable_modifications)
         else:
             warnings.warn("CAUTION! No variable modifications provided, using an empty set.")
-            variable_modifications = {}
+            variable_modifications = set()
 
         if static_modifications is not None:
             static_modifications = unimod_mods_to_set(static_modifications)
         else:
             warnings.warn("CAUTION! No static modifications provided, using an empty set.")
-            static_modifications = {}
+            static_modifications = set()
 
         expected_modifications = variable_modifications.union(static_modifications)
 
