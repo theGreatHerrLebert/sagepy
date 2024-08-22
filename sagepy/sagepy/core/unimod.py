@@ -52,6 +52,10 @@ def unimod_static_mods_to_sage_static_mods(
        A tuple containing a dict that maps ModificationSpecificity objects
        to mass values and a set of modification names.
     """
+
+    if len(unimod_static_mods) == 0:
+        return {}
+
     mods_numeric = type(list(unimod_static_mods.values())[0]) is int
     if mods_numeric:
         mod_to_mass = unimod.unimod_modification_to_mass_numerical()
@@ -80,6 +84,9 @@ def unimod_variable_mods_to_sage_variable_mods(
         A tuple containing a dict that maps ModificationSpecificity objects
         to lists of mass values and a set of modification names.
     """
+
+    if len(unimod_variable_mods) == 0:
+        return {}
 
     # Check if the modification IDs are numeric or string
     mods_numeric = type(list(unimod_variable_mods.values())[0]) is int
