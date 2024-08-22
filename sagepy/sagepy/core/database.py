@@ -12,6 +12,7 @@ import sagepy_connector
 
 from sagepy.core.ion_series import IonType
 from sagepy.core.modification import ModificationSpecificity
+from sagepy.core.unimod import unimod_variable_mods_to_sage_variable_mods, unimod_static_mods_to_sage_static_mods
 
 psc = sagepy_connector.py_database
 
@@ -151,8 +152,8 @@ class SageSearchConfiguration:
                  peptide_max_mass: float = 5_000,
                  ion_kinds: List[IonType] = None,
                  min_ion_index: int = 2,
-                 static_mods: Dict[ModificationSpecificity, float] = None,
-                 variable_mods: Dict[ModificationSpecificity, List[float]] = None,
+                 static_mods: Union[Dict[str, str], Dict[str, int]] = None,
+                 variable_mods: Union[Dict[str, str], Dict[str, int]] = None,
                  max_variable_mods: int = 2,
                  decoy_tag: str = 'rev_',
                  generate_decoys: bool = True,
@@ -171,14 +172,21 @@ class SageSearchConfiguration:
             peptide_max_mass (float, optional): The maximum peptide mass. Defaults to 5000.
             ion_kinds (List[IonType], optional): The ion types. Defaults to None.
             min_ion_index (int, optional): The minimum ion index. Defaults to 2.
-            static_mods (Dict[ModificationSpecificity, float], optional): The static modifications. Defaults to None.
-            variable_mods (Dict[ModificationSpecificity, List[float]], optional): The variable modifications. Defaults to None.
+            static_mods (Dict[str, str] | Dict[str, int], optional): The static modifications given in UNIMOD notation. Defaults to None.
+            variable_mods (Dict[str, str] | Dict[str, int], optional): The variable modifications given in UNIMOD notation. Defaults to None.
             max_variable_mods (int, optional): The maximum number of variable modifications. Defaults to 2.
             decoy_tag (str, optional): The decoy tag. Defaults to 'rev_'.
             generate_decoys (bool, optional): Whether to generate decoys. Defaults to True.
             shuffle_decoys (Union[bool, None], optional): Whether to shuffle decoys. Defaults to None.
             keep_ends (Union[bool, None], optional): Whether to include start and end amino acid for permutation strategy. Defaults to None.
         """
+
+        if variable_mods is not None:
+            variable_mods = unimod_variable_mods_to_sage_variable_mods(variable_mods)
+
+        if static_mods is not None:
+            static_mods = unimod_static_mods_to_sage_static_mods(static_mods)
+
         self.__py_parameter_ptr = psc.PyParameters(
             find_next_power_of_2(bucket_size),
             enzyme_builder.get_py_ptr(),

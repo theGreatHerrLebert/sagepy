@@ -3,6 +3,7 @@ from typing import Optional, List, Union, Tuple, Dict
 import pandas as pd
 import sagepy_connector
 from .spectrum import ProcessedSpectrum
+from .unimod import unimod_mods_to_set
 
 psc = sagepy_connector.py_scoring
 psc_utils = sagepy_connector.py_utility
@@ -421,6 +422,8 @@ class Scorer:
             annotate_matches: bool = True,
             score_type: ScoreType = ScoreType("openms"),
             max_fragment_charge: Optional[int] = 1,
+            variable_modifications: Union[Dict[str, str], Dict[str, int]] = None,
+            static_modifications: Union[Dict[str, str], Dict[str, int]] = None,
     ):
         """Scorer class
 
@@ -441,13 +444,37 @@ class Scorer:
             score_type (ScoreType, optional): The score type. Defaults to ScoreType("openms").
             max_fragment_charge (Optional[int], optional): The maximum fragment charge. Defaults to 1.
         """
-        self.__scorer_ptr = psc.PyScorer(precursor_tolerance.get_py_ptr(),
-                                         fragment_tolerance.get_py_ptr(),
-                                         min_matched_peaks,
-                                         min_isotope_err, max_isotope_err, min_precursor_charge,
-                                         max_precursor_charge, min_fragment_mass, max_fragment_mass,
-                                         chimera, report_psms, wide_window, annotate_matches, max_fragment_charge,
-                                         score_type.get_py_ptr())
+
+        if variable_modifications is not None:
+            variable_modifications = unimod_mods_to_set(variable_modifications)
+        else:
+            variable_modifications = {}
+
+        if static_modifications is not None:
+            static_modifications = unimod_mods_to_set(static_modifications)
+        else:
+            static_modifications = {}
+
+        expected_modifications = variable_modifications.union(static_modifications)
+
+        self.__scorer_ptr = psc.PyScorer(
+            precursor_tolerance.get_py_ptr(),
+            fragment_tolerance.get_py_ptr(),
+            min_matched_peaks,
+            min_isotope_err,
+            max_isotope_err,
+            min_precursor_charge,
+            max_precursor_charge,
+            min_fragment_mass,
+            max_fragment_mass,
+            chimera,
+            report_psms,
+            wide_window,
+            annotate_matches,
+            expected_modifications,
+            max_fragment_charge,
+            score_type.get_py_ptr()
+        )
 
     @classmethod
     def from_py_scorer(cls, scorer: psc.PyScorer):
