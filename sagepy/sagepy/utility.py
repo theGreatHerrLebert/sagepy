@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional, Union
 
 from numba import jit
 import numpy as np
@@ -314,6 +314,8 @@ def create_sage_database(
     c_terminal: bool = True,
     generate_decoys: bool = True,
     bucket_size: int = 16384,
+    static_mods: Union[Dict[str, str], Dict[int, str]] = {"C": "[UNIMOD:4]"},
+    variable_mods: Union[Dict[str, str], Dict[int, str]] = {"M": "[UNIMOD:35]", "[": "[UNIMOD:1]"},
 ) -> IndexedDatabase:
     """Create a SAGE database
 
@@ -327,6 +329,8 @@ def create_sage_database(
         c_terminal: Whether the enzyme is C-terminal
         generate_decoys: Whether to generate decoys
         bucket_size: The bucket size
+        static_mods: The static modifications
+        variable_mods: The variable modifications
 
     Returns:
         IndexedDatabase: The indexed database ready for searching
@@ -342,16 +346,6 @@ def create_sage_database(
         c_terminal=c_terminal,
     )
 
-    # generate static cysteine modification TODO: refactor to pass in modifications
-    static_mods = {k: v for k, v in [SAGE_KNOWN_MODS.cysteine_static()]}
-
-    # generate variable methionine modification TODO: refactor to pass in modifications
-    variable_mods = {k: v for k, v in [SAGE_KNOWN_MODS.methionine_variable()]}
-
-    # Validate modifications
-    static = validate_mods(static_mods)
-    variab = validate_var_mods(variable_mods)
-
     # Read FASTA file
     with open(fasta_path, 'r') as infile:
         fasta = infile.read()
@@ -359,8 +353,8 @@ def create_sage_database(
     # Set up SAGE configuration
     sage_config = SageSearchConfiguration(
         fasta=fasta,
-        static_mods=static,
-        variable_mods=variab,
+        static_mods=static_mods,
+        variable_mods=variable_mods,
         enzyme_builder=enzyme_builder,
         generate_decoys=generate_decoys,
         bucket_size=bucket_size
