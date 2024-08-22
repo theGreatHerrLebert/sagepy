@@ -1,1 +1,1 @@
-from lda import rescore_lda
+from .lda import rescore_lda
