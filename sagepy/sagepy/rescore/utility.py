@@ -61,6 +61,9 @@ def get_features(
     ds["intensity_ms1"] = ds["intensity_ms1"].apply(lambda x: np.log1p(x))
     ds["intensity_ms2"] = ds["intensity_ms2"].apply(lambda x: np.log1p(x))
 
+    # avoid none values for cosine similarity
+    ds["cosine_similarity"] = ds["cosine_similarity"].apply(lambda x: 0.0 if x is None else x)
+
     # transform cosine similarity to spectral angle similarity
     ds["cosine_similarity"] = ds["cosine_similarity"].apply(cosim_to_spectral_angle_sim)
 
