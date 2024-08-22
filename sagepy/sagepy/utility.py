@@ -13,9 +13,7 @@ from sagepy.qfdr.tdc import target_decoy_competition_pandas
 
 from pyteomics import mzml
 
-
 import sagepy_connector
-
 psc = sagepy_connector.py_utility
 
 

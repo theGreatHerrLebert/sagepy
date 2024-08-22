@@ -3,14 +3,11 @@ import pandas as pd
 from numpy.typing import NDArray
 from typing import Optional, Tuple, List
 
-from numba import jit
-
 from sagepy.core import PeptideSpectrumMatch
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
 from sagepy.utility import peptide_spectrum_match_collection_to_pandas
 
 
-@jit(nopython=True)
 def cosim_to_spectral_angle_sim(cosim: float) -> float:
     return 1 - ((np.arccos(cosim) * (180 / np.pi)) / 180)
 
