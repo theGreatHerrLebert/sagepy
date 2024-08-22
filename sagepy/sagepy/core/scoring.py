@@ -1,3 +1,4 @@
+import warnings
 from typing import Optional, List, Union, Tuple, Dict
 
 import pandas as pd
@@ -448,11 +449,13 @@ class Scorer:
         if variable_modifications is not None:
             variable_modifications = unimod_mods_to_set(variable_modifications)
         else:
+            warnings.warn("CAUTION! No variable modifications provided, using an empty set.")
             variable_modifications = {}
 
         if static_modifications is not None:
             static_modifications = unimod_mods_to_set(static_modifications)
         else:
+            warnings.warn("CAUTION! No static modifications provided, using an empty set.")
             static_modifications = {}
 
         expected_modifications = variable_modifications.union(static_modifications)

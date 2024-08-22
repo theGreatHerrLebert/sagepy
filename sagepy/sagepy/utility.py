@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from sagepy.core import PeptideSpectrumMatch
 from sagepy.core.spectrum import ProcessedSpectrum, RawSpectrum, Precursor, SpectrumProcessor, Representation
 from sagepy.core.mass import Tolerance
 from sagepy.core.database import IndexedDatabase, EnzymeBuilder, SageSearchConfiguration
@@ -71,13 +72,13 @@ def py_fragments_to_fragments_map(fragments, normalize: bool = True) -> Dict[Tup
 
 
 def peptide_spectrum_match_list_to_pandas(
-        psms,
+        psm_list: List[PeptideSpectrumMatch],
         re_score: bool = False,
         use_sequence_as_match_idx: bool = True) -> pd.DataFrame:
     """Convert a list of peptide spectrum matches to a pandas dataframe
 
     Args:
-        psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        psm_list (List[PeptideSpectrumMatch]): The peptide spectrum matches
         re_score (bool, optional): Should re-score be used. Defaults to False.
         use_sequence_as_match_idx (bool, optional): Should the sequence be used as the match index. Defaults to True.
 
@@ -85,7 +86,7 @@ def peptide_spectrum_match_list_to_pandas(
         pd.DataFrame: The pandas dataframe
     """
     row_list = []
-    for match in psms:
+    for match in psm_list:
         if match.retention_time_predicted is not None and match.projected_rt is not None:
             delta_rt = match.retention_time_predicted - match.projected_rt
         else:
