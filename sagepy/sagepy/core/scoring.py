@@ -3,7 +3,7 @@ from typing import Optional, List, Union, Tuple, Dict
 import pandas as pd
 import sagepy_connector
 from .spectrum import ProcessedSpectrum
-from .unimod import unimod_mods_to_set, variable_unimod_mods_to_set, static_unimod_mods_to_set
+from .unimod import variable_unimod_mods_to_set, static_unimod_mods_to_set
 
 psc = sagepy_connector.py_scoring
 psc_utils = sagepy_connector.py_utility
