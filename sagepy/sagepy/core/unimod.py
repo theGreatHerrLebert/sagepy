@@ -72,7 +72,7 @@ def unimod_static_mods_to_sage_static_mods(
 
 
 def unimod_variable_mods_to_sage_variable_mods(
-        unimod_variable_mods: Union[Dict[str, str], Dict[str, int]]
+        unimod_variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]]
 ) -> Dict[ModificationSpecificity, List[float]]:
     """ Translate a dict that maps modification names to Unimod IDs
     to a dict that maps ModificationSpecificity objects to lists of mass values and a set of modification names.
@@ -98,18 +98,19 @@ def unimod_variable_mods_to_sage_variable_mods(
 
     sage_raw_dict: Dict[str, List[float]] = {}
 
-    for key, value in unimod_variable_mods.items():
-        mass = mod_to_mass[value]
+    for key, values in unimod_variable_mods.items():
+        for value in values:
+            mass = mod_to_mass[value]
 
-        if key in sage_raw_dict:
-            sage_raw_dict[key].append(mass)
-        else:
-            sage_raw_dict[key] = [mass]
+            if key in sage_raw_dict:
+                sage_raw_dict[key].append(mass)
+            else:
+                sage_raw_dict[key] = [mass]
 
     return validate_var_mods(sage_raw_dict)
 
 
-def unimod_mods_to_set(
+def static_unimod_mods_to_set(
         unimod_mods: Union[Dict[str, str], Dict[str, int]]
 ) -> set:
     """ Translate a dict that maps modification names to Unimod IDs to a set of modification names.
@@ -128,3 +129,20 @@ def unimod_mods_to_set(
         return {f"[UNIMOD:{value}]" for value in unimod_mods.values()}
     else:
         return set(unimod_mods.values())
+
+def variable_unimod_mods_to_set(
+        unimod_mods: Union[Dict[str, List[str]], Dict[str, List[int]]
+    ]) -> set:
+    """ Translate a dict that maps modification names to Unimod IDs to a set of modification names.
+
+    Args:
+        unimod_mods: A dict that maps modification names to Unimod IDs.
+
+    Returns:
+        A set of modification names.
+    """
+
+    if isinstance(next(iter(unimod_mods.values())), int):
+        return {f"[UNIMOD:{value}]" for values in unimod_mods.values() for value in values}
+    else:
+        return {value for values in unimod_mods.values() for value in values}

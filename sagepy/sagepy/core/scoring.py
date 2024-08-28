@@ -4,7 +4,7 @@ from typing import Optional, List, Union, Tuple, Dict
 import pandas as pd
 import sagepy_connector
 from .spectrum import ProcessedSpectrum
-from .unimod import unimod_mods_to_set
+from .unimod import variable_unimod_mods_to_set, static_unimod_mods_to_set
 
 psc = sagepy_connector.py_scoring
 psc_utils = sagepy_connector.py_utility
@@ -423,7 +423,7 @@ class Scorer:
             annotate_matches: bool = True,
             score_type: ScoreType = ScoreType("openms"),
             max_fragment_charge: Optional[int] = 1,
-            variable_modifications: Union[Dict[str, str], Dict[str, int]] = None,
+            variable_modifications: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
             static_modifications: Union[Dict[str, str], Dict[str, int]] = None,
     ):
         """Scorer class
@@ -447,13 +447,13 @@ class Scorer:
         """
 
         if variable_modifications is not None:
-            variable_modifications = unimod_mods_to_set(variable_modifications)
+            variable_modifications = variable_unimod_mods_to_set(variable_modifications)
         else:
             warnings.warn("CAUTION! No variable modifications provided, using an empty set.")
             variable_modifications = set()
 
         if static_modifications is not None:
-            static_modifications = unimod_mods_to_set(static_modifications)
+            static_modifications = static_unimod_mods_to_set(static_modifications)
         else:
             warnings.warn("CAUTION! No static modifications provided, using an empty set.")
             static_modifications = set()
