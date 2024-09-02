@@ -323,7 +323,7 @@ def create_sage_database(
     generate_decoys: bool = True,
     bucket_size: int = 16384,
     static_mods: Union[Dict[str, str], Dict[int, str]] = {"C": "[UNIMOD:4]"},
-    variable_mods: Union[Dict[str, str], Dict[int, str]] = {"M": "[UNIMOD:35]", "[": "[UNIMOD:1]"},
+    variable_mods: Union[Dict[str, List[int]], Dict[int, List[str]]] = {"M": ["[UNIMOD:35]"], "[": ["[UNIMOD:1]"]}
 ) -> IndexedDatabase:
     """Create a SAGE database
 
