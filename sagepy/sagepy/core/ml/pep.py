@@ -44,7 +44,7 @@ def kde_pdf(sample: NDArray,
 
 
 @njit
-def calculate_pep(
+def calculate_pep_single(
         scores: NDArray,
         decoys: NDArray,
         bins: int = 1000,
@@ -122,11 +122,11 @@ def posterior_error(pep_bins: NDArray,
 
 # caclulate pep for all scores
 @njit
-def calculate_pep_all(scores: NDArray,
-                      decoys: NDArray,
-                      bins: int = 1000,
-                      bw_adjust: float = 1.0,
-                      monotonic: bool = True) -> NDArray:
+def calculate_pep(scores: NDArray,
+                  decoys: NDArray,
+                  bins: int = 1000,
+                  bw_adjust: float = 1.0,
+                  monotonic: bool = True) -> NDArray:
     """Calculate PEP for all scores.
 
     Args:
@@ -139,7 +139,7 @@ def calculate_pep_all(scores: NDArray,
     Returns:
         numpy array: PEP values for all scores
     """
-    pep_bins, min_score, score_step = calculate_pep(scores, decoys, bins, bw_adjust, monotonic)
+    pep_bins, min_score, score_step = calculate_pep_single(scores, decoys, bins, bw_adjust, monotonic)
     pep = np.zeros(len(scores))
     for i in range(len(scores)):
         pep[i] = posterior_error(pep_bins, min_score, score_step, scores[i])
@@ -156,10 +156,10 @@ if __name__ == "__main__":
     # sort decoys where true comes first
     decoys = np.sort(decoys)[::-1]
 
-    pep_bins, min_score, score_step = calculate_pep(scores, decoys)
+    pep_bins, min_score, score_step = calculate_pep_single(scores, decoys)
     pep = posterior_error(pep_bins, min_score, score_step, scores[0])
 
-    peps = calculate_pep_all(scores, decoys)
+    peps = calculate_pep(scores, decoys)
 
     from matplotlib import pyplot as plt
     plt.plot(scores, peps)
