@@ -562,7 +562,7 @@ impl PyScorer {
                         let peptide = &db.inner[feature.peptide_idx];
                         let decoy = peptide.decoy;
                         let score = feature.hyperscore;
-                        let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap()).sum();
+                        let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap_or(0.0)).sum();
                         let intensity_ms2: f32 = feature.ms2_intensity;
                         let charge = feature.charge;
                         let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
