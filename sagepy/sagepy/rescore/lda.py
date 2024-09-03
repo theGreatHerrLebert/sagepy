@@ -27,7 +27,7 @@ def rescore_lda(
         balance: Whether to balance the dataset (equal number of target and decoy examples)
         normalize: Whether to normalize the dataset (mean=0, std=1)
         replace_nan: Whether to replace NaN values with 0
-        score: Score to use for re-scoring
+        score: Score to use for rescoring
 
     Returns:
         List[PeptideSpectrumMatch]: List of PeptideSpectrumMatch objects
