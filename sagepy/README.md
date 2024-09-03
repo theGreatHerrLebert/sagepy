@@ -165,5 +165,3 @@ potential output:
 
 ### Hot TODOs
 * Documentation and in-detail examples
-* Support for mzML file processing
-* Handling of PTMs need to be re-implemented, using chanonical UNIMOD notation
