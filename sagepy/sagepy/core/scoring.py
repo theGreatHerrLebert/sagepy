@@ -587,6 +587,7 @@ class Scorer:
         py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(), [spectrum.get_py_ptr()], 1)
 
         ret_dict = {}
+
         for key, values in py_psms.items():
             ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
 
