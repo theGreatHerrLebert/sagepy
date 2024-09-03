@@ -583,11 +583,14 @@ class Scorer:
 
         return ret_dict
 
-    def score_psm(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> Optional[PeptideSpectrumMatch]:
+    def score_psm(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> Dict[str, List[PeptideSpectrumMatch]]:
         py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(), [spectrum.get_py_ptr()], 1)
-        if len(py_psms) == 0:
-            return None
-        return PeptideSpectrumMatch.from_py_ptr(py_psms[0])
+
+        ret_dict = {}
+        for key, values in py_psms.items():
+            ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
+
+        return ret_dict
 
     def _score_chimera_fast(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
         return [Feature.from_py_feature(f) for f in
