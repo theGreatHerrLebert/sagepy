@@ -153,7 +153,7 @@ class SageSearchConfiguration:
                  ion_kinds: List[IonType] = None,
                  min_ion_index: int = 2,
                  static_mods: Union[Dict[str, str], Dict[str, int]] = None,
-                 variable_mods: Union[Dict[str, str], Dict[str, int]] = None,
+                 variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
                  max_variable_mods: int = 2,
                  decoy_tag: str = 'rev_',
                  generate_decoys: bool = True,
