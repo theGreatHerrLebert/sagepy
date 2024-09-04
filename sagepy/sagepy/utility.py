@@ -1,21 +1,19 @@
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional, Union
 
 from numba import jit
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from sagepy.core import PeptideSpectrumMatch
 from sagepy.core.spectrum import ProcessedSpectrum, RawSpectrum, Precursor, SpectrumProcessor, Representation
 from sagepy.core.mass import Tolerance
 from sagepy.core.database import IndexedDatabase, EnzymeBuilder, SageSearchConfiguration
-from sagepy.core.modification import SAGE_KNOWN_MODS, validate_mods, validate_var_mods
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
 
 from pyteomics import mzml
 
-
 import sagepy_connector
-
 psc = sagepy_connector.py_utility
 
 
@@ -70,22 +68,33 @@ def py_fragments_to_fragments_map(fragments, normalize: bool = True) -> Dict[Tup
     return psc.py_fragments_to_fragments_map(fragments.get_py_ptr(), normalize)
 
 
-def peptide_spectrum_match_list_to_pandas(
-        psms,
+def peptide_spectrum_match_collection_to_pandas(
+        psm_collection: Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]],
         re_score: bool = False,
-        use_sequence_as_match_idx: bool = True) -> pd.DataFrame:
+        use_sequence_as_match_idx: bool = True,
+) -> pd.DataFrame:
     """Convert a list of peptide spectrum matches to a pandas dataframe
 
     Args:
-        psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        psm_collection (Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]): The peptide spectrum matches
         re_score (bool, optional): Should re-score be used. Defaults to False.
         use_sequence_as_match_idx (bool, optional): Should the sequence be used as the match index. Defaults to True.
 
     Returns:
         pd.DataFrame: The pandas dataframe
     """
+
+    psm_list = []
+
+    if isinstance(psm_collection, dict):
+        for spec_id, psm_candidates in psm_collection.items():
+            psm_list.extend(psm_candidates)
+
+    else:
+        psm_list = psm_collection
+
     row_list = []
-    for match in psms:
+    for match in psm_list:
         if match.retention_time_predicted is not None and match.projected_rt is not None:
             delta_rt = match.retention_time_predicted - match.projected_rt
         else:
@@ -201,7 +210,7 @@ def apply_mz_calibration(psm, fragments: pd.DataFrame, use_median: bool = True,
     for _, item in psm.items():
         psms.extend(item)
 
-    P = peptide_spectrum_match_list_to_pandas(psms)
+    P = peptide_spectrum_match_collection_to_pandas(psms)
     TDC = target_decoy_competition_pandas(P)
     TDC = TDC[TDC.q_value <= target_q]
 
@@ -313,6 +322,8 @@ def create_sage_database(
     c_terminal: bool = True,
     generate_decoys: bool = True,
     bucket_size: int = 16384,
+    static_mods: Union[Dict[str, str], Dict[int, str]] = {"C": "[UNIMOD:4]"},
+    variable_mods: Union[Dict[str, List[int]], Dict[int, List[str]]] = {"M": ["[UNIMOD:35]"], "[": ["[UNIMOD:1]"]}
 ) -> IndexedDatabase:
     """Create a SAGE database
 
@@ -326,6 +337,8 @@ def create_sage_database(
         c_terminal: Whether the enzyme is C-terminal
         generate_decoys: Whether to generate decoys
         bucket_size: The bucket size
+        static_mods: The static modifications
+        variable_mods: The variable modifications
 
     Returns:
         IndexedDatabase: The indexed database ready for searching
@@ -341,16 +354,6 @@ def create_sage_database(
         c_terminal=c_terminal,
     )
 
-    # generate static cysteine modification TODO: refactor to pass in modifications
-    static_mods = {k: v for k, v in [SAGE_KNOWN_MODS.cysteine_static()]}
-
-    # generate variable methionine modification TODO: refactor to pass in modifications
-    variable_mods = {k: v for k, v in [SAGE_KNOWN_MODS.methionine_variable()]}
-
-    # Validate modifications
-    static = validate_mods(static_mods)
-    variab = validate_var_mods(variable_mods)
-
     # Read FASTA file
     with open(fasta_path, 'r') as infile:
         fasta = infile.read()
@@ -358,8 +361,8 @@ def create_sage_database(
     # Set up SAGE configuration
     sage_config = SageSearchConfiguration(
         fasta=fasta,
-        static_mods=static,
-        variable_mods=variab,
+        static_mods=static_mods,
+        variable_mods=variable_mods,
         enzyme_builder=enzyme_builder,
         generate_decoys=generate_decoys,
         bucket_size=bucket_size

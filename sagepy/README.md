@@ -56,7 +56,7 @@ in the core SAGE library.
 ### Example generation of a sage database
 ```python
 import numpy as np
-from sagepy.core import EnzymeBuilder, SageSearchConfiguration, validate_mods, validate_var_mods, SAGE_KNOWN_MODS
+from sagepy.core import EnzymeBuilder, SageSearchConfiguration
 
 # configure a trypsin-like digestor of fasta files
 enzyme_builder = EnzymeBuilder(
@@ -68,15 +68,9 @@ enzyme_builder = EnzymeBuilder(
     c_terminal=True,
 )
 
-# generate static cysteine modification
-static_mods = { k: v for k, v in [SAGE_KNOWN_MODS.cysteine_static()] }
-
-# generate variable methionine modification
-variable_mods = { k: v for k, v in [SAGE_KNOWN_MODS.methionine_variable()] }
-
-# generate SAGE compatible mod representations
-static = validate_mods(static_mods)
-variab = validate_var_mods(variable_mods)
+# UPDATE: Modification handling is simplified, using canonical UNIMOD notation
+static_mods = {"C": "[UNIMOD:4]"}  # static cysteine modification
+variable_mods = {"M": ["[UNIMOD:35]"]}
 
 with open('path/to/reference.fasta', 'r') as infile:
     fasta = infile.read()
@@ -84,8 +78,8 @@ with open('path/to/reference.fasta', 'r') as infile:
 # set-up a config for a sage-database
 sage_config = SageSearchConfiguration(
     fasta=fasta,
-    static_mods=static,
-    variable_mods=variab,
+    static_mods=static_mods,
+    variable_mods=variable_mods,
     enzyme_builder=enzyme_builder,
     generate_decoys=True,
     bucket_size=int(np.power(2, 14))
@@ -159,7 +153,8 @@ query = spec_processor.process(raw_spectrum)
 ```python
 from sagepy.core import Scorer
 
-scorer = Scorer(report_psms=2, min_matched_peaks=5)
+# UPDATE: pass modifications to the scorer, necessary for PTM handling
+scorer = Scorer(report_psms=2, min_matched_peaks=5, variable_mods=variable_mods, static_mods=static_mods)
 results = scorer.score(db=indexed_db, spectrum=query)
 ```
 
@@ -170,5 +165,3 @@ potential output:
 
 ### Hot TODOs
 * Documentation and in-detail examples
-* Support for mzML file processing
-* Handling of PTMs need to be re-implemented, using chanonical UNIMOD notation

@@ -1,3 +1,4 @@
+import warnings
 from typing import Optional, List, Union, Tuple, Dict
 
 import pandas as pd
@@ -422,8 +423,8 @@ class Scorer:
             annotate_matches: bool = True,
             score_type: ScoreType = ScoreType("openms"),
             max_fragment_charge: Optional[int] = 1,
-            variable_modifications: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
-            static_modifications: Union[Dict[str, str], Dict[str, int]] = None,
+            variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
+            static_mods: Union[Dict[str, str], Dict[str, int]] = None,
     ):
         """Scorer class
 
@@ -445,17 +446,19 @@ class Scorer:
             max_fragment_charge (Optional[int], optional): The maximum fragment charge. Defaults to 1.
         """
 
-        if variable_modifications is not None:
-            variable_modifications = variable_unimod_mods_to_set(variable_modifications)
+        if variable_mods is not None:
+            variable_mods = variable_unimod_mods_to_set(variable_mods)
         else:
-            variable_modifications = {}
+            warnings.warn("CAUTION! No variable modifications provided, using an empty set.")
+            variable_mods = set()
 
-        if static_modifications is not None:
-            static_modifications = static_unimod_mods_to_set(static_modifications)
+        if static_mods is not None:
+            static_mods = static_unimod_mods_to_set(static_mods)
         else:
-            static_modifications = {}
+            warnings.warn("CAUTION! No static modifications provided, using an empty set.")
+            static_mods = set()
 
-        expected_modifications = variable_modifications.union(static_modifications)
+        expected_modifications = variable_mods.union(static_mods)
 
         self.__scorer_ptr = psc.PyScorer(
             precursor_tolerance.get_py_ptr(),
@@ -574,8 +577,17 @@ class Scorer:
                                                                        [spec.get_py_ptr() for spec in
                                                                         spectrum_collection],
                                                                        num_threads)
+        ret_dict = {}
+        for key, values in py_psms.items():
+            ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
+
+        return ret_dict
+
+    def score_psm(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> Dict[str, List[PeptideSpectrumMatch]]:
+        py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(), [spectrum.get_py_ptr()], 1)
 
         ret_dict = {}
+
         for key, values in py_psms.items():
             ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
 
