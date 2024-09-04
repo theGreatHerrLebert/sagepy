@@ -1202,7 +1202,7 @@ impl PyPeptideSpectrumMatch {
     pub fn set_beta_score(&mut self, beta_score: f64) {
         self.inner.beta_score = Some(beta_score);
     }
-    
+
     #[getter]
     pub fn posterior_error_prob(&self) -> Option<f64> {
         self.inner.posterior_error_prob
