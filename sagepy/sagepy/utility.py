@@ -120,6 +120,11 @@ def peptide_spectrum_match_collection_to_pandas(
         else:
             beta_score = None
 
+        if match.posterior_error_prob is not None:
+            pep = match.posterior_error_prob
+        else:
+            pep = None
+
         row_list.append({
             "spec_idx": match.spec_idx,
             "match_idx": match_idx,
@@ -163,7 +168,8 @@ def peptide_spectrum_match_collection_to_pandas(
             "fragments_observed": match.fragments_observed,
             "fragments_predicted": match.fragments_predicted,
             "projected_rt": match.projected_rt,
-            "beta_score": beta_score
+            "beta_score": beta_score,
+            "posterior_error_prob": pep,
         })
 
     return pd.DataFrame(row_list)
