@@ -78,6 +78,7 @@ class PeptideSpectrumMatch:
                  mz_calibration_ppm: Union[None, float] = None,
                  projected_rt: Union[None, float] = None,
                  beta_score: Union[None, float] = None,
+                 posterior_error_prob: Union[None, float] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed,
@@ -88,7 +89,7 @@ class PeptideSpectrumMatch:
             intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr(),
             re_score, cosine_similarity, file_name,
             fragment_charges, fragment_ion_types, fragment_ordinals, fragment_intensities, fragment_mz_calculated,
-            fragment_mz_experimental, mz_calibration_ppm, projected_rt, beta_score
+            fragment_mz_experimental, mz_calibration_ppm, projected_rt, beta_score, posterior_error_prob
         )
 
     @property
@@ -293,6 +294,14 @@ class PeptideSpectrumMatch:
     def beta_score(self, value):
         self.__py_ptr.beta_score = value
 
+    @property
+    def posterior_error_prob(self):
+        return self.__py_ptr.posterior_error_prob
+
+    @posterior_error_prob.setter
+    def posterior_error_prob(self, value):
+        self.__py_ptr.posterior_error_prob = value
+
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
         instance = cls.__new__(cls)
@@ -344,8 +353,8 @@ class PeptideSpectrumMatch:
                f"file_name: {self.file_name if self.file_name is not None else None}, "
                f"mz_calibration_ppm: {self.mz_calibration_ppm if self.mz_calibration_ppm is not None else None}, "
                f"projected_rt: {self.projected_rt if self.projected_rt is not None else None}, "
-               f"beta_score: {self.beta_score if self.beta_score is not None else None})"
-               )
+               f"beta_score: {self.beta_score if self.beta_score is not None else None}, "
+               f"posterior_error_prob: {self.posterior_error_prob if self.posterior_error_prob is not None else None})")
 
 
 class Fragments:
