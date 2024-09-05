@@ -77,10 +77,10 @@ def target_decoy_competition_pandas(
     else:
         assert 'score' in df.columns, "score column not found"
 
-    score = df['score'] if score is None else df[score]
+    target_score = df['score'] if score is None else df[score]
 
     spec_idx, match_idx, target, scores = (df['spec_idx'].tolist(),
-                                           df['match_idx'].tolist(), df['decoy'].tolist(), score.tolist())
+                                           df['match_idx'].tolist(), df['decoy'].tolist(), target_score.tolist())
 
     spec_idx, match_idx, target, scores, q_values = target_decoy_competition(spec_idx,
                                                                              match_idx, target, scores, method)
