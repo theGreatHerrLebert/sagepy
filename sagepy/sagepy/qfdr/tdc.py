@@ -89,16 +89,24 @@ def target_decoy_competition_pandas(
         'spec_idx': spec_idx,
         'match_idx': match_idx,
         'decoy': target,
-        score: scores,
+        'score': scores,
         'q_value': q_values
     }).sort_values(by=['q_value'])
 
     if merge:
-       df_tdc = pd.merge(
-           df_tdc,
-           df.drop(columns=["q_value", score]),
-           left_on=["match_idx", "spec_idx", "decoy"],
-           right_on=["match_idx", "spec_idx", "decoy"]
-       )
+
+        if score in df.columns:
+            df = df.drop(columns=[score])
+
+        if "score" in df.columns:
+            df = df.drop(columns=["score"])
+
+        if merge:
+           df_tdc = pd.merge(
+               df_tdc,
+               df.drop(columns=["q_value"]),
+               left_on=["match_idx", "spec_idx", "decoy"],
+               right_on=["match_idx", "spec_idx", "decoy"]
+           )
 
     return df_tdc
