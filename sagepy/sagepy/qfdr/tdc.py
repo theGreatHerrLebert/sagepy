@@ -61,30 +61,31 @@ def target_decoy_competition_pandas(
     Args:
         df: a pandas DataFrame
         method: the method to use, allowed values are: psm, peptide_psm_only, peptide_peptide_only, peptide_psm_peptide
-        score: the target column name
+        score: the target column name (optional)
         merge: whether to merge the q-values with the original DataFrame
 
     Returns:
         a pandas DataFrame with q-values
     """
-    assert 'spec_idx' in df.columns, "spec_idx column not found"
-    assert 'match_idx' in df.columns, "match_idx column not found"
-    assert 'decoy' in df.columns, "decoy column not found"
 
-    if score is not None:
-        assert score in df.columns, f"{score} column not found"
+    # Ensure necessary columns are present
+    required_columns = ['spec_idx', 'match_idx', 'decoy']
+    for col in required_columns:
+        assert col in df.columns, f"{col} column not found"
 
-    else:
-        assert 'score' in df.columns, "score column not found"
+    score_col = score if score else 'score'
+    assert score_col in df.columns, f"{score_col} column not found"
 
-    target_score = df['score'] if score is None else df[score]
-
+    target_score = df[score_col]
     spec_idx, match_idx, target, scores = (df['spec_idx'].tolist(),
-                                           df['match_idx'].tolist(), df['decoy'].tolist(), target_score.tolist())
+                                           df['match_idx'].tolist(),
+                                           df['decoy'].tolist(),
+                                           target_score.tolist())
 
     spec_idx, match_idx, target, scores, q_values = target_decoy_competition(spec_idx,
                                                                              match_idx, target, scores, method)
 
+    # Create df with TDC results
     df_tdc = pd.DataFrame({
         'spec_idx': spec_idx,
         'match_idx': match_idx,
@@ -93,20 +94,18 @@ def target_decoy_competition_pandas(
         'q_value': q_values
     }).sort_values(by=['q_value'])
 
+    # If merging results with the original DataFrame
     if merge:
+        df_no_score = df.drop(columns=[score_col, 'score'], errors='ignore')
 
-        if score in df.columns:
-            df = df.drop(columns=[score])
+        df_tdc = pd.merge(
+            df_tdc,
+            df_no_score,
+            on=["match_idx", "spec_idx", "decoy"],
+            how="left",
+            suffixes=('', '_drop')
+        )
 
-        if "score" in df.columns:
-            df = df.drop(columns=["score"])
-
-        if merge:
-           df_tdc = pd.merge(
-               df_tdc,
-               df.drop(columns=["q_value"]),
-               left_on=["match_idx", "spec_idx", "decoy"],
-               right_on=["match_idx", "spec_idx", "decoy"]
-           )
+        df_tdc = df_tdc.loc[:, ~df_tdc.columns.str.endswith('_drop')]
 
     return df_tdc
