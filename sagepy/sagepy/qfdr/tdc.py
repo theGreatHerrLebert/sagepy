@@ -54,6 +54,7 @@ def target_decoy_competition_pandas(
         df: pd.DataFrame,
         method: str = "peptide_psm_peptide",
         score: Optional[str] = None,
+        merge: bool = False,
 ) -> pd.DataFrame:
     """ Perform target-decoy competition on a pandas DataFrame.
 
@@ -61,6 +62,7 @@ def target_decoy_competition_pandas(
         df: a pandas DataFrame
         method: the method to use, allowed values are: psm, peptide_psm_only, peptide_peptide_only, peptide_psm_peptide
         score: the target column name
+        merge: whether to merge the q-values with the original DataFrame
 
     Returns:
         a pandas DataFrame with q-values
@@ -83,10 +85,20 @@ def target_decoy_competition_pandas(
     spec_idx, match_idx, target, scores, q_values = target_decoy_competition(spec_idx,
                                                                              match_idx, target, scores, method)
 
-    return pd.DataFrame({
+    df_tdc = pd.DataFrame({
         'spec_idx': spec_idx,
         'match_idx': match_idx,
         'decoy': target,
         'score': scores,
         'q_value': q_values
     }).sort_values(by=['q_value'])
+
+    if merge:
+       df_tdc = pd.merge(
+           df_tdc,
+           df.drop(columns=["q_value", score]),
+           left_on=["match_idx", "spec_idx", "decoy"],
+           right_on=["match_idx", "spec_idx", "decoy"]
+       )
+
+    return df_tdc
