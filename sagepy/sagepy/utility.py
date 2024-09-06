@@ -125,6 +125,17 @@ def peptide_spectrum_match_collection_to_pandas(
         else:
             pep = None
 
+        if match.fragments_observed is not None:
+            match_median_ppm = median_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated)
+        else:
+            match_median_ppm = None
+
+        if match.fragments_observed is not None:
+            match_mean_ppm = mean_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated)
+        else:
+            match_mean_ppm = None
+
+
         row_list.append({
             "spec_idx": match.spec_idx,
             "match_idx": match_idx,
@@ -163,8 +174,8 @@ def peptide_spectrum_match_collection_to_pandas(
             "q_value": match.q_value,
             "collision_energy": match.collision_energy,
             "cosine_similarity": match.cosine_similarity,
-            "mean_ppm": mean_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated),
-            "median_ppm": median_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated),
+            "mean_ppm": match_mean_ppm,
+            "median_ppm": match_median_ppm,
             "fragments_observed": match.fragments_observed,
             "fragments_predicted": match.fragments_predicted,
             "projected_rt": match.projected_rt,
