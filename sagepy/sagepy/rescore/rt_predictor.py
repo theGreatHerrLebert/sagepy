@@ -80,58 +80,52 @@ def prepare_data(sequences, retention_times, token_alphabet):
     return X, y
 
 
-def train_ridge_regression_model(X, y, alpha=1.0, test_size=0.2, verbose=False):
+def train_ridge_regression_model(X, y, alpha=1.0, verbose=False):
     """
     Train a ridge regression model with L2 regularization.
     Args:
         X: tokenized peptide sequences
         y: retention times
         alpha: regularization strength
-        test_size: fraction of data to use for testing
         verbose: whether to print the test MSE
 
     Returns:
         Trained model and train/test data
     """
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
 
     model = Ridge(alpha=alpha)
-    model.fit(X_train, y_train)
-
-    y_pred = model.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
+    model.fit(X, y)
 
     if verbose:
+        y_pred = model.predict(X)
+        mse = mean_squared_error(y, y_pred)
         print(f"Test MSE (Ridge, alpha={alpha}): {mse}")
 
-    return model, X_train, X_test, y_train, y_test
+    return model
 
 
-def train_lasso_regression_model(X, y, alpha=1.0, test_size=0.2, verbose=False):
+def train_lasso_regression_model(X, y, alpha=1.0, verbose=False):
     """
     Train a Lasso regression model with L1 regularization.
     Args:
         X: Peptide sequences
         y: Retention times
         alpha: Regularization strength
-        test_size: Fraction of data to use for testing
         verbose: Whether to print the test MSE
 
     Returns:
         Trained model and train/test data
     """
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
 
     model = Lasso(alpha=alpha)
-    model.fit(X_train, y_train)
-
-    y_pred = model.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
+    model.fit(X, y)
 
     if verbose:
+        y_pred = model.predict(X)
+        mse = mean_squared_error(y, y_pred)
         print(f"Test MSE (Lasso, alpha={alpha}): {mse}")
 
-    return model, X_train, X_test, y_train, y_test
+    return model
 
 
 def transform_sequences(sequences, token_alphabet):
@@ -147,14 +141,13 @@ def transform_sequences(sequences, token_alphabet):
     X_new = np.array([sequence_to_vector(seq, token_alphabet) for seq in sequences])
     return X_new
 
-def predict_retention_times_psm(psm_collection: List[PeptideSpectrumMatch], fdr_threshold: float = 0.01, alpha: float = 0.2, test_size: float = 0.0):
+def predict_retention_times_psm(psm_collection: List[PeptideSpectrumMatch], fdr_threshold: float = 0.01, alpha: float = 0.2):
     """
     Predict retention times for peptide spectrum matches using a ridge regression model
     Args:
         psm_collection: A list of PeptideSpectrumMatch objects
         fdr_threshold: The false discovery rate threshold for selecting target hits
         alpha: The regularization strength for the ridge regression model
-        test_size: The fraction of data to use for testing
 
     Returns:
         None, the retention times are updated in place in the PeptideSpectrumMatch objects
@@ -176,7 +169,7 @@ def predict_retention_times_psm(psm_collection: List[PeptideSpectrumMatch], fdr_
     X, y = prepare_data(FDR_controlled["sequence"], FDR_controlled["retention_time_observed"], token_alphabet)
 
     # Train a ridge regression model
-    model, _, _, _, _ = train_ridge_regression_model(X, y, alpha=alpha, test_size=test_size)
+    model = train_ridge_regression_model(X, y, alpha=alpha)
 
     # Predict retention times for all PSMs
     X_new = transform_sequences(PSM_pandas["sequence"], token_alphabet)
