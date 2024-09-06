@@ -90,13 +90,13 @@ def target_decoy_competition_pandas(
         'spec_idx': spec_idx,
         'match_idx': match_idx,
         'decoy': target,
-        'score': scores,
+        're_score': scores,
         'q_value': q_values
     }).sort_values(by=['q_value'])
 
     # If merging results with the original DataFrame
     if merge:
-        df_no_score = df.drop(columns=[score_col, 'score'], errors='ignore')
+        df_no_score = df.drop(columns=[score_col], errors='ignore')
 
         df_tdc = pd.merge(
             df_tdc,
