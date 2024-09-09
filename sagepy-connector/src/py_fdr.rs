@@ -48,9 +48,7 @@ impl PyCompetitionPeptideIx {
 #[pyfunction]
 pub fn py_picked_peptide(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
     let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
-    let what = picked_peptide(&indexed_database.inner, &mut inner_collection);
-
-    println!("{:?}", what);
+    let _ = picked_peptide(&indexed_database.inner, &mut inner_collection);
 
     for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
         feature.inner.peptide_q = inner.peptide_q;
@@ -62,9 +60,7 @@ pub fn py_picked_peptide(mut feature_collection: Vec<PyFeature>, indexed_databas
 #[pyfunction]
 pub fn py_picked_protein(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
     let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
-    let what = picked_protein(&indexed_database.inner, &mut inner_collection);
-
-    println!("{:?}", what);
+    let _ = picked_protein(&indexed_database.inner, &mut inner_collection);
 
     for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
         feature.inner.peptide_q = inner.peptide_q;
