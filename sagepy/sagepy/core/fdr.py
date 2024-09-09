@@ -48,34 +48,24 @@ class CompetitionPeptideIx:
         return (f"CompetitionPeptideIx(forward={self.forward}, reverse={self.reverse}, "
                 f"forward_ix={self.forward_ix}, reverse_ix={self.reverse_ix})")
 
-def picked_peptide(feature_collection: List[Feature], indexed_db: IndexedDatabase) -> List[Feature]:
+def picked_peptide(feature_collection: List[Feature], indexed_db: IndexedDatabase):
     """ Perform SAGE picked peptide implementation, calculates q-values and PEPs for a given feature collection.
     Args:
         feature_collection: a list of features
         indexed_db: an indexed database
-
-    Returns:
-        a list of features, with q-values and PEPs calculated
     """
-    py_features =  psc.py_picked_peptide(
+    psc.py_picked_peptide(
         [feature.get_py_ptr() for feature in feature_collection],
         indexed_db.get_py_ptr()
     )
 
-    return [Feature.from_py_feature(py_feature) for py_feature in py_features]
-
-def picked_protein(feature_collection: List[Feature], indexed_db: IndexedDatabase) -> List[Feature]:
+def picked_protein(feature_collection: List[Feature], indexed_db: IndexedDatabase):
     """ Perform SAGE picked protein implementation, calculates q-values and PEPs for a given feature collection.
     Args:
         feature_collection: a list of features
         indexed_db: an indexed database
-
-    Returns:
-        a list of features, with q-values and PEPs calculated
     """
-    py_features = psc.py_picked_protein(
+    psc.py_picked_protein(
         [feature.get_py_ptr() for feature in feature_collection],
         indexed_db.get_py_ptr()
     )
-
-    return [Feature.from_py_feature(py_feature) for py_feature in py_features]
