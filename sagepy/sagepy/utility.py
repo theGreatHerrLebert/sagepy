@@ -329,7 +329,9 @@ def create_sage_database(
     generate_decoys: bool = True,
     bucket_size: int = 16384,
     static_mods: Union[Dict[str, str], Dict[int, str]] = {"C": "[UNIMOD:4]"},
-    variable_mods: Union[Dict[str, List[int]], Dict[int, List[str]]] = {"M": ["[UNIMOD:35]"], "[": ["[UNIMOD:1]"]}
+    variable_mods: Union[Dict[str, List[int]], Dict[int, List[str]]] = {"M": ["[UNIMOD:35]"], "[": ["[UNIMOD:1]"]},
+    fragment_min_mz: float = 100.0,
+    fragment_max_mz: float = 2000.0,
 ) -> IndexedDatabase:
     """Create a SAGE database
 
@@ -371,7 +373,9 @@ def create_sage_database(
         variable_mods=variable_mods,
         enzyme_builder=enzyme_builder,
         generate_decoys=generate_decoys,
-        bucket_size=bucket_size
+        bucket_size=bucket_size,
+        fragment_min_mz=fragment_min_mz,
+        fragment_max_mz=fragment_max_mz
     )
 
     # Generate and return the indexed database
