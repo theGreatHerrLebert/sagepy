@@ -252,6 +252,10 @@ class PeptideSpectrumMatch:
     def cosine_similarity(self):
         return self.__py_ptr.cosine_similarity
 
+    @cosine_similarity.setter
+    def cosine_similarity(self, value: float):
+        self.__py_ptr.cosine_similarity = value
+
     @property
     def file_name(self):
         return self.__py_ptr.file_name
