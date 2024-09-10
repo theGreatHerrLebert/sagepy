@@ -264,11 +264,19 @@ class PeptideSpectrumMatch:
     def fragments_observed(self) -> Union[None, 'Fragments']:
         return Fragments.from_py_fragments(self.__py_ptr.fragments_observed)
 
+    @fragments_observed.setter
+    def fragments_observed(self, value: 'Fragments'):
+        self.__py_ptr.fragments_observed = value.get_py_ptr()
+
     @property
     def fragments_predicted(self) -> Union[None, 'Fragments']:
         if self.__py_ptr.fragments_predicted is None:
             return None
         return Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
+
+    @fragments_predicted.setter
+    def fragments_predicted(self, value: 'Fragments'):
+        self.__py_ptr.fragments_predicted = value.get_py_ptr()
 
     @property
     def mz_calibration_ppm(self):
