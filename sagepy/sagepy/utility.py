@@ -72,6 +72,7 @@ def peptide_spectrum_match_collection_to_pandas(
         psm_collection: Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]],
         re_score: bool = False,
         use_sequence_as_match_idx: bool = True,
+        project_rt: bool = False,
 ) -> pd.DataFrame:
     """Convert a list of peptide spectrum matches to a pandas dataframe
 
@@ -79,6 +80,7 @@ def peptide_spectrum_match_collection_to_pandas(
         psm_collection (Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]): The peptide spectrum matches
         re_score (bool, optional): Should re-score be used. Defaults to False.
         use_sequence_as_match_idx (bool, optional): Should the sequence be used as the match index. Defaults to True.
+        project_rt (bool, optional): Should the retention time be projected. Defaults to False.
 
     Returns:
         pd.DataFrame: The pandas dataframe
@@ -95,10 +97,16 @@ def peptide_spectrum_match_collection_to_pandas(
 
     row_list = []
     for match in psm_list:
-        if match.retention_time_predicted is not None and match.projected_rt is not None:
-            delta_rt = match.retention_time_predicted - match.projected_rt
+        if project_rt:
+            if match.retention_time_predicted is not None and match.projected_rt is not None:
+                delta_rt = match.retention_time_predicted - match.projected_rt
+            else:
+                delta_rt = None
         else:
-            delta_rt = None
+            if match.retention_time_predicted is not None and match.retention_time_observed is not None:
+                delta_rt = match.retention_time_predicted - match.retention_time_observed
+            else:
+                delta_rt = None
 
         if re_score:
             score = match.re_score
