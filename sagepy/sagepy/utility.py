@@ -72,7 +72,7 @@ def peptide_spectrum_match_collection_to_pandas(
         psm_collection: Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]],
         re_score: bool = False,
         use_sequence_as_match_idx: bool = True,
-        project_rt: bool = False,
+        project_rt: bool = True,
 ) -> pd.DataFrame:
     """Convert a list of peptide spectrum matches to a pandas dataframe
 
