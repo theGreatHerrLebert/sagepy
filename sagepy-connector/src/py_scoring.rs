@@ -1069,6 +1069,11 @@ impl PyPeptideSpectrumMatch {
         self.fragments_observed.clone()
     }
 
+    #[setter]
+    pub fn set_fragments_observed(&mut self, fragments: Option<PyFragments>) {
+        self.fragments_observed = fragments;
+    }
+
     #[getter]
     pub fn fragments_predicted(&self) -> Option<PyFragments> {
         self.fragments_predicted.clone()
