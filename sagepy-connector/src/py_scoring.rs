@@ -629,6 +629,10 @@ impl PyScorer {
                             None,
                             None,
                             None,
+                            None,
+                            None,
+                            None,
+                            None,
                         );
                         psms.push((psm, fragments));
                     }
@@ -849,7 +853,11 @@ impl PyPeptideSpectrumMatch {
         projected_rt: Option<f32>,
         beta_score: Option<f64>,
         posterior_error_prob: Option<f64>,
-        prosit_intensities: Option<Vec<f32>>
+        prosit_intensities: Option<Vec<f32>>,
+        spectral_entropy_similarity: Option<f32>,
+        spectral_correlation_similarity_pearson: Option<f32>,
+        spectral_correlation_similarity_spearman: Option<f32>,
+        spectral_normalized_intensity_difference: Option<f32>,
     ) -> Self {
 
         let maybe_charges = fragments_observed.clone().map(|f| f.inner.charges);
@@ -904,7 +912,11 @@ impl PyPeptideSpectrumMatch {
                 projected_rt,
                 beta_score,
                 posterior_error_prob,
-                prosit_intensities
+                prosit_intensities,
+                spectral_entropy_similarity,
+                spectral_correlation_similarity_pearson,
+                spectral_correlation_similarity_spearman,
+                spectral_normalized_intensity_difference,
             ),
             fragments_observed,
             fragments_predicted,
@@ -1231,6 +1243,46 @@ impl PyPeptideSpectrumMatch {
         self.inner.prosit_intensities = Some(prosit_intensities);
     }
 
+    #[getter]
+    pub fn spectral_entropy_similarity(&self) -> Option<f32> {
+        self.inner.spectral_entropy_similarity
+    }
+
+    #[setter]
+    pub fn set_spectral_entropy_similarity(&mut self, spectral_entropy_similarity: f32) {
+        self.inner.spectral_entropy_similarity = Some(spectral_entropy_similarity);
+    }
+
+    #[getter]
+    pub fn spectral_correlation_similarity_pearson(&self) -> Option<f32> {
+        self.inner.spectral_correlation_similarity_pearson
+    }
+
+    #[setter]
+    pub fn set_spectral_correlation_similarity_pearson(&mut self, spectral_correlation_similarity_pearson: f32) {
+        self.inner.spectral_correlation_similarity_pearson = Some(spectral_correlation_similarity_pearson);
+    }
+
+    #[getter]
+    pub fn spectral_correlation_similarity_spearman(&self) -> Option<f32> {
+        self.inner.spectral_correlation_similarity_spearman
+    }
+
+    #[setter]
+    pub fn set_spectral_correlation_similarity_spearman(&mut self, spectral_correlation_similarity_spearman: f32) {
+        self.inner.spectral_correlation_similarity_spearman = Some(spectral_correlation_similarity_spearman);
+    }
+
+    #[getter]
+    pub fn spectral_normalized_intensity_difference(&self) -> Option<f32> {
+        self.inner.spectral_normalized_intensity_difference
+    }
+
+    #[setter]
+    pub fn set_spectral_normalized_intensity_difference(&mut self, spectral_normalized_intensity_difference: f32) {
+        self.inner.spectral_normalized_intensity_difference = Some(spectral_normalized_intensity_difference);
+    }
+
     pub fn prosit_fragment_map(&self) -> Option<BTreeMap<(u32, i32, i32), f32>> {
         self.inner.prosit_intensities.clone().map(|intensities| {
             flat_prosit_array_to_fragments_map(intensities)
@@ -1414,8 +1466,8 @@ pub fn associate_psm_with_prosit_predicted_intensities(
         fragments_predicted: Some(fragments_predicted),
     };
 
+    psm.inner.prosit_intensities = Some(intensity_copy);
     psm.set_cosine_similarity(cosim);
-    psm.set_prosit_intensities(intensity_copy);
 
     psm
 }
@@ -1432,8 +1484,7 @@ pub fn associate_fragment_ions_with_prosit_predicted_intensities_par(
         .unwrap();
 
     let result = pool.install(|| {
-        psms.par_iter()
-            .zip(flat_intensities.par_iter())
+        psms.par_iter().zip(flat_intensities.par_iter())
             .map(|(psm, flat_intensities)| {
                 associate_psm_with_prosit_predicted_intensities(psm.clone(), flat_intensities.clone())
             })
