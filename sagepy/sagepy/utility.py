@@ -178,6 +178,10 @@ def peptide_spectrum_match_collection_to_pandas(
             "projected_rt": match.projected_rt,
             "beta_score": beta_score,
             "posterior_error_prob": pep,
+            "spectral_entropy_similarity": match.spectral_entropy_similarity,
+            "spectral_correlation_similarity_pearson": match.spectral_correlation_similarity_pearson,
+            "spectral_correlation_similarity_spearman": match.spectral_correlation_similarity_spearman,
+            "spectral_normalized_intensity_difference": match.spectral_normalized_intensity_difference,
         })
 
     return pd.DataFrame(row_list)
@@ -192,7 +196,9 @@ def get_features(ds: pd.DataFrame, score: Optional[str] = None) -> (NDArray, NDA
         "rank", "isotope_error", "average_ppm", "delta_next", "delta_best",
         "matched_peaks", "longest_b", "longest_y", "longest_y_pct", "missed_cleavages",
         "matched_intensity_pct", "poisson", "charge",
-        "intensity_ms1", "intensity_ms2", "collision_energy"
+        "intensity_ms1", "intensity_ms2", "collision_energy", "spectral_entropy_similarity",
+        "spectral_correlation_similarity_pearson", "spectral_correlation_similarity_spearman",
+        "spectral_normalized_intensity_difference"
     ]
     ds = ds.copy()
 

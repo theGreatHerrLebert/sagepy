@@ -79,7 +79,11 @@ class PeptideSpectrumMatch:
                  projected_rt: Union[None, float] = None,
                  beta_score: Union[None, float] = None,
                  posterior_error_prob: Union[None, float] = None,
-                 prosit_intensities: Union[None, List[float]] = None
+                 prosit_intensities: Union[None, List[float]] = None,
+                 spectral_entropy_similarity: Union[None, float] = None,
+                 spectral_correlation_similarity_pearson: Union[None, float] = None,
+                 spectral_correlation_similarity_spearman: Union[None, float] = None,
+                 spectral_normalized_intensity_difference: Union[None, float] = None,
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed,
@@ -90,7 +94,9 @@ class PeptideSpectrumMatch:
             intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr(),
             re_score, cosine_similarity, file_name,
             fragment_charges, fragment_ion_types, fragment_ordinals, fragment_intensities, fragment_mz_calculated,
-            fragment_mz_experimental, mz_calibration_ppm, projected_rt, beta_score, posterior_error_prob, prosit_intensities
+            fragment_mz_experimental, mz_calibration_ppm, projected_rt, beta_score, posterior_error_prob, prosit_intensities,
+            spectral_entropy_similarity, spectral_correlation_similarity_pearson, spectral_correlation_similarity_spearman,
+            spectral_normalized_intensity_difference
         )
 
     @property
@@ -322,6 +328,38 @@ class PeptideSpectrumMatch:
     @prosit_intensities.setter
     def prosit_intensities(self, value):
         self.__py_ptr.prosit_intensities = value
+
+    @property
+    def spectral_entropy_similarity(self):
+        return self.__py_ptr.spectral_entropy_similarity
+
+    @spectral_entropy_similarity.setter
+    def spectral_entropy_similarity(self, value):
+        self.__py_ptr.spectral_entropy_similarity = value
+
+    @property
+    def spectral_correlation_similarity_pearson(self):
+        return self.__py_ptr.spectral_correlation_similarity_pearson
+
+    @spectral_correlation_similarity_pearson.setter
+    def spectral_correlation_similarity_pearson(self, value):
+        self.__py_ptr.spectral_correlation_similarity_pearson = value
+
+    @property
+    def spectral_correlation_similarity_spearman(self):
+        return self.__py_ptr.spectral_correlation_similarity_spearman
+
+    @spectral_correlation_similarity_spearman.setter
+    def spectral_correlation_similarity_spearman(self, value):
+        self.__py_ptr.spectral_correlation_similarity_spearman = value
+
+    @property
+    def spectral_normalized_intensity_difference(self):
+        return self.__py_ptr.spectral_normalized_intensity_difference
+
+    @spectral_normalized_intensity_difference.setter
+    def spectral_normalized_intensity_difference(self, value):
+        self.__py_ptr.spectral_normalized_intensity_difference = value
 
     def prosit_fragment_map(self) -> Optional[Dict[Tuple[int, int, int], float]]:
         return self.__py_ptr.prosit_fragment_map()
