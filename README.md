@@ -10,11 +10,12 @@ The project is structured as follows:
 *	`qfdrust`: This crate implements basic false discovery rate (FDR) estimation using TDC, following the methods proposed by [Crema](https://github.com/Noble-Lab/crema).
 *	`unimod`: A work-in-progress crate that bridges Sage-style PSM annotation with the UNIMOD standard.
 
-There is still much work to be done, but the essentials for peptide identification and FDR estimation are already fully functional.
-
+## Quickstart
 Get started quickly by installing sagepy via pip:
 ```
 pip install sagepy
 ```
+Check out the tutorial notebooks to dive into [DB generation, searching, and FDR estimation](https://github.com/theGreatHerrLebert/sagepy/blob/main/sagepy/examples/scoring/scoring.ipynb), [peptide property prediction](https://github.com/theGreatHerrLebert/sagepy/blob/main/sagepy/examples/property-prediction/property_prediction.ipynb), and [re-scoring of results](https://github.com/theGreatHerrLebert/sagepy/blob/main/sagepy/examples/rescoring/rescoring.ipynb).
 
+## Get involved
 Do you have any questions or want to contribute? Feel free to reach out at any time!
