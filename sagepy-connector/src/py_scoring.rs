@@ -628,6 +628,7 @@ impl PyScorer {
                             None,
                             None,
                             None,
+                            None,
                         );
                         psms.push((psm, fragments));
                     }
@@ -848,6 +849,7 @@ impl PyPeptideSpectrumMatch {
         projected_rt: Option<f32>,
         beta_score: Option<f64>,
         posterior_error_prob: Option<f64>,
+        prosit_intensities: Option<Vec<f32>>
     ) -> Self {
 
         let maybe_charges = fragments_observed.clone().map(|f| f.inner.charges);
@@ -902,6 +904,7 @@ impl PyPeptideSpectrumMatch {
                 projected_rt,
                 beta_score,
                 posterior_error_prob,
+                prosit_intensities
             ),
             fragments_observed,
             fragments_predicted,
@@ -1217,6 +1220,26 @@ impl PyPeptideSpectrumMatch {
     pub fn set_posterior_error_prob(&mut self, posterior_error_prob: f64) {
         self.inner.posterior_error_prob = Some(posterior_error_prob);
     }
+
+    #[getter]
+    pub fn prosit_intensities(&self) -> Option<Vec<f32>> {
+        self.inner.prosit_intensities.clone()
+    }
+
+    #[setter]
+    pub fn set_prosit_intensities(&mut self, prosit_intensities: Vec<f32>) {
+        self.inner.prosit_intensities = Some(prosit_intensities);
+    }
+
+    pub fn prosit_fragment_map(&self) -> Option<BTreeMap<(u32, i32, i32), f32>> {
+        self.inner.prosit_intensities.clone().map(|intensities| {
+            flat_prosit_array_to_fragments_map(intensities)
+        })
+    }
+
+    pub fn observed_fragment_map(&self) -> Option<BTreeMap<(u32, i32, i32), f32>> {
+        self.fragments_observed.clone().map(|f| py_fragments_to_fragments_map(&f, true))
+    }
 }
 
 #[pyfunction]
@@ -1319,6 +1342,8 @@ pub fn associate_psm_with_prosit_predicted_intensities(
     flat_intensities: Vec<f32>,
 ) -> PyPeptideSpectrumMatch {
 
+    let intensity_copy = flat_intensities.clone();
+
     let fragments_observed = &psm.fragments_observed.unwrap();
     let observed_map = py_fragments_to_fragments_map(fragments_observed, true);
     let predicted_map = flat_prosit_array_to_fragments_map(flat_intensities);
@@ -1390,6 +1415,7 @@ pub fn associate_psm_with_prosit_predicted_intensities(
     };
 
     psm.set_cosine_similarity(cosim);
+    psm.set_prosit_intensities(intensity_copy);
 
     psm
 }

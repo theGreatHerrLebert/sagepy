@@ -79,6 +79,7 @@ class PeptideSpectrumMatch:
                  projected_rt: Union[None, float] = None,
                  beta_score: Union[None, float] = None,
                  posterior_error_prob: Union[None, float] = None,
+                 prosit_intensities: Union[None, List[float]] = None
                  ):
         self.__py_ptr = psc.PyPeptideSpectrumMatch(
             spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed,
@@ -89,7 +90,7 @@ class PeptideSpectrumMatch:
             intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr(),
             re_score, cosine_similarity, file_name,
             fragment_charges, fragment_ion_types, fragment_ordinals, fragment_intensities, fragment_mz_calculated,
-            fragment_mz_experimental, mz_calibration_ppm, projected_rt, beta_score, posterior_error_prob
+            fragment_mz_experimental, mz_calibration_ppm, projected_rt, beta_score, posterior_error_prob, prosit_intensities
         )
 
     @property
@@ -313,6 +314,20 @@ class PeptideSpectrumMatch:
     @posterior_error_prob.setter
     def posterior_error_prob(self, value):
         self.__py_ptr.posterior_error_prob = value
+
+    @property
+    def prosit_intensities(self):
+        return self.__py_ptr.prosit_intensities
+
+    @prosit_intensities.setter
+    def prosit_intensities(self, value):
+        self.__py_ptr.prosit_intensities = value
+
+    def prosit_fragment_map(self) -> Optional[Dict[Tuple[int, int, int], float]]:
+        return self.__py_ptr.prosit_fragment_map()
+
+    def observed_fragment_map(self) -> Optional[Dict[Tuple[int, int, int], float]]:
+        return self.__py_ptr.observed_fragment_map()
 
     @classmethod
     def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
