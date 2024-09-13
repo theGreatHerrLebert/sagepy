@@ -3,10 +3,15 @@ use std::f64::consts::LN_2;
 use ndarray::Array1;
 use ndarray::Zip;
 
-fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>) -> Option<f32> {
+fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>, epsilon: f32) -> Option<f32> {
     if vec1.len() != vec2.len() || vec1.is_empty() {
         return None;
     }
+
+    // filter the intensities based on the epsilon value
+    let valid_ion_mask: Vec<bool> = vec2.iter().map(|&x| x > epsilon).collect();
+    let vec1: Vec<f32> = vec1.iter().zip(&valid_ion_mask).filter_map(|(&x, &valid)| if valid { Some(x) } else { None }).collect();
+    let vec2: Vec<f32> = vec2.iter().zip(&valid_ion_mask).filter_map(|(&x, &valid)| if valid { Some(x) } else { None }).collect();
 
     let dot_product: f32 = vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum();
     let magnitude_vec1: f32 = vec1.iter().map(|x| x.powi(2)).sum::<f32>().sqrt();
@@ -307,14 +312,14 @@ impl FragmentIntensityPrediction {
         spearman_correlation(&observed_intensities, &prosit_intensities, epsilon)
     }
 
-    pub fn cosine_similarity(&self) -> Option<f32> {
+    pub fn cosine_similarity(&self, epsilon: f32) -> Option<f32> {
         let observed_intensities = self.get_observed_intensities_re_indexed();
         let prosit_intensities = self.get_prosit_intensities_re_indexed();
-        cosine_similarity(&observed_intensities, &prosit_intensities)
+        cosine_similarity(&observed_intensities, &prosit_intensities, epsilon)
     }
 
-    pub fn spectral_angle_similarity(&self) -> f32 {
-        let cosim = self.cosine_similarity().unwrap_or(0.0);
+    pub fn spectral_angle_similarity(&self, epsilon: f32) -> f32 {
+        let cosim = self.cosine_similarity(epsilon).unwrap_or(0.0);
         cosim_to_spectral_angle(cosim)
     }
 }
