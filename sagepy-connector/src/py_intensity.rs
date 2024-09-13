@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use qfdrust::intensity::FragmentIntensityPrediction;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
-use crate::py_scoring::{PyFeature, PyPeptideSpectrumMatch};
+use crate::py_scoring::{PyPeptideSpectrumMatch};
 
 #[pyclass]
 pub struct PyFragmentIntensityPrediction {
