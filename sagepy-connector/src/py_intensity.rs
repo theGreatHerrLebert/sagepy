@@ -1,6 +1,4 @@
 use pyo3::prelude::*;
-use pyo3::exceptions::PyValueError;
-use pyo3::types::PyList;
 use qfdrust::intensity::FragmentIntensityPrediction;
 
 #[pyclass]
@@ -103,8 +101,12 @@ impl PyFragmentIntensityPrediction {
         self.inner.prosit_intensity_predicted = prosit_intensity_predicted;
     }
 
-    fn cosine_similarity(&self) -> f32 {
-        self.inner.cosine_similarity().unwrap()
+    fn cosine_similarity(&self, epsilon: f32) -> f32 {
+        self.inner.cosine_similarity(epsilon).unwrap()
+    }
+
+    fn spectral_angle_similarity(&self, epsilon: f32) -> f32 {
+        self.inner.spectral_angle_similarity(epsilon)
     }
 
     fn pearson_correlation(&self, epsilon: f32) -> f32 {
