@@ -23,6 +23,7 @@ fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>, epsilon: f32) -> Option<f
 
     Some(dot_product / (magnitude_vec1 * magnitude_vec2))
 }
+
 fn cosim_to_spectral_angle(cosim: f32) -> f32 {
     let angle = (1.0 - cosim).acos();
     1.0 - angle / std::f32::consts::PI
@@ -219,8 +220,8 @@ pub fn reshape_prosit_array(flat_array: Vec<f32>) -> Vec<Vec<Vec<f32>>> {
 
 pub struct FragmentIntensityPrediction {
     pub intensities_observed: Vec<f32>,
-    pub mz_observed: Vec<f64>,
-    pub mz_calculated: Vec<f64>,
+    pub mz_observed: Vec<f32>,
+    pub mz_calculated: Vec<f32>,
     pub charges: Vec<i32>,
     pub ordinals: Vec<i32>,
     // 0: b, 1: y
@@ -231,8 +232,8 @@ pub struct FragmentIntensityPrediction {
 impl FragmentIntensityPrediction {
     pub fn new(
         intensities_observed: Vec<f32>,
-        mz_observed: Vec<f64>,
-        mz_calculated: Vec<f64>,
+        mz_observed: Vec<f32>,
+        mz_calculated: Vec<f32>,
         charges: Vec<i32>,
         ordinals: Vec<i32>,
         ion_types: Vec<bool>,
@@ -254,11 +255,14 @@ impl FragmentIntensityPrediction {
 
     pub fn observed_intensity_to_fragments_map(&self) -> BTreeMap<(u32, i32, i32), f32> {
         let mut fragments: BTreeMap<(u32, i32, i32), f32> = BTreeMap::new();
-        for (i, &intensity) in self.intensities_observed.iter().enumerate() {
-            if intensity >= 0.0 {
-                fragments.insert((self.ion_types[i] as u32, self.charges[i], self.ordinals[i]), intensity);
-            }
+        let max_intensity = self.intensities_observed.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+
+        for i in 0..self.mz_calculated.len() {
+            let kind = self.ion_types[i] as u32;
+            let intensity = self.intensities_observed[i] / max_intensity;
+            fragments.insert((kind, self.charges[i], self.ordinals[i]), intensity);
         }
+
         fragments
     }
 
@@ -278,10 +282,30 @@ impl FragmentIntensityPrediction {
         observed_intensities
     }
 
-    pub fn get_prosit_intensities_re_indexed(&self) -> Vec<f32> {
+    /// Get the prosit intensities re-indexed to match the observed intensities
+    ///
+    /// # Arguments
+    ///
+    /// * `reduce_matched` - A boolean indicating whether to reduce the prosit intensities to only the matched ions
+    ///
+    /// # Returns
+    ///
+    /// * `Vec<f32>` - A vector of f32 representing the re-indexed prosit intensities, possibly reduced to only the matched ions
+    pub fn get_prosit_intensities_re_indexed(&self, reduce_matched: bool) -> Vec<f32> {
         // vector should be of a fixed size 174,
         let mut prosit_intensities = vec![0.0; 174];
-        let intensity_map = self.prosit_intensity_to_fragments_map();
+        let mut intensity_map = self.prosit_intensity_to_fragments_map();
+
+        // Reduce the prosit intensities to only the matched ions
+        if reduce_matched {
+            let real_intensity_map = self.observed_intensity_to_fragments_map();
+
+            for (key, _) in intensity_map.clone().iter() {
+                if !real_intensity_map.contains_key(&key) {
+                    intensity_map.remove(&key);
+                }
+            }
+        }
 
         for ((kind, charge, ordinal), intensity) in intensity_map.iter() {
             let ordinal_index = ordinal - 1;
@@ -294,32 +318,42 @@ impl FragmentIntensityPrediction {
         prosit_intensities
     }
 
-    pub fn spectral_entropy_similarity(&self, epsilon: f32) -> f32 {
+    pub fn spectral_entropy_similarity(&self, epsilon: f32, reduce_matched: bool) -> f32 {
         let observed_intensities = self.get_observed_intensities_re_indexed();
-        let prosit_intensities = self.get_prosit_intensities_re_indexed();
+        let prosit_intensities = self.get_prosit_intensities_re_indexed(reduce_matched);
         spectral_entropy_similarity(&observed_intensities, &prosit_intensities, epsilon)
     }
 
-    pub fn pearson_correlation(&self, epsilon: f32) -> f32 {
+    pub fn pearson_correlation(&self, epsilon: f32, reduce_matched: bool) -> f32 {
         let observed_intensities = self.get_observed_intensities_re_indexed();
-        let prosit_intensities = self.get_prosit_intensities_re_indexed();
+        let prosit_intensities = self.get_prosit_intensities_re_indexed(reduce_matched);
         pearson_correlation(&observed_intensities, &prosit_intensities, epsilon)
     }
 
-    pub fn spearman_correlation(&self, epsilon: f32) -> f32 {
+    pub fn spearman_correlation(&self, epsilon: f32, reduce_matched: bool) -> f32 {
         let observed_intensities = self.get_observed_intensities_re_indexed();
-        let prosit_intensities = self.get_prosit_intensities_re_indexed();
+        let prosit_intensities = self.get_prosit_intensities_re_indexed(reduce_matched);
         spearman_correlation(&observed_intensities, &prosit_intensities, epsilon)
     }
 
-    pub fn cosine_similarity(&self, epsilon: f32) -> Option<f32> {
+    pub fn cosine_similarity(&self, epsilon: f32, reduce_matched: bool) -> Option<f32> {
         let observed_intensities = self.get_observed_intensities_re_indexed();
-        let prosit_intensities = self.get_prosit_intensities_re_indexed();
+        let prosit_intensities = self.get_prosit_intensities_re_indexed(reduce_matched);
         cosine_similarity(&observed_intensities, &prosit_intensities, epsilon)
     }
 
-    pub fn spectral_angle_similarity(&self, epsilon: f32) -> f32 {
-        let cosim = self.cosine_similarity(epsilon).unwrap_or(0.0);
+    pub fn spectral_angle_similarity(&self, epsilon: f32, reduce_matched: bool) -> f32 {
+        let cosim = self.cosine_similarity(epsilon, reduce_matched).unwrap_or(0.0);
         cosim_to_spectral_angle(cosim)
+    }
+
+    pub fn get_feature_vector(&self, epsilon: f32, reduce_matched: bool) -> Vec<f32> {
+        vec![
+            self.cosine_similarity(epsilon, reduce_matched).unwrap_or(0.0),
+            self.spectral_angle_similarity(epsilon, reduce_matched),
+            self.pearson_correlation(epsilon, reduce_matched),
+            self.spearman_correlation(epsilon, reduce_matched),
+            self.spectral_entropy_similarity(epsilon, reduce_matched),
+        ]
     }
 }

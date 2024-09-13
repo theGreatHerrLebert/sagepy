@@ -1,7 +1,11 @@
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Dict
 
-import pandas as pd
+import numpy as np
 import sagepy_connector
+from numpy.typing import NDArray
+
+from sagepy.core import PeptideSpectrumMatch
+
 psc = sagepy_connector.py_intensity
 
 class FragmentIntensity:
@@ -74,20 +78,20 @@ class FragmentIntensity:
     def intensities_observed(self, intensities_observed: List[float]):
         self.__py_ptr.intensities_observed = intensities_observed
 
-    def cosine_similarity(self, epsilon: float = 1e-7) -> float:
-        return self.__py_ptr.cosine_similarity(epsilon)
+    def cosine_similarity(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.cosine_similarity(epsilon, reduce_matched)
 
-    def spectral_angle_similarity(self, epsilon: float = 1e-7) -> float:
-        return self.__py_ptr.spectral_angle_similarity(epsilon)
+    def spectral_angle_similarity(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.spectral_angle_similarity(epsilon, reduce_matched)
 
-    def pearson_correlation(self, epsilon: float = 1e-7) -> float:
-        return self.__py_ptr.pearson_correlation(epsilon)
+    def pearson_correlation(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.pearson_correlation(epsilon, reduce_matched)
 
-    def spearman_correlation(self, epsilon: float = 1e-7) -> float:
-        return self.__py_ptr.spearman_correlation(epsilon)
+    def spearman_correlation(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.spearman_correlation(epsilon, reduce_matched)
 
-    def spectral_entropy_similarity(self, epsilon: float = 1e-7) -> float:
-        return self.__py_ptr.spectral_entropy_similarity(epsilon)
+    def spectral_entropy_similarity(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.spectral_entropy_similarity(epsilon, reduce_matched)
 
     def __repr__(self):
         return (f"FragmentIntensity(intensities_observed={self.intensities_observed}, "
@@ -100,3 +104,14 @@ class FragmentIntensity:
 
     def predicted_intensity_map(self) -> Dict[Tuple[int, int, int], float]:
         return self.__py_ptr.predicted_intensity_map()
+
+def peptide_spectrum_match_list_to_intensity_feature_matrix(
+        psm_list: List[PeptideSpectrumMatch],
+        epsilon: float = 1e-7,
+        reduce_matched: bool = False,
+        num_threads: int = 16,
+) -> NDArray:
+    features = psc.peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
+        [p.get_py_ptr() for p in psm_list], epsilon, reduce_matched, num_threads
+    )
+    return np.array(features)
