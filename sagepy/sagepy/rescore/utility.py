@@ -1,11 +1,137 @@
 import numpy as np
 import pandas as pd
+
+import scipy.stats
+
 from numpy.typing import NDArray
 from typing import Optional, Tuple, List
 
 from sagepy.core import PeptideSpectrumMatch
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
 from sagepy.utility import peptide_spectrum_match_collection_to_pandas
+
+
+def dict_to_dense_array(peak_dict, array_length=174):
+    """
+    Convert a dictionary of peaks to a fixed-length array.
+    Args:
+        peak_dict: a dictionary of peaks (ion_type, charge, ordinal) -> intensity
+        array_length: the length of the fixed-length array
+
+    Returns:
+        A fixed-length array of intensities.
+    """
+    # initialize a fixed-length array of zeros
+    intensities = np.zeros(array_length)
+
+    half_length = array_length // 2  # first half for b ions, second half for y ions
+    block_size = 29  # number of ordinals per charge state
+
+    for (ion_type, charge, ordinal), intensity in peak_dict.items():
+        # map (b=0, y=1) ions to the correct index
+        index = ion_type * half_length + (charge - 1) * block_size + (ordinal - 1)
+        intensities[index] = intensity
+
+    return intensities
+
+
+def spectral_entropy_similarity(observed_intensities, predicted_intensities,
+                                epsilon: float = 1e-7) -> float:
+    """
+    Calculate the spectral entropy similarity between observed and predicted intensities
+    Args:
+        observed_intensities: the observed intensities
+        predicted_intensities: the predicted intensities
+        epsilon: small value to avoid division by zero
+
+    Returns:
+        The spectral entropy similarity between observed and predicted intensities.
+    """
+
+    valid_ion_mask = predicted_intensities > epsilon
+
+    observed_filtered = observed_intensities[valid_ion_mask]
+    predicted_filtered = predicted_intensities[valid_ion_mask]
+
+    entropy_merged = scipy.stats.entropy(observed_filtered + predicted_filtered)
+    entropy_obs = scipy.stats.entropy(observed_filtered)
+    entropy_pred = scipy.stats.entropy(predicted_filtered)
+
+    # calculate the spectral entropy similarity
+    entropy = 1 - (2 * entropy_merged - entropy_obs - entropy_pred) / np.log(4)
+
+    # handle cases where the entropy is NaN (set them to 0)
+    if np.isnan(entropy):
+        entropy = 0
+
+    return entropy
+
+
+def spectral_correlation(
+        observed_intensities,
+        predicted_intensities,
+        method: str = "pearson", epsilon: float = 1e-7,
+) -> float:
+    """
+    Calculate the spectral correlation between observed and predicted intensities.
+    Args:
+        observed_intensities: intensities observed in the spectrum
+        predicted_intensities: intensities predicted by the model
+        method: correlation method (pearson or spearman)
+        epsilon: small value to avoid division by zero
+
+    Returns:
+        The spectral correlation between observed and predicted intensities.
+    """
+
+    if method not in ["pearson", "spearman"]:
+        raise ValueError(f"Invalid correlation method: {method}. Choose 'pearson' or 'spearman'.")
+
+    valid_ion_mask = predicted_intensities > epsilon
+
+    observed_filtered = observed_intensities[valid_ion_mask]
+    predicted_filtered = predicted_intensities[valid_ion_mask]
+
+    observed_filtered = observed_filtered[~np.isnan(observed_filtered)]
+    predicted_filtered = predicted_filtered[~np.isnan(predicted_filtered)]
+
+    if len(observed_filtered) <= 2 or len(predicted_filtered) <= 2:
+        return 0
+
+    if method == "pearson":
+        corr, _ = scipy.stats.pearsonr(observed_filtered, predicted_filtered)
+    else:
+        corr, _ = scipy.stats.spearmanr(observed_filtered, predicted_filtered)
+
+    if np.isnan(corr):
+        corr = 0
+
+    return corr
+
+
+def spectral_coverage(observed_intensities, predicted_intensities):
+    """
+    Calculate the spectral coverage between observed and predicted intensities
+    Args:
+        observed_intensities: the observed intensities
+        predicted_intensities: the predicted intensities
+
+    Returns:
+        The spectral coverage between observed and predicted intensities.
+    """
+    predicted = predicted_intensities
+    observed = observed_intensities
+
+    intensity_covered = 0.0
+    total_intensity = 0.0
+
+    for key, value in predicted.items():
+        total_intensity += value
+
+        if key in observed:
+            intensity_covered += value
+
+    return intensity_covered / total_intensity
 
 
 def cosim_to_spectral_angle_sim(cosim: float) -> float:
