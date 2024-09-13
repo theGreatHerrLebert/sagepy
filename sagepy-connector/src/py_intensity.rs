@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use pyo3::prelude::*;
 use qfdrust::intensity::FragmentIntensityPrediction;
 
@@ -119,6 +120,14 @@ impl PyFragmentIntensityPrediction {
 
     fn spectral_entropy_similarity(&self, epsilon: f32) -> f32 {
         self.inner.spectral_entropy_similarity(epsilon)
+    }
+
+    fn observed_intensity_map(&self) -> BTreeMap<(u32, i32, i32), f32> {
+        self.inner.prosit_intensity_to_fragments_map()
+    }
+
+    fn predicted_intensity_map(&self) -> BTreeMap<(u32, i32, i32), f32> {
+        self.inner.observed_intensity_to_fragments_map()
     }
 }
 

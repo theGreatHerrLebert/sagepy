@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 import pandas as pd
 import sagepy_connector
@@ -94,3 +94,9 @@ class FragmentIntensity:
                 f"mz_observed={self.mz_observed}, mz_calculated={self.mz_calculated}, "
                 f"charges={self.charges}, ordinals={self.ordinals}, ion_types={self.ion_types}, "
                 f"prosit_intensity_predicted={self.prosit_intensity_predicted})")
+
+    def observed_intensity_map(self) -> Dict[Tuple[int, int, int], float]:
+        return self.__py_ptr.observed_intensity_map()
+
+    def predicted_intensity_map(self) -> Dict[Tuple[int, int, int], float]:
+        return self.__py_ptr.predicted_intensity_map()
