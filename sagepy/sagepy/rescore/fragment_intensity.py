@@ -20,31 +20,59 @@ class FragmentIntensity:
 
     @property
     def intensities_observed(self) -> List[float]:
-        return self.__py_ptr.intensities_observed()
+        return self.__py_ptr.intensities_observed
+
+    @intensities_observed.setter
+    def intensities_observed(self, intensities_observed: List[float]):
+        self.__py_ptr.intensities_observed = intensities_observed
 
     @property
     def mz_observed(self) -> List[float]:
-        return self.__py_ptr.mz_observed()
+        return self.__py_ptr.mz_observed
+
+    @mz_observed.setter
+    def mz_observed(self, mz_observed: List[float]):
+        self.__py_ptr.mz_observed = mz_observed
 
     @property
     def mz_calculated(self) -> List[float]:
-        return self.__py_ptr.mz_calculated()
+        return self.__py_ptr.mz_calculated
+
+    @mz_calculated.setter
+    def mz_calculated(self, mz_calculated: List[float]):
+        self.__py_ptr.mz_calculated = mz_calculated
 
     @property
     def charges(self) -> List[int]:
-        return self.__py_ptr.charges()
+        return self.__py_ptr.charges
+
+    @charges.setter
+    def charges(self, charges: List[int]):
+        self.__py_ptr.charges = charges
 
     @property
     def ordinals(self) -> List[int]:
-        return self.__py_ptr.ordinals()
+        return self.__py_ptr.ordinals
+
+    @ordinals.setter
+    def ordinals(self, ordinals: List[int]):
+        self.__py_ptr.ordinals = ordinals
 
     @property
     def ion_types(self) -> List[bool]:
-        return self.__py_ptr.ion_types()
+        return self.__py_ptr.ion_types
+
+    @ion_types.setter
+    def ion_types(self, ion_types: List[bool]):
+        self.__py_ptr.ion_types = ion_types
 
     @property
     def prosit_intensity_predicted(self) -> List[float]:
-        return self.__py_ptr.prosit_intensity_predicted()
+        return self.__py_ptr.prosit_intensity_predicted
+
+    @intensities_observed.setter
+    def intensities_observed(self, intensities_observed: List[float]):
+        self.__py_ptr.intensities_observed = intensities_observed
 
     def cosine_similarity(self) -> float:
         return self.__py_ptr.cosine_similarity()
