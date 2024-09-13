@@ -308,7 +308,9 @@ impl FragmentIntensityPrediction {
     }
 
     pub fn cosine_similarity(&self) -> Option<f32> {
-        cosine_similarity(&self.intensities_observed, &self.prosit_intensity_predicted)
+        let observed_intensities = self.get_observed_intensities_re_indexed();
+        let prosit_intensities = self.get_prosit_intensities_re_indexed();
+        cosine_similarity(&observed_intensities, &prosit_intensities)
     }
 
     pub fn spectral_angle_similarity(&self) -> f32 {
