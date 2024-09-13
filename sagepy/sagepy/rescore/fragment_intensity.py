@@ -74,8 +74,11 @@ class FragmentIntensity:
     def intensities_observed(self, intensities_observed: List[float]):
         self.__py_ptr.intensities_observed = intensities_observed
 
-    def cosine_similarity(self) -> float:
-        return self.__py_ptr.cosine_similarity()
+    def cosine_similarity(self, epsilon: float = 1e-7) -> float:
+        return self.__py_ptr.cosine_similarity(epsilon)
+
+    def spectral_angle_similarity(self, epsilon: float = 1e-7) -> float:
+        return self.__py_ptr.spectral_angle_similarity(epsilon)
 
     def pearson_correlation(self, epsilon: float = 1e-7) -> float:
         return self.__py_ptr.pearson_correlation(epsilon)
