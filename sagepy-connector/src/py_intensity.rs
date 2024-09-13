@@ -123,11 +123,11 @@ impl PyFragmentIntensityPrediction {
     }
 
     fn observed_intensity_map(&self) -> BTreeMap<(u32, i32, i32), f32> {
-        self.inner.prosit_intensity_to_fragments_map()
+        self.inner.observed_intensity_to_fragments_map()
     }
 
     fn predicted_intensity_map(&self) -> BTreeMap<(u32, i32, i32), f32> {
-        self.inner.observed_intensity_to_fragments_map()
+        self.inner.prosit_intensity_to_fragments_map()
     }
 }
 
