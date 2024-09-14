@@ -1466,7 +1466,7 @@ pub fn associate_psm_with_prosit_predicted_intensities(
         intensity_copy.clone(),
     );
 
-    let cosine_sim = fragment_intensity_pred.cosine_similarity(1e-7, false);
+    let cosine_sim = fragment_intensity_pred.cosine_similarity(1e-7, true);
     let spearman = fragment_intensity_pred.spearman_correlation(1e-7, false);
     let pearson = fragment_intensity_pred.pearson_correlation(1e-7, false);
     let spectral_entropy = fragment_intensity_pred.spectral_entropy_similarity(1e-7, false);
