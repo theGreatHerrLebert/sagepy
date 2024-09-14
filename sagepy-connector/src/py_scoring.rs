@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 use itertools::Itertools;
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch};
+use qfdrust::intensity::FragmentIntensityPrediction;
 use crate::utilities::sage_sequence_to_unimod_sequence;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
@@ -13,7 +14,7 @@ use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments, ScoreType};
 use serde::{Deserialize, Serialize};
 use crate::py_ion_series::PyKind;
-use crate::py_utility::{cosine_similarity, flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
+use crate::py_utility::{flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
 
 #[pyclass]
 #[derive(Clone, Serialize, Deserialize)]
@@ -1455,10 +1456,20 @@ pub fn associate_psm_with_prosit_predicted_intensities(
         }
     };
 
-    let observed_intensities = fragments_observed.intensities();
-    let predicted_intensities = fragments_predicted.intensities();
-    let cosim = cosine_similarity(&observed_intensities, &predicted_intensities);
+    let fragment_intensity_pred = FragmentIntensityPrediction::new(
+        fragments_observed.inner.intensities.clone(),
+        fragments_observed.inner.mz_experimental.clone(),
+        fragments_observed.inner.mz_calculated.clone(),
+        fragments_observed.inner.charges.clone(),
+        fragments_observed.inner.fragment_ordinals.clone(),
+        fragments_observed.inner.kinds.iter().map(|k| kind_to_string(*k) == "y").collect(),
+        intensity_copy.clone(),
+    );
 
+    let cosine_sim = fragment_intensity_pred.cosine_similarity(1e-7, false);
+    let spearman = fragment_intensity_pred.spearman_correlation(1e-7, false);
+    let pearson = fragment_intensity_pred.pearson_correlation(1e-7, false);
+    let spectral_entropy = fragment_intensity_pred.spectral_entropy_similarity(1e-7, false);
 
     let mut psm = PyPeptideSpectrumMatch {
         inner: psm.inner,
@@ -1467,7 +1478,11 @@ pub fn associate_psm_with_prosit_predicted_intensities(
     };
 
     psm.inner.prosit_intensities = Some(intensity_copy);
-    psm.set_cosine_similarity(cosim);
+
+    psm.inner.cosine_similarity = cosine_sim;
+    psm.inner.spectral_entropy_similarity = Some(spectral_entropy);
+    psm.inner.spectral_correlation_similarity_pearson = Some(pearson);
+    psm.inner.spectral_correlation_similarity_spearman = Some(spearman);
 
     psm
 }
