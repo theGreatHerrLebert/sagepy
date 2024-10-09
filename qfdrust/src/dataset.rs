@@ -3,6 +3,7 @@ use itertools::multizip;
 use rustms::chemistry::formula::calculate_mz;
 use rustms::proteomics::peptide::{FragmentType, PeptideProductIonSeriesCollection, PeptideSequence};
 use serde::{Deserialize, Serialize};
+use crate::intensity::FragmentIntensityPrediction;
 use crate::utility;
 
 #[derive(Clone, Debug)]
@@ -316,6 +317,18 @@ impl PeptideSpectrumMatch {
 
     pub fn from_json(json: &str) -> PeptideSpectrumMatch {
         serde_json::from_str(json).unwrap()
+    }
+
+    pub fn get_fragment_intensity_prediction(&self) -> FragmentIntensityPrediction {
+        FragmentIntensityPrediction::new(
+            self.fragment_intensities.clone().unwrap(),
+            self.fragment_mz_observed.clone().unwrap(),
+            self.fragment_mz_calculated.clone().unwrap(),
+            self.fragment_charges.clone().unwrap(),
+            self.fragment_ordinals.clone().unwrap(),
+            self.fragment_ion_types.clone().unwrap().iter().map(|kind| kind == "y").collect(),
+            self.prosit_intensities.clone().unwrap(),
+        )
     }
 }
 

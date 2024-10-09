@@ -203,12 +203,30 @@ def get_features(ds: pd.DataFrame, score: Optional[str] = None) -> (NDArray, NDA
     score = score if score is not None else "score"
 
     features = [
-        f"{score}", "delta_rt", "delta_ims", "cosine_similarity", "delta_mass",
-        "rank", "isotope_error", "average_ppm", "delta_next", "delta_best",
-        "matched_peaks", "longest_b", "longest_y", "longest_y_pct", "missed_cleavages",
-        "matched_intensity_pct", "poisson", "charge",
-        "intensity_ms1", "intensity_ms2", "collision_energy", "spectral_entropy_similarity",
-        "spectral_correlation_similarity_pearson", "spectral_correlation_similarity_spearman",
+        f"{score}",
+        "delta_rt",
+        "delta_ims",
+        "cosine_similarity",
+        "delta_mass",
+        "rank",
+        "isotope_error",
+        "average_ppm",
+        "delta_next",
+        "delta_best",
+        "matched_peaks",
+        "longest_b",
+        "longest_y",
+        "longest_y_pct",
+        "missed_cleavages",
+        "matched_intensity_pct",
+        "poisson",
+        "charge",
+        "intensity_ms1",
+        "intensity_ms2",
+        "collision_energy",
+        "spectral_entropy_similarity",
+        "spectral_correlation_similarity_pearson",
+        "spectral_correlation_similarity_spearman",
         "spectral_normalized_intensity_difference"
     ]
     ds = ds.copy()
@@ -217,6 +235,10 @@ def get_features(ds: pd.DataFrame, score: Optional[str] = None) -> (NDArray, NDA
     ds["intensity_ms2"] = ds["intensity_ms2"].apply(lambda x: np.log(x + 1))
 
     X = ds[features].to_numpy().astype(np.float32)
+
+    # make sure that there are no NaN values
+    X = np.nan_to_num(X, nan=0.0)
+
     Y = ds["decoy"].to_numpy()
     Y = np.array([0 if x else 1 for x in Y]).astype(np.float32)
 
