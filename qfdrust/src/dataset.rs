@@ -180,6 +180,11 @@ pub struct PeptideSpectrumMatch {
     pub projected_rt: Option<f32>,
     pub beta_score: Option<f64>,
     pub posterior_error_prob: Option<f64>,
+    pub prosit_intensities: Option<Vec<f32>>,
+    pub spectral_entropy_similarity: Option<f32>,
+    pub spectral_correlation_similarity_pearson: Option<f32>,
+    pub spectral_correlation_similarity_spearman: Option<f32>,
+    pub spectral_normalized_intensity_difference: Option<f32>,
 }
 
 impl PeptideSpectrumMatch {
@@ -227,6 +232,11 @@ impl PeptideSpectrumMatch {
         projected_rt: Option<f32>,
         beta_score: Option<f64>,
         posterior_error_prob: Option<f64>,
+        prosit_intensities: Option<Vec<f32>>,
+        spectral_entropy_similarity: Option<f32>,
+        spectral_correlation_similarity_pearson: Option<f32>,
+        spectral_correlation_similarity_spearman: Option<f32>,
+        spectral_normalized_intensity_difference: Option<f32>,
     ) -> PeptideSpectrumMatch {
 
         let peptide_sequence = match &sequence {
@@ -290,6 +300,11 @@ impl PeptideSpectrumMatch {
             projected_rt,
             beta_score,
             posterior_error_prob,
+            prosit_intensities,
+            spectral_entropy_similarity,
+            spectral_correlation_similarity_pearson,
+            spectral_correlation_similarity_spearman,
+            spectral_normalized_intensity_difference,
         }
     }
     pub fn associate_with_prosit_predicted_intensities(&self, flat_intensities: Vec<f64>) -> Option<PeptideProductIonSeriesCollection> {
