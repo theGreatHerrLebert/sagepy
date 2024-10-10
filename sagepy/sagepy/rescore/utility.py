@@ -166,6 +166,7 @@ def get_features(
         'spectral_entropy_similarity',
         'spectral_correlation_similarity_pearson',
         'spectral_correlation_similarity_spearman',
+        'spectral_normalized_intensity_difference',
         "delta_mass",
         "rank",
         "isotope_error",
