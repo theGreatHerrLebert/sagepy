@@ -330,6 +330,8 @@ def transform_psm_to_mokapot_pin(psm_df):
         'longest_y': 'Feature20',
         'longest_y_pct': 'Feature21',
         'cosine_similarity': 'Feature22',
+        'rank': 'Feature23',
+        'missed_cleavages': 'Feature24',
     }
 
     psm_df = psm_df[list(columns_map.keys())]
