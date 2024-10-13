@@ -41,16 +41,17 @@ def rescore_psms(
     else:
         psm_list = psm_collection
 
-
+    # get features for all PSMs, which will be a matrix of shape (n_samples, n_features)
     X_all, _ = get_features(peptide_spectrum_match_collection_to_pandas(psm_list), score=score, replace_nan=replace_nan)
 
+    # use a scaler to scale the features
     if use_min_max_scaler:
         scaler = MinMaxScaler()
     else:
         scaler = StandardScaler()
-
     scaler.fit(X_all)
 
+    # split the PSMs into num_splits folds to perform cross-validation
     splits = split_psm_list(psm_list=psm_list, num_splits=num_splits)
 
     predictions = []
@@ -79,6 +80,7 @@ def rescore_psms(
             Y_pred = model.predict_proba(scaler.transform(X))
             predictions.extend(Y_pred[:, 1])  # Use class probabilities (second column for binary classification)
 
+    # assign the re-scored values to the PSMs
     for score, match in zip(predictions, psm_list):
         match.re_score = score
 
