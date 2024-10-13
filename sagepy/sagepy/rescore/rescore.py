@@ -1,6 +1,4 @@
-import numpy as np
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from tqdm import tqdm
 from typing import Union, List, Dict
@@ -10,22 +8,26 @@ from sagepy.rescore.utility import get_features, generate_training_data, split_p
 from sagepy.utility import peptide_spectrum_match_collection_to_pandas
 
 
-def rescore_lda(
+def rescore_psms(
         psm_collection: Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]],
-        num_splits: int = 5,
+        model,
+        use_min_max_scaler: bool = False,
+        num_splits: int = 3,
         verbose: bool = True,
         balance: bool = True,
         replace_nan: bool = True,
         score: str = "hyper_score",
 ) -> List[PeptideSpectrumMatch]:
-    """ Re-score PSMs using Linear Discriminant Analysis (LDA).
+    """ Re-score PSMs using a model (e.g. Random Forest, Gradient Boosting, etc.).
     Args:
         psm_collection: A collection of PSMs
+        model: A model to use for re-scoring, needs to comply to the sklearn API
+        use_min_max_scaler: Whether to use MinMaxScaler instead of StandardScaler
         num_splits: Number of splits (folds) to use for cross-validation
         verbose: Whether to print progress
         balance: Whether to balance the dataset (equal number of target and decoy examples)
         replace_nan: Whether to replace NaN values with 0
-        score: Score to use for rescoring
+        score: Score to use for re-scoring
 
     Returns:
         List[PeptideSpectrumMatch]: List of PeptideSpectrumMatch objects
@@ -41,7 +43,12 @@ def rescore_lda(
 
 
     X_all, _ = get_features(peptide_spectrum_match_collection_to_pandas(psm_list), score=score, replace_nan=replace_nan)
-    scaler = StandardScaler()
+
+    if use_min_max_scaler:
+        scaler = MinMaxScaler()
+    else:
+        scaler = StandardScaler()
+
     scaler.fit(X_all)
 
     splits = split_psm_list(psm_list=psm_list, num_splits=num_splits)
@@ -62,20 +69,15 @@ def rescore_lda(
 
         # get features for target that we want to re-score
         X, _ = get_features(peptide_spectrum_match_collection_to_pandas(target), replace_nan=replace_nan)
+        model.fit(scaler.transform(X_train), Y_train)
 
-        # experimenting with different settings for LDA showed that shrinkage should be used, which tries to
-        # keep model weights small and helps to prevent overfitting
-        lda = LinearDiscriminantAnalysis(solver="eigen", shrinkage="auto")
-        lda.fit(scaler.transform(X_train), Y_train)
-
+        # try to use decision function, otherwise use predict_proba
         try:
-            # check for flip sign of LDA classification return to be compatible with good score ascending
-            score_flip = 1.0 if Y_train[np.argmax(np.squeeze(lda.transform(scaler.transform(X_train))))] == 1.0 else -1.0
-        except:
-            score_flip = 1.0
-
-        Y_pred = np.squeeze(lda.transform(scaler.transform(X))) * score_flip
-        predictions.extend(Y_pred)
+            Y_pred = model.decision_function(scaler.transform(X))
+            predictions.extend(Y_pred)  # Use decision scores directly
+        except AttributeError:
+            Y_pred = model.predict_proba(scaler.transform(X))
+            predictions.extend(Y_pred[:, 1])  # Use class probabilities (second column for binary classification)
 
     for score, match in zip(predictions, psm_list):
         match.re_score = score

@@ -17,6 +17,33 @@ import sagepy_connector
 psc = sagepy_connector.py_utility
 
 
+def process_variable_start_end_mods(variable_modifications):
+    """Helper function to process variable modifications for start and end of peptides/proteins
+    For some reason, the variable modification wildcards are not processed correctly when passed to SAGE
+    This function processes the variable modifications and adds the start and end wildcards for amino acids
+    Args:
+        variable_modifications: The variable modifications
+
+    Returns:
+        Dict: The processed variable modifications
+    """
+
+    # peptide C, peptide N, protein C, protein N
+    targets = ["^", "$", "[", "]"]
+
+    # combine targets with amino acids
+    AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
+
+    ret_dict = {}
+
+    for key, values in variable_modifications.items():
+        if key in targets:
+            for amino_acid in AMINO_ACIDS:
+                ret_dict[key + amino_acid] = values
+
+    return { **variable_modifications, **ret_dict }
+
+
 @jit(nopython=True)
 def calculate_ppm_error(measured_value, reference_value):
     ppm_error = ((measured_value - reference_value) / reference_value) * 1_000_000
