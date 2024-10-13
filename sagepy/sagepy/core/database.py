@@ -13,6 +13,7 @@ import sagepy_connector
 from sagepy.core.ion_series import IonType
 from sagepy.core.modification import ModificationSpecificity
 from sagepy.core.unimod import unimod_variable_mods_to_sage_variable_mods, unimod_static_mods_to_sage_static_mods
+from .modification import process_variable_start_end_mods
 
 psc = sagepy_connector.py_database
 
@@ -173,7 +174,7 @@ class SageSearchConfiguration:
             ion_kinds (List[IonType], optional): The ion types. Defaults to None.
             min_ion_index (int, optional): The minimum ion index. Defaults to 2.
             static_mods (Dict[str, str] | Dict[str, int], optional): The static modifications given in UNIMOD notation. Defaults to None.
-            variable_mods (Dict[str, str] | Dict[str, int], optional): The variable modifications given in UNIMOD notation. Defaults to None.
+            variable_mods (Dict[str, List[str]] | Dict[str, List[int]], optional): The variable modifications given in UNIMOD notation. Defaults to None.
             max_variable_mods (int, optional): The maximum number of variable modifications. Defaults to 2.
             decoy_tag (str, optional): The decoy tag. Defaults to 'rev_'.
             generate_decoys (bool, optional): Whether to generate decoys. Defaults to True.
@@ -182,6 +183,8 @@ class SageSearchConfiguration:
         """
 
         if variable_mods is not None:
+            # Process variable mods, expanding wildcard start and end modifications to all possible amino acids
+            variable_mods = process_variable_start_end_mods(variable_mods)
             variable_mods = unimod_variable_mods_to_sage_variable_mods(variable_mods)
 
         if static_mods is not None:

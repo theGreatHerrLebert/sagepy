@@ -5,6 +5,7 @@ import pandas as pd
 import sagepy_connector
 from .spectrum import ProcessedSpectrum
 from .unimod import variable_unimod_mods_to_set, static_unimod_mods_to_set
+from .modification import process_variable_start_end_mods
 
 psc = sagepy_connector.py_scoring
 psc_utils = sagepy_connector.py_utility
@@ -521,6 +522,8 @@ class Scorer:
         """
 
         if variable_mods is not None:
+            # Process variable mods, expanding wildcard start and end modifications to all possible amino acids
+            variable_mods = process_variable_start_end_mods(variable_mods)
             variable_mods = variable_unimod_mods_to_set(variable_mods)
         else:
             warnings.warn("CAUTION! No variable modifications provided, using an empty set.")
