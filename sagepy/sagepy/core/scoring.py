@@ -5,7 +5,7 @@ import pandas as pd
 import sagepy_connector
 from .spectrum import ProcessedSpectrum
 from .unimod import variable_unimod_mods_to_set, static_unimod_mods_to_set
-from ..utility import process_variable_start_end_mods
+from .modification import process_variable_start_end_mods
 
 psc = sagepy_connector.py_scoring
 psc_utils = sagepy_connector.py_utility

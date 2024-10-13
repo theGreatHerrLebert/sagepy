@@ -13,7 +13,7 @@ import sagepy_connector
 from sagepy.core.ion_series import IonType
 from sagepy.core.modification import ModificationSpecificity
 from sagepy.core.unimod import unimod_variable_mods_to_sage_variable_mods, unimod_static_mods_to_sage_static_mods
-from sagepy.utility import process_variable_start_end_mods
+from .modification import process_variable_start_end_mods
 
 psc = sagepy_connector.py_database
 
