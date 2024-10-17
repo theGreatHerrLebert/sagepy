@@ -609,7 +609,7 @@ class Scorer:
     def __repr__(self):
         return (f"Scorer({self.precursor_tolerance}, {self.fragment_tolerance}, {self.min_matched_peaks}, "
                 f"{self.min_isotope_err}, {self.max_isotope_err}, {self.min_precursor_charge}, "
-                f"{self.max_precursor_charge}, {self.min_fragment_mass}, {self.max_fragment_mass}, "
+                f"{self.max_precursor_charge}, "
                 f"{self.chimera}, {self.report_psms}, {self.wide_window}, {self.max_fragment_charge})")
 
     def score(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
