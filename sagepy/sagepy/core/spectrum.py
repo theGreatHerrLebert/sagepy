@@ -366,8 +366,6 @@ class RawSpectrum:
 class SpectrumProcessor:
     def __init__(
             self, take_top_n: int = 150,
-            min_fragment_mz: float = 150,
-            max_fragment_mz: float = 2000,
             min_deisotope_mz: float = 0.0,
             deisotope: bool = False,
     ):
@@ -375,13 +373,11 @@ class SpectrumProcessor:
 
         Args:
             take_top_n (int, optional): The number of peaks to take. Defaults to 150.
-            min_fragment_mz (float, optional): The minimum fragment mz. Defaults to 150.
-            max_fragment_mz (float, optional): The maximum fragment mz. Defaults to 2000.
             min_deisotope_mz (float, optional): The minimum deisotope mz. Defaults to 0.0.
             deisotope (bool, optional): Whether to deisotope the spectrum. Defaults to False.
         """
         self.__spectrum_processor_ptr = psc.PySpectrumProcessor(
-            take_top_n, max_fragment_mz, min_fragment_mz, min_deisotope_mz, deisotope)
+            take_top_n, min_deisotope_mz, deisotope)
 
     @classmethod
     def from_py_spectrum_processor(cls, spectrum_processor: psc.PySpectrumProcessor):
@@ -397,20 +393,11 @@ class SpectrumProcessor:
         return self.__spectrum_processor_ptr.take_top_n
 
     @property
-    def max_fragment_mz(self):
-        return self.__spectrum_processor_ptr.max_fragment_mz
-
-    @property
-    def min_fragment_mz(self):
-        return self.__spectrum_processor_ptr.min_fragment_mz
-
-    @property
     def deisotope(self):
         return self.__spectrum_processor_ptr.deisotope
 
     def __repr__(self):
-        return f"SpectrumProcessor(take_top_n: {self.take_top_n}, max_fragment_mz: {self.max_fragment_mz}, " \
-               f"min_fragment_mz: {self.min_fragment_mz}, deisotope: {self.deisotope})"
+        return f"SpectrumProcessor(take_top_n: {self.take_top_n}, deisotope: {self.deisotope})"
 
     def process(self, raw_spectrum: RawSpectrum) -> ProcessedSpectrum:
         return ProcessedSpectrum.from_py_processed_spectrum(self.__spectrum_processor_ptr.process(raw_spectrum.get_py_ptr()))

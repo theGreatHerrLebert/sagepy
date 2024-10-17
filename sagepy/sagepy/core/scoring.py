@@ -490,12 +490,11 @@ class Scorer:
             max_isotope_err: int = 3,
             min_precursor_charge: int = 2,
             max_precursor_charge: int = 4,
-            min_fragment_mass: float = 150,
-            max_fragment_mass: float = 2000,
             chimera: bool = False,
             report_psms: int = 1,
             wide_window: bool = False,
             annotate_matches: bool = True,
+            override_precursor_charge: bool = False,
             score_type: ScoreType = ScoreType("openms"),
             max_fragment_charge: Optional[int] = 1,
             variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
@@ -511,12 +510,11 @@ class Scorer:
             max_isotope_err (int, optional): The maximum isotope error. Defaults to 3.
             min_precursor_charge (int, optional): The minimum precursor charge. Defaults to 2.
             max_precursor_charge (int, optional): The maximum precursor charge. Defaults to 4.
-            min_fragment_mass (float, optional): The minimum fragment mass. Defaults to 150.
-            max_fragment_mass (float, optional): The maximum fragment mass. Defaults to 2000.
             chimera (bool, optional): Should chimera be used. Defaults to False.
             report_psms (int, optional): The number of PSMs to report. Defaults to 1.
             wide_window (bool, optional): Should wide window be used. Defaults to False.
             annotate_matches (bool, optional): Should matches be annotated. Defaults to True.
+            override_precursor_charge (bool, optional): Should the precursor charge be overridden. Defaults to False.
             score_type (ScoreType, optional): The score type. Defaults to ScoreType("openms").
             max_fragment_charge (Optional[int], optional): The maximum fragment charge. Defaults to 1.
         """
@@ -545,12 +543,11 @@ class Scorer:
             max_isotope_err,
             min_precursor_charge,
             max_precursor_charge,
-            min_fragment_mass,
-            max_fragment_mass,
             chimera,
             report_psms,
             wide_window,
             annotate_matches,
+            override_precursor_charge,
             expected_modifications,
             max_fragment_charge,
             score_type.get_py_ptr()
@@ -589,14 +586,6 @@ class Scorer:
     @property
     def max_precursor_charge(self) -> int:
         return self.__scorer_ptr.max_precursor_charge
-
-    @property
-    def min_fragment_mass(self) -> float:
-        return self.__scorer_ptr.min_fragment_mass
-
-    @property
-    def max_fragment_mass(self) -> float:
-        return self.__scorer_ptr.max_fragment_mass
 
     @property
     def chimera(self) -> bool:
