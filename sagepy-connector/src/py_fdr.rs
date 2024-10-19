@@ -81,9 +81,9 @@ pub fn py_picked_protein(mut feature_collection: Vec<PyFeature>, indexed_databas
     }
 }
 #[pyfunction]
-pub fn py_sage_fdr(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
+pub fn py_sage_fdr(mut feature_collection: &Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
     feature_collection.iter_mut().for_each(|feat| {
-        feat.set_discriminant_score(feat.inner.hyperscore as f32);
+        feat.inner.discriminant_score = feat.inner.hyperscore as f32;
     });
 }
 
