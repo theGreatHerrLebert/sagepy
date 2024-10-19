@@ -1,5 +1,6 @@
 use numpy::inner;
 use pyo3::prelude::*;
+use pyo3::types::PyList;
 use sage_core::fdr::{Competition, picked_peptide, picked_protein};
 use sage_core::database::{PeptideIx};
 use sage_core::scoring::Feature;
@@ -81,10 +82,13 @@ pub fn py_picked_protein(mut feature_collection: Vec<PyFeature>, indexed_databas
     }
 }
 #[pyfunction]
-pub fn py_sage_fdr(mut feature_collection: &Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
-    feature_collection.iter_mut().for_each(|feat| {
-        feat.inner.discriminant_score = feat.inner.hyperscore as f32;
-    });
+pub fn py_sage_fdr(feature_collection: &PyList, indexed_database: &PyIndexedDatabase) -> PyResult<()> {
+    for item in feature_collection.iter() {
+        let feature: &PyCell<PyFeature> = item.extract()?;
+        let hyperscore = feature.borrow().inner.hyperscore;
+        feature.borrow_mut().set_discriminant_score(hyperscore as f32);
+    }
+    Ok(())
 }
 
 #[pymodule]
