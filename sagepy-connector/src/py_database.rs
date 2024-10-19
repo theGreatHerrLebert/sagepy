@@ -421,8 +421,6 @@ impl PyParameters {
     pub fn new(
         bucket_size: usize,
         py_enzyme_builder: PyEnzymeBuilder,
-        fragment_min_mz: f32,
-        fragment_max_mz: f32,
         peptide_min_mass: f32,
         peptide_max_mass: f32,
         min_ion_index: usize,
@@ -440,8 +438,6 @@ impl PyParameters {
             inner: Parameters {
                 bucket_size,
                 enzyme: py_enzyme_builder.inner,
-                fragment_min_mz,
-                fragment_max_mz,
                 peptide_min_mass,
                 peptide_max_mass,
                 ion_kinds: ion_kinds
@@ -506,16 +502,6 @@ impl PyParameters {
         PyEnzymeBuilder {
             inner: self.inner.enzyme.clone(),
         }
-    }
-
-    #[getter]
-    pub fn fragment_min_mz(&self) -> f32 {
-        self.inner.fragment_min_mz
-    }
-
-    #[getter]
-    pub fn fragment_max_mz(&self) -> f32 {
-        self.inner.fragment_max_mz
     }
 
     #[getter]

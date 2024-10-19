@@ -392,12 +392,11 @@ pub struct PyScorer {
     pub min_precursor_charge: u8,
     pub max_precursor_charge: u8,
     pub max_fragment_charge: Option<u8>,
-    pub min_fragment_mass: f32,
-    pub max_fragment_mass: f32,
     pub chimera: bool,
     pub report_psms: usize,
     pub wide_window: bool,
     pub annotate_matches: bool,
+    pub override_precursor_charge: bool,
     pub expected_mods: HashSet<String>,
     pub score_type: Option<PyScoreType>,
 }
@@ -413,12 +412,11 @@ impl PyScorer {
         max_isotope_err: i8,
         min_precursor_charge: u8,
         max_precursor_charge: u8,
-        min_fragment_mass: f32,
-        max_fragment_mass: f32,
         chimera: bool,
         report_psms: usize,
         wide_window: bool,
         annotate_matches: bool,
+        override_precursor_charge: bool,
         expected_mods: HashSet<String>,
         max_fragment_charge: Option<u8>,
         score_type: Option<PyScoreType>,
@@ -432,12 +430,11 @@ impl PyScorer {
             min_precursor_charge,
             max_precursor_charge,
             max_fragment_charge,
-            min_fragment_mass,
-            max_fragment_mass,
             chimera,
             report_psms,
             wide_window,
             annotate_matches,
+            override_precursor_charge,
             score_type,
             expected_mods,
         }
@@ -454,13 +451,12 @@ impl PyScorer {
             min_precursor_charge: self.min_precursor_charge,
             max_precursor_charge: self.max_precursor_charge,
             max_fragment_charge: self.max_fragment_charge,
-            min_fragment_mass: self.min_fragment_mass,
-            max_fragment_mass: self.max_fragment_mass,
             chimera: self.chimera,
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
-            score_type: self.score_type.clone().map(|s| s.inner),
+            override_precursor_charge: self.override_precursor_charge,
+            score_type: self.score_type.clone().unwrap().inner,
         };
         let features = scorer.score(&spectrum.inner);
         features
@@ -485,13 +481,12 @@ impl PyScorer {
             min_precursor_charge: self.min_precursor_charge,
             max_precursor_charge: self.max_precursor_charge,
             max_fragment_charge: self.max_fragment_charge,
-            min_fragment_mass: self.min_fragment_mass,
-            max_fragment_mass: self.max_fragment_mass,
             chimera: self.chimera,
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
-            score_type: self.score_type.clone().map(|s| s.inner),
+            override_precursor_charge: self.override_precursor_charge,
+            score_type: self.score_type.clone().unwrap().inner,
         };
         // Configure the global thread pool to the desired number of threads
         let pool = ThreadPoolBuilder::new()
@@ -531,13 +526,12 @@ impl PyScorer {
             min_precursor_charge: self.min_precursor_charge,
             max_precursor_charge: self.max_precursor_charge,
             max_fragment_charge: self.max_fragment_charge,
-            min_fragment_mass: self.min_fragment_mass,
-            max_fragment_mass: self.max_fragment_mass,
             chimera: self.chimera,
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
-            score_type: self.score_type.clone().map(|s| s.inner),
+            override_precursor_charge: self.override_precursor_charge,
+            score_type: self.score_type.clone().unwrap().inner,
         };
 
         let pool = ThreadPoolBuilder::new()
@@ -692,13 +686,12 @@ impl PyScorer {
             min_precursor_charge: self.min_precursor_charge,
             max_precursor_charge: self.max_precursor_charge,
             max_fragment_charge: self.max_fragment_charge,
-            min_fragment_mass: self.min_fragment_mass,
-            max_fragment_mass: self.max_fragment_mass,
             chimera: self.chimera,
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
-            score_type: self.score_type.clone().map(|s| s.inner),
+            override_precursor_charge: self.override_precursor_charge,
+            score_type: self.score_type.clone().unwrap().inner,
         };
         let features = scorer.score_chimera_fast(&query.inner);
         features
@@ -722,13 +715,12 @@ impl PyScorer {
             min_precursor_charge: self.min_precursor_charge,
             max_precursor_charge: self.max_precursor_charge,
             max_fragment_charge: self.max_fragment_charge,
-            min_fragment_mass: self.min_fragment_mass,
-            max_fragment_mass: self.max_fragment_mass,
             chimera: self.chimera,
             report_psms: self.report_psms,
             wide_window: self.wide_window,
             annotate_matches: self.annotate_matches,
-            score_type: self.score_type.clone().map(|s| s.inner),
+            override_precursor_charge: self.override_precursor_charge,
+            score_type: self.score_type.clone().map(|s| s.inner).unwrap(),
         };
         let features = scorer.score_standard(&query.inner);
         features
@@ -775,16 +767,6 @@ impl PyScorer {
     #[getter]
     pub fn max_fragment_charge(&self) -> Option<u8> {
         self.max_fragment_charge
-    }
-
-    #[getter]
-    pub fn min_fragment_mass(&self) -> f32 {
-        self.min_fragment_mass
-    }
-
-    #[getter]
-    pub fn max_fragment_mass(&self) -> f32 {
-        self.max_fragment_mass
     }
 
     #[getter]

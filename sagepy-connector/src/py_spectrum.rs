@@ -311,16 +311,12 @@ impl PySpectrumProcessor {
     #[new]
     pub fn new(
         take_top_n: usize,
-        max_fragment_mz: f32,
-        min_fragment_mz: f32,
         min_deisotope_mz: f32,
         deisotope: bool,
     ) -> Self {
         PySpectrumProcessor {
             inner: SpectrumProcessor {
                 take_top_n,
-                max_fragment_mz,
-                min_fragment_mz,
                 min_deisotope_mz,
                 deisotope,
             },
@@ -330,16 +326,6 @@ impl PySpectrumProcessor {
     #[getter]
     pub fn take_top_n(&self) -> usize {
         self.inner.take_top_n
-    }
-
-    #[getter]
-    pub fn max_fragment_mz(&self) -> f32 {
-        self.inner.max_fragment_mz
-    }
-
-    #[getter]
-    pub fn min_fragment_mz(&self) -> f32 {
-        self.inner.min_fragment_mz
     }
 
     #[getter]

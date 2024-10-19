@@ -147,8 +147,6 @@ class SageSearchConfiguration:
                  fasta: str,
                  bucket_size: int = 8192,
                  enzyme_builder: 'EnzymeBuilder' = EnzymeBuilder.default_trypsin(),
-                 fragment_min_mz: float = 150,
-                 fragment_max_mz: float = 2_000,
                  peptide_min_mass: float = 500,
                  peptide_max_mass: float = 5_000,
                  ion_kinds: List[IonType] = None,
@@ -167,8 +165,6 @@ class SageSearchConfiguration:
             fasta (str): The fasta file
             bucket_size (int, optional): The bucket size. Defaults to 8192.
             enzyme_builder (EnzymeBuilder, optional): The enzyme builder. Defaults to EnzymeBuilder.default_trypsin().
-            fragment_min_mz (float, optional): The minimum fragment m/z. Defaults to 150.
-            fragment_max_mz (float, optional): The maximum fragment m/z. Defaults to 2000.
             peptide_min_mass (float, optional): The minimum peptide mass. Defaults to 500.
             peptide_max_mass (float, optional): The maximum peptide mass. Defaults to 5000.
             ion_kinds (List[IonType], optional): The ion types. Defaults to None.
@@ -193,8 +189,6 @@ class SageSearchConfiguration:
         self.__py_parameter_ptr = psc.PyParameters(
             find_next_power_of_2(bucket_size),
             enzyme_builder.get_py_ptr(),
-            fragment_min_mz,
-            fragment_max_mz,
             peptide_min_mass,
             peptide_max_mass,
             min_ion_index,
@@ -238,14 +232,6 @@ class SageSearchConfiguration:
         return EnzymeBuilder.from_py_enzyme_builder(self.__py_parameter_ptr.enzyme_builder)
 
     @property
-    def fragment_min_mz(self):
-        return self.__py_parameter_ptr.fragment_min_mz
-
-    @property
-    def fragment_max_mz(self):
-        return self.__py_parameter_ptr.fragment_max_mz
-
-    @property
     def peptide_min_mass(self):
         return self.__py_parameter_ptr.peptide_min_mass
 
@@ -287,7 +273,6 @@ class SageSearchConfiguration:
 
     def __repr__(self):
         return f"SageSearchConfiguration(bucket_size: {self.bucket_size}, enzyme_builder: {self.enzyme_builder}, " \
-               f"fragment_min_mz: {self.fragment_min_mz}, fragment_max_mz: {self.fragment_max_mz}, " \
                f"peptide_min_mass: {self.peptide_min_mass}, peptide_max_mass: {self.peptide_max_mass}, " \
                f"ion_kinds: {self.ion_kinds}, min_ion_index: {self.min_ion_index}, " \
                f"max_variable_mods: {self.max_variable_mods}, decoy_tag: {self.decoy_tag}, " \
