@@ -94,7 +94,7 @@ pub fn py_sage_fdr(mut feature_collection: Vec<PyFeature>, indexed_database: &Py
 
     let _ = sage_core::ml::qvalue::spectrum_q_value(inner_collection_mut);
 
-    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
+    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection_mut.iter()) {
         feature.inner.discriminant_score = inner.discriminant_score;
         feature.inner.spectrum_q = inner.spectrum_q;
     }
