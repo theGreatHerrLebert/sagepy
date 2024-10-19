@@ -110,6 +110,7 @@ pub fn py_sage_fdr(mut feature_collection: Vec<PyFeature>, indexed_database: &Py
 
     for (feature, inner) in feature_collection.iter_mut().zip(inner_collection_mut.iter()) {
         feature.inner.discriminant_score = inner.discriminant_score;
+        feature.set_discriminant_score(inner.discriminant_score);
         /*
         feature.inner.spectrum_q = inner.spectrum_q;
         feature.inner.peptide_q = inner.peptide_q;

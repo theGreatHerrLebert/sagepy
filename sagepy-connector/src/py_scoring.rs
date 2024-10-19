@@ -336,6 +336,11 @@ impl PyFeature {
         self.inner.discriminant_score
     }
 
+    #[setter]
+    pub fn set_discriminant_score(&mut self, discriminant_score: f32) {
+        self.inner.discriminant_score = discriminant_score;
+    }
+
     #[getter]
     pub fn posterior_error(&self) -> f32 {
         self.inner.posterior_error
