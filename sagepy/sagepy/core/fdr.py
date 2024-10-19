@@ -69,3 +69,15 @@ def picked_protein(feature_collection: List[Feature], indexed_db: IndexedDatabas
         [feature.get_py_ptr() for feature in feature_collection],
         indexed_db.get_py_ptr()
     )
+
+def sage_fdr(feature_collection: List[Feature], indexed_db: IndexedDatabase):
+    """ Perform SAGE FDR on all levels (spectrum, peptide, protein), calculates q-values and PEPs for a given feature collection.
+    Args:
+        feature_collection: a list of features
+        indexed_db: an indexed database
+    """
+    psc.py_sage_fdr(
+        [feature.get_py_ptr() for feature in feature_collection],
+        indexed_db.get_py_ptr()
+    )
+

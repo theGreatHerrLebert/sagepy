@@ -1,9 +1,10 @@
 use pyo3::prelude::*;
 use sage_core::fdr::{Competition, picked_peptide, picked_protein};
-use sage_core::database::{IndexedDatabase, PeptideIx};
+use sage_core::database::{PeptideIx};
 use sage_core::scoring::Feature;
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_scoring::PyFeature;
+use rayon::prelude::*;
 
 #[pyclass]
 // TODO: Check if it makes sense to tie this to PeptideIx
@@ -48,6 +49,11 @@ impl PyCompetitionPeptideIx {
 #[pyfunction]
 pub fn py_picked_peptide(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
     let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
+
+    inner_collection.par_iter_mut().for_each(|feat| {
+        feat.discriminant_score = (-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
+    });
+
     let _ = picked_peptide(&indexed_database.inner, &mut inner_collection);
 
     for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
@@ -60,9 +66,35 @@ pub fn py_picked_peptide(mut feature_collection: Vec<PyFeature>, indexed_databas
 #[pyfunction]
 pub fn py_picked_protein(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
     let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
+
+    inner_collection.par_iter_mut().for_each(|feat| {
+        feat.discriminant_score = (-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
+    });
+
     let _ = picked_protein(&indexed_database.inner, &mut inner_collection);
 
     for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
+        feature.inner.peptide_q = inner.peptide_q;
+        feature.inner.protein_q = inner.protein_q;
+        feature.inner.posterior_error = inner.posterior_error;
+    }
+}
+#[pyfunction]
+pub fn py_sage_fdr(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
+    let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
+
+    inner_collection.par_iter_mut().for_each(|feat| {
+        feat.discriminant_score = (-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
+    });
+
+    inner_collection.par_sort_unstable_by(|a, b| b.discriminant_score.total_cmp(&a.discriminant_score));
+
+    let _ = sage_core::ml::qvalue::spectrum_q_value(inner_collection.as_mut_slice());
+    let _ = picked_peptide(&indexed_database.inner, &mut inner_collection);
+    let _ = picked_protein(&indexed_database.inner, &mut inner_collection);
+
+    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
+        feature.inner.spectrum_q = inner.spectrum_q;
         feature.inner.peptide_q = inner.peptide_q;
         feature.inner.protein_q = inner.protein_q;
         feature.inner.posterior_error = inner.posterior_error;
