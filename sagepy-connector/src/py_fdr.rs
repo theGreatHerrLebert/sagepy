@@ -82,42 +82,9 @@ pub fn py_picked_protein(mut feature_collection: Vec<PyFeature>, indexed_databas
 }
 #[pyfunction]
 pub fn py_sage_fdr(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
-
-    // extract inner collection to get SAGE native features
-    let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
-
-    // get mutable slice ref
-    let inner_collection_mut = inner_collection.as_mut_slice();
-
-    // set discriminant score to hyper score
-    inner_collection_mut.par_iter_mut().for_each(|feat| {
-        feat.discriminant_score = feat.hyperscore as f32 //(-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
+    feature_collection.iter_mut().for_each(|feat| {
+        feat.set_discriminant_score(feat.inner.hyperscore as f32);
     });
-
-    /*
-    inner_collection.par_sort_unstable_by(|a, b| b.discriminant_score.total_cmp(&a.discriminant_score));
-
-    let _ = sage_core::ml::qvalue::spectrum_q_value(inner_collection_mut);
-
-    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection_mut) {
-        feature.inner.discriminant_score = inner.discriminant_score;
-        feature.inner.spectrum_q = inner.spectrum_q;
-    }
-
-    let _ = picked_peptide(&indexed_database.inner, inner_collection_mut);
-    let _ = picked_protein(&indexed_database.inner, inner_collection_mut);
-     */
-
-    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection_mut.iter()) {
-        feature.inner.discriminant_score = inner.discriminant_score;
-        feature.set_discriminant_score(inner.discriminant_score);
-        /*
-        feature.inner.spectrum_q = inner.spectrum_q;
-        feature.inner.peptide_q = inner.peptide_q;
-        feature.inner.protein_q = inner.protein_q;
-        feature.inner.posterior_error = inner.posterior_error;
-         */
-    }
 }
 
 #[pymodule]
