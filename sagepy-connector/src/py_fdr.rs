@@ -49,41 +49,8 @@ impl PyCompetitionPeptideIx {
 }
 
 #[pyfunction]
-pub fn py_picked_peptide(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
-    let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
+pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, indexed_database: &PyIndexedDatabase, use_hyper_score: bool) -> PyResult<()> {
 
-    inner_collection.par_iter_mut().for_each(|feat| {
-        feat.discriminant_score = (-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
-    });
-
-    let _ = picked_peptide(&indexed_database.inner, &mut inner_collection);
-
-    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
-        feature.inner.peptide_q = inner.peptide_q;
-        feature.inner.protein_q = inner.protein_q;
-        feature.inner.posterior_error = inner.posterior_error;
-    }
-}
-
-#[pyfunction]
-pub fn py_picked_protein(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
-    let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
-
-    inner_collection.par_iter_mut().for_each(|feat| {
-        feat.discriminant_score = (-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
-    });
-
-    let _ = picked_protein(&indexed_database.inner, &mut inner_collection);
-
-    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
-        feature.inner.peptide_q = inner.peptide_q;
-        feature.inner.protein_q = inner.protein_q;
-        feature.inner.posterior_error = inner.posterior_error;
-    }
-}
-
-#[pyfunction]
-pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, _indexed_database: &PyIndexedDatabase) -> PyResult<()> {
     // Extract the inner collection of Feature objects along with their original indices
     let mut indexed_inner_collection: Vec<(usize, Feature)> = feature_collection.iter()
         .enumerate()
@@ -97,7 +64,15 @@ pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, _indexed_database: 
 
     // Set discriminant score to hyper score
     indexed_inner_collection.par_iter_mut().for_each(|(_, feat)| {
-        feat.discriminant_score = feat.hyperscore as f32; // Update this calculation if needed
+
+        match use_hyper_score {
+            false => {
+                feat.discriminant_score = (-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
+            }
+            true => {
+                feat.discriminant_score = feat.hyperscore as f32;
+            }
+        }
     });
 
     // Sort indexed_inner_collection by discriminant_score
@@ -109,8 +84,8 @@ pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, _indexed_database: 
     // Perform additional operations on the sorted inner_collection
     let mut inner_collection: Vec<Feature> = indexed_inner_collection.into_iter().map(|(_, feat)| feat).collect();
     let _ = sage_core::ml::qvalue::spectrum_q_value(&mut inner_collection);
-    let _ = picked_peptide(&_indexed_database.inner, &mut inner_collection);
-    let _ = picked_protein(&_indexed_database.inner, &mut inner_collection);
+    let _ = picked_peptide(&indexed_database.inner, &mut inner_collection);
+    let _ = picked_protein(&indexed_database.inner, &mut inner_collection);
 
     // Update the original feature_collection according to the sorted order
     for (sorted_index, sorted_feature) in sorted_indices.iter().zip(inner_collection.iter()) {
@@ -129,8 +104,6 @@ pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, _indexed_database: 
 #[pymodule]
 pub fn fdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyCompetitionPeptideIx>()?;
-    m.add_function(wrap_pyfunction!(py_picked_peptide, m)?)?;
-    m.add_function(wrap_pyfunction!(py_picked_protein, m)?)?;
     m.add_function(wrap_pyfunction!(py_sage_fdr, m)?)?;
     Ok(())
 }

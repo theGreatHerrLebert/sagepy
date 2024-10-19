@@ -48,36 +48,16 @@ class CompetitionPeptideIx:
         return (f"CompetitionPeptideIx(forward={self.forward}, reverse={self.reverse}, "
                 f"forward_ix={self.forward_ix}, reverse_ix={self.reverse_ix})")
 
-def picked_peptide(feature_collection: List[Feature], indexed_db: IndexedDatabase):
-    """ Perform SAGE picked peptide implementation, calculates q-values and PEPs for a given feature collection.
-    Args:
-        feature_collection: a list of features
-        indexed_db: an indexed database
-    """
-    psc.py_picked_peptide(
-        [feature.get_py_ptr() for feature in feature_collection],
-        indexed_db.get_py_ptr()
-    )
 
-def picked_protein(feature_collection: List[Feature], indexed_db: IndexedDatabase):
-    """ Perform SAGE picked protein implementation, calculates q-values and PEPs for a given feature collection.
-    Args:
-        feature_collection: a list of features
-        indexed_db: an indexed database
-    """
-    psc.py_picked_protein(
-        [feature.get_py_ptr() for feature in feature_collection],
-        indexed_db.get_py_ptr()
-    )
-
-def sage_fdr(feature_collection: List[Feature], indexed_db: IndexedDatabase):
+def sage_fdr(feature_collection: List[Feature], indexed_db: IndexedDatabase, use_hyper_score: bool = True):
     """ Perform SAGE FDR on all levels (spectrum, peptide, protein), calculates q-values and PEPs for a given feature collection.
     Args:
         feature_collection: a list of features
         indexed_db: an indexed database
+        use_hyper_score: whether to use hyper score or discriminant score for q-value calculation
     """
     psc.py_sage_fdr(
         [feature.get_py_ptr() for feature in feature_collection],
-        indexed_db.get_py_ptr()
+        indexed_db.get_py_ptr(),
+        use_hyper_score
     )
-
