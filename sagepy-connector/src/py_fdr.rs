@@ -106,5 +106,6 @@ pub fn fdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyCompetitionPeptideIx>()?;
     m.add_function(wrap_pyfunction!(py_picked_peptide, m)?)?;
     m.add_function(wrap_pyfunction!(py_picked_protein, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sage_fdr, m)?)?;
     Ok(())
 }
