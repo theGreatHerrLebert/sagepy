@@ -81,13 +81,48 @@ pub fn py_picked_protein(mut feature_collection: Vec<PyFeature>, indexed_databas
         feature.inner.posterior_error = inner.posterior_error;
     }
 }
+
 #[pyfunction]
-pub fn py_sage_fdr(feature_collection: &PyList, indexed_database: &PyIndexedDatabase) -> PyResult<()> {
-    for item in feature_collection.iter() {
-        let feature: &PyCell<PyFeature> = item.extract()?;
-        let hyperscore = feature.borrow().inner.hyperscore;
-        feature.borrow_mut().set_discriminant_score(hyperscore as f32);
+pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, _indexed_database: &PyIndexedDatabase) -> PyResult<()> {
+    // Extract the inner collection of Feature objects along with their original indices
+    let mut indexed_inner_collection: Vec<(usize, Feature)> = feature_collection.iter()
+        .enumerate()
+        .map(|(index, item)| {
+            // Extract each item as a PyCell<PyFeature>
+            let feature: &PyCell<PyFeature> = item.extract().expect("Failed to extract PyFeature");
+            // Clone the inner Feature and keep the original index
+            (index, feature.borrow().inner.clone())
+        })
+        .collect();
+
+    // Set discriminant score to hyper score
+    indexed_inner_collection.par_iter_mut().for_each(|(_, feat)| {
+        feat.discriminant_score = feat.hyperscore as f32; // Update this calculation if needed
+    });
+
+    // Sort indexed_inner_collection by discriminant_score
+    indexed_inner_collection.par_sort_unstable_by(|(_, a), (_, b)| b.discriminant_score.total_cmp(&a.discriminant_score));
+
+    // Extract the sorted indices
+    let sorted_indices: Vec<usize> = indexed_inner_collection.iter().map(|(index, _)| *index).collect();
+
+    // Perform additional operations on the sorted inner_collection
+    let mut inner_collection: Vec<Feature> = indexed_inner_collection.into_iter().map(|(_, feat)| feat).collect();
+    let _ = sage_core::ml::qvalue::spectrum_q_value(&mut inner_collection);
+    let _ = picked_peptide(&_indexed_database.inner, &mut inner_collection);
+    let _ = picked_protein(&_indexed_database.inner, &mut inner_collection);
+
+    // Update the original feature_collection according to the sorted order
+    for (sorted_index, sorted_feature) in sorted_indices.iter().zip(inner_collection.iter()) {
+        let feature: &PyCell<PyFeature> = feature_collection.get_item(*sorted_index).expect("Failed to get PyFeature").extract()?;
+        let mut feature_borrow = feature.borrow_mut();
+        // Update the feature's fields
+        feature_borrow.inner.discriminant_score = sorted_feature.discriminant_score;
+        feature_borrow.inner.spectrum_q = sorted_feature.spectrum_q;
+        feature_borrow.inner.peptide_q = sorted_feature.peptide_q;
+        feature_borrow.inner.protein_q = sorted_feature.protein_q;
     }
+
     Ok(())
 }
 
