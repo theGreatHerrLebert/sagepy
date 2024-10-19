@@ -1,3 +1,4 @@
+use numpy::inner;
 use pyo3::prelude::*;
 use sage_core::fdr::{Competition, picked_peptide, picked_protein};
 use sage_core::database::{PeptideIx};
@@ -84,12 +85,20 @@ pub fn py_sage_fdr(mut feature_collection: Vec<PyFeature>, indexed_database: &Py
     let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
 
     inner_collection.par_iter_mut().for_each(|feat| {
-        feat.discriminant_score = (-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
+        feat.discriminant_score = feat.hyperscore as f32//(-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
     });
 
     inner_collection.par_sort_unstable_by(|a, b| b.discriminant_score.total_cmp(&a.discriminant_score));
 
-    let _ = sage_core::ml::qvalue::spectrum_q_value(inner_collection.as_mut_slice());
+    let inner_collection_mut = inner_collection.as_mut_slice();
+
+    let _ = sage_core::ml::qvalue::spectrum_q_value(inner_collection_mut);
+
+    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
+        feature.inner.discriminant_score = inner.discriminant_score;
+        feature.inner.spectrum_q = inner.spectrum_q;
+    }
+
     let _ = picked_peptide(&indexed_database.inner, &mut inner_collection);
     let _ = picked_protein(&indexed_database.inner, &mut inner_collection);
 
