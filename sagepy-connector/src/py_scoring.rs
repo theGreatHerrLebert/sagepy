@@ -12,6 +12,7 @@ use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments, ScoreType};
+use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore};
 use serde::{Deserialize, Serialize};
 use crate::py_ion_series::PyKind;
 use crate::py_utility::{flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
@@ -26,13 +27,22 @@ pub struct PyScoreType {
 impl PyScoreType {
     #[new]
     pub fn new(name: &str) -> Self {
+        let score = match name.to_lowercase().as_str() {
+            "hyperscore" => SageHyperScore,
+            "openmshyperscore" => OpenMSHyperScore,
+            _ => panic!("Invalid score type: {}", name),
+        };
+        
         PyScoreType {
-            inner: ScoreType::from_str(name),
+            inner: score
         }
     }
 
     pub fn to_str(&self) -> String {
-        self.inner.to_str().to_string()
+        match self.inner {
+            SageHyperScore => "hyperscore".to_string(),
+            OpenMSHyperScore => "openmshyperscore".to_string(),
+        }
     }
 }
 
