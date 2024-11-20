@@ -431,8 +431,8 @@ impl PyParameters {
         generate_decoys: bool,
         fasta: String,
         ion_kinds: Option<Vec<PyKind>>,
-        shuffle_decoys: Option<bool>,
-        keep_ends: Option<bool>,
+        _shuffle_decoys: Option<bool>,
+        _keep_ends: Option<bool>,
     ) -> PyResult<Self> {
         Ok(PyParameters {
             inner: Parameters {
@@ -460,8 +460,8 @@ impl PyParameters {
                 decoy_tag,
                 generate_decoys,
                 fasta,
-                shuffle_decoys: shuffle_decoys.unwrap_or(false),
-                keep_ends: keep_ends.unwrap_or(true),
+                // shuffle_decoys: shuffle_decoys.unwrap_or(false),
+                // keep_ends: keep_ends.unwrap_or(true),
             },
         })
     }
