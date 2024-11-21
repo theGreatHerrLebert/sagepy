@@ -1,6 +1,7 @@
 import warnings
 from typing import Optional, List, Union, Tuple, Dict
 
+import numpy as np
 import pandas as pd
 import sagepy_connector
 from .spectrum import ProcessedSpectrum
@@ -14,10 +15,264 @@ from .mass import Tolerance
 from .database import PeptideIx, IndexedDatabase
 
 
+class Psm:
+    def __init__(
+            self,
+            spec_idx: str,
+            peptide_idx: int,
+            proteins: List[str],
+            hyperscore: float,
+            decoy: bool,
+            sage_feature: 'Feature',
+            sequence: Optional[str] = None,
+            charge: Optional[int] = None,
+            mono_mz_calculated: Optional[float] = None,
+            mono_mass_observed: Optional[float] = None,
+            mono_mass_calculated: Optional[float] = None,
+            intensity_ms1: Optional[float] = None,
+            intensity_ms2: Optional[float] = None,
+            collision_energy: Optional[float] = None,
+            collision_energy_calibrated: Optional[float] = None,
+            retention_time: Optional[float] = None,
+            retention_time_calibrated: Optional[float] = None,
+            inverse_ion_mobility: Optional[float] = None,
+            inverse_ion_mobility_calibrated: Optional[float] = None,
+            prosit_predicted_intensities: Optional[List[float]] = None,
+            re_score: Optional[float] = None,
+            q_value: Optional[float] = None,
+            posterior_error_probability: Optional[float] = None,
+            external_features: Dict[str, float] = None,
+    ):
+        self.__py_ptr = psc.PyPsm(
+            spec_idx, peptide_idx, proteins, hyperscore, decoy, sage_feature.get_py_ptr(), sequence, charge,
+            mono_mz_calculated, mono_mass_observed, mono_mass_calculated, intensity_ms1, intensity_ms2,
+            collision_energy, collision_energy_calibrated, retention_time, retention_time_calibrated,
+            inverse_ion_mobility, inverse_ion_mobility_calibrated, prosit_predicted_intensities, re_score, q_value,
+            posterior_error_probability, external_features
+        )
+
+    @classmethod
+    def from_py_ptr(cls, py_ptr: psc.PyPsm) -> 'Psm':
+        instance = cls.__new__(cls)
+        instance.__py_ptr = py_ptr
+        return instance
+
+    def get_py_ptr(self):
+        return self.__py_ptr
+
+    @property
+    def spec_idx(self):
+        return self.__py_ptr.spec_idx
+
+    @spec_idx.setter
+    def spec_idx(self, value):
+        self.__py_ptr.spec_idx = value
+
+    @property
+    def peptide_idx(self):
+        return self.__py_ptr.peptide_idx
+
+    @peptide_idx.setter
+    def peptide_idx(self, value):
+        self.__py_ptr.peptide_idx = value
+
+    @property
+    def proteins(self):
+        return self.__py_ptr.proteins
+
+    @proteins.setter
+    def proteins(self, value):
+        self.__py_ptr.proteins = value
+
+    @property
+    def hyperscore(self):
+        return self.__py_ptr.hyperscore
+
+    @hyperscore.setter
+    def hyperscore(self, value):
+        self.__py_ptr.hyperscore = value
+
+    @property
+    def decoy(self):
+        return self.__py_ptr.decoy
+
+    @decoy.setter
+    def decoy(self, value):
+        self.__py_ptr.decoy = value
+
+    @property
+    def sage_feature(self):
+        return Feature.from_py_feature(self.__py_ptr.sage_feature)
+
+    @sage_feature.setter
+    def sage_feature(self, value):
+        self.__py_ptr.sage_feature = value.get_py_ptr()
+
+    @property
+    def sequence(self):
+        return self.__py_ptr.sequence
+
+    @property
+    def charge(self):
+        return self.__py_ptr.charge
+
+    @charge.setter
+    def charge(self, value):
+        self.__py_ptr.charge = value
+
+    @property
+    def mono_mz_calculated(self):
+        return self.__py_ptr.mono_mz_calculated
+
+    @mono_mz_calculated.setter
+    def mono_mz_calculated(self, value):
+        self.__py_ptr.mono_mz_calculated = value
+
+    @property
+    def mono_mass_observed(self):
+        return self.__py_ptr.mono_mass_observed
+
+    @mono_mass_observed.setter
+    def mono_mass_observed(self, value):
+        self.__py_ptr.mono_mass_observed = value
+
+    @property
+    def mono_mass_calculated(self):
+        return self.__py_ptr.mono_mass_calculated
+
+    @mono_mass_calculated.setter
+    def mono_mass_calculated(self, value):
+        self.__py_ptr.mono_mass_calculated = value
+
+    @property
+    def intensity_ms1(self):
+        return self.__py_ptr.intensity_ms1
+
+    @intensity_ms1.setter
+    def intensity_ms1(self, value):
+        self.__py_ptr.intensity_ms1 = value
+
+    @property
+    def intensity_ms2(self):
+        return self.__py_ptr.intensity_ms2
+
+    @intensity_ms2.setter
+    def intensity_ms2(self, value):
+        self.__py_ptr.intensity_ms2 = value
+
+    @property
+    def collision_energy(self):
+        return self.__py_ptr.collision_energy
+
+    @collision_energy.setter
+    def collision_energy(self, value):
+        self.__py_ptr.collision_energy = value
+
+    @property
+    def collision_energy_calibrated(self):
+        return self.__py_ptr.collision_energy_calibrated
+
+    @collision_energy_calibrated.setter
+    def collision_energy_calibrated(self, value):
+        self.__py_ptr.collision_energy_calibrated = value
+
+    @property
+    def retention_time(self):
+        return self.__py_ptr.retention_time
+
+    @retention_time.setter
+    def retention_time(self, value):
+        self.__py_ptr.retention_time = value
+
+    @property
+    def retention_time_calibrated(self):
+        return self.__py_ptr.retention_time_calibrated
+
+    @retention_time_calibrated.setter
+    def retention_time_calibrated(self, value):
+        self.__py_ptr.retention_time_calibrated = value
+
+    @property
+    def inverse_ion_mobility(self):
+        return self.__py_ptr.inverse_ion_mobility
+
+    @inverse_ion_mobility.setter
+    def inverse_ion_mobility(self, value):
+        self.__py_ptr.inverse_ion_mobility = value
+
+    @property
+    def inverse_ion_mobility_calibrated(self):
+        return self.__py_ptr.inverse_ion_mobility_calibrated
+
+    @inverse_ion_mobility_calibrated.setter
+    def inverse_ion_mobility_calibrated(self, value):
+        self.__py_ptr.inverse_ion_mobility_calibrated = value
+
+    @property
+    def prosit_predicted_intensities(self):
+        return np.array(self.__py_ptr.prosit_predicted_intensities)
+
+    @prosit_predicted_intensities.setter
+    def prosit_predicted_intensities(self, value):
+        self.__py_ptr.prosit_predicted_intensities = value
+
+    @property
+    def re_score(self):
+        return self.__py_ptr.re_score
+
+    @re_score.setter
+    def re_score(self, value):
+        self.__py_ptr.re_score = value
+
+    @property
+    def q_value(self):
+        return self.__py_ptr.q_value
+
+    @q_value.setter
+    def q_value(self, value):
+        self.__py_ptr.q_value = value
+
+    @property
+    def posterior_error_probability(self):
+        return self.__py_ptr.posterior_error_probability
+
+    @posterior_error_probability.setter
+    def posterior_error_probability(self, value):
+        self.__py_ptr.posterior_error_probability = value
+
+    @property
+    def external_features(self):
+        return self.__py_ptr.external_features
+
+    @external_features.setter
+    def external_features(self, value):
+        self.__py_ptr.external_features = value
+
+    def __repr__(self):
+        return (f"Psm(spec_idx: {self.spec_idx}, peptide_idx: {self.peptide_idx}, "
+                f"proteins: {self.proteins}, hyperscore: {self.hyperscore}, "
+                f"decoy: {self.decoy}, sage_feature: {self.sage_feature}, "
+                f"sequence: {self.sequence}, charge: {self.charge}, "
+                f"mono_mz_calculated: {self.mono_mz_calculated}, "
+                f"mono_mass_observed: {self.mono_mass_observed}, "
+                f"mono_mass_calculated: {self.mono_mass_calculated}, "
+                f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
+                f"collision_energy: {self.collision_energy}, "
+                f"collision_energy_calibrated: {self.collision_energy_calibrated}, "
+                f"retention_time: {self.retention_time}, "
+                f"retention_time_calibrated: {self.retention_time_calibrated}, "
+                f"inverse_ion_mobility: {self.inverse_ion_mobility}, "
+                f"inverse_ion_mobility_calibrated: {self.inverse_ion_mobility_calibrated}, "
+                f"prosit_predicted_intensities: {self.prosit_predicted_intensities}, "
+                f"re_score: {self.re_score}, q_value: {self.q_value}, "
+                f"posterior_error_probability: {self.posterior_error_probability}, "
+                f"external_features: {self.external_features})")
+
+
 class ScoreType:
     def __init__(self, name: str):
         name = name.lower()
-        names = {"openms", "sage", "happy"}
+        names = {"openmshyperscore", "hyperscore"}
         assert name in names, f"Invalid score type: {name}, allowed values are: {names}"
         self.__py_ptr = psc.PyScoreType(name)
 
@@ -495,7 +750,7 @@ class Scorer:
             wide_window: bool = False,
             annotate_matches: bool = True,
             override_precursor_charge: bool = False,
-            score_type: ScoreType = ScoreType("openms"),
+            score_type: ScoreType = ScoreType("openmshyperscore"),
             max_fragment_charge: Optional[int] = 1,
             variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
             static_mods: Union[Dict[str, str], Dict[str, int]] = None,
@@ -646,6 +901,19 @@ class Scorer:
         ret_dict = {}
         for key, values in py_psms.items():
             ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
+
+        return ret_dict
+
+    def score_candidates(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
+                             num_threads: int = 4) -> Dict[str, List[Psm]]:
+
+        py_psms = self.__scorer_ptr.score_candidates(db.get_py_ptr(),
+                                                     [spec.get_py_ptr() for spec in spectrum_collection],
+                                                     num_threads)
+
+        ret_dict = {}
+        for key, values in py_psms.items():
+            ret_dict[key] = [Psm.from_py_ptr(psm) for psm in values]
 
         return ret_dict
 

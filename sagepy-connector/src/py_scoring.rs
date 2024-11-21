@@ -3,6 +3,7 @@ use itertools::Itertools;
 use pyo3::prelude::*;
 use qfdrust::dataset::{PeptideSpectrumMatch};
 use qfdrust::intensity::FragmentIntensityPrediction;
+use qfdrust::psm::Psm;
 use crate::utilities::sage_sequence_to_unimod_sequence;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
@@ -16,6 +17,303 @@ use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore};
 use serde::{Deserialize, Serialize};
 use crate::py_ion_series::PyKind;
 use crate::py_utility::{flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
+
+#[pyclass]
+#[derive(Clone, Serialize)]
+pub struct PyPsm {
+    pub inner: Psm,
+}
+
+#[pymethods]
+impl PyPsm {
+    #[new]
+    pub fn new(
+        spec_idx: String,
+        peptide_idx: u32,
+        proteins: Vec<String>,
+        hyperscore: f64,
+        decoy: bool,
+        sage_feature: PyFeature,
+        sequence: Option<String>,
+        charge: Option<u8>,
+        mono_mass_observed: Option<f32>,
+        intensity_ms1: Option<f32>,
+        intensity_ms2: Option<f32>,
+        collision_energy: Option<f32>,
+        collision_energy_calibrated: Option<f32>,
+        retention_time: Option<f32>,
+        retention_time_calibrated: Option<f32>,
+        inverse_ion_mobility: Option<f32>,
+        inverse_ion_mobility_calibrated: Option<f32>,
+        prosit_predicted_intensities: Option<Vec<f32>>,
+        re_score: Option<f64>,
+        q_value: Option<f64>,
+        posterior_error_probability: Option<f64>,
+    ) -> Self {
+        PyPsm {
+            inner: Psm::new(
+                spec_idx,
+                peptide_idx,
+                proteins,
+                hyperscore,
+                decoy,
+                sage_feature.inner.clone(),
+                sequence,
+                charge,
+                mono_mass_observed,
+                intensity_ms1,
+                intensity_ms2,
+                collision_energy,
+                collision_energy_calibrated,
+                retention_time,
+                retention_time_calibrated,
+                inverse_ion_mobility,
+                inverse_ion_mobility_calibrated,
+                prosit_predicted_intensities,
+                re_score,
+                q_value,
+                posterior_error_probability,
+            ),
+        }
+    }
+
+    #[getter]
+    pub fn spec_idx(&self) -> String {
+        self.inner.spec_idx.clone()
+    }
+    
+    #[setter]
+    pub fn set_spec_idx(&mut self, value: String) {
+        self.inner.spec_idx = value;
+    }
+
+    #[getter]
+    pub fn peptide_idx(&self) -> u32 {
+        self.inner.peptide_idx
+    }
+    
+    #[setter]
+    pub fn set_peptide_idx(&mut self, value: u32) {
+        self.inner.peptide_idx = value;
+    }
+
+    #[getter]
+    pub fn proteins(&self) -> Vec<String> {
+        self.inner.proteins.clone()
+    }
+    
+    #[setter]
+    pub fn set_proteins(&mut self, value: Vec<String>) {
+        self.inner.proteins = value;
+    }
+
+    #[getter]
+    pub fn hyperscore(&self) -> f64 {
+        self.inner.hyperscore
+    }
+    
+    #[setter]
+    pub fn set_hyperscore(&mut self, value: f64) {
+        self.inner.hyperscore = value;
+    }
+
+    #[getter]
+    pub fn sage_feature(&self) -> PyFeature {
+        PyFeature {
+            inner: self.inner.sage_feature.clone(),
+        }
+    }
+    
+    #[setter]
+    pub fn set_sage_feature(&mut self, value: PyFeature) {
+        self.inner.sage_feature = value.inner.clone();
+    }
+
+    #[getter]
+    pub fn sequence(&self) -> Option<String> {
+        Some(self.inner.clone().sequence?.sequence)
+    }
+
+    #[getter]
+    pub fn charge(&self) -> Option<u8> {
+        self.inner.charge
+    }
+    
+    #[setter]
+    pub fn set_charge(&mut self, value: Option<u8>) {
+        self.inner.charge = value;
+    }
+    
+    #[getter]
+    pub fn mono_mass_observed(&self) -> Option<f32> {
+        self.inner.mono_mass_observed
+    }
+    
+    #[setter]
+    pub fn set_mono_mass_observed(&mut self, value: Option<f32>) {
+        self.inner.mono_mass_observed = value;
+    }
+
+    #[getter]
+    pub fn mono_mass_calculated(&self) -> Option<f32> {
+        self.inner.mono_mass_calculated
+    }
+    
+    #[setter]
+    pub fn set_mono_mass_calculated(&mut self, value: Option<f32>) {
+        self.inner.mono_mass_calculated = value;
+    }
+
+    #[getter]
+    pub fn mono_mz_calculated(&self) -> Option<f32> {
+        self.inner.mono_mz_calculated
+    }
+    
+    #[setter]
+    pub fn set_mono_mz_calculated(&mut self, value: Option<f32>) {
+        self.inner.mono_mz_calculated = value;
+    }
+    
+    #[getter]
+    pub fn intensity_ms1(&self) -> Option<f32> {
+        self.inner.intensity_ms1
+    }
+    
+    #[setter]
+    pub fn set_intensity_ms1(&mut self, value: Option<f32>) {
+        self.inner.intensity_ms1 = value;
+    }
+    
+    #[getter]
+    pub fn intensity_ms2(&self) -> Option<f32> {
+        self.inner.intensity_ms2
+    }
+    
+    #[setter]
+    pub fn set_intensity_ms2(&mut self, value: Option<f32>) {
+        self.inner.intensity_ms2 = value;
+    }
+    
+    #[getter]
+    pub fn collision_energy(&self) -> Option<f32> {
+        self.inner.collision_energy
+    }
+    
+    #[setter]
+    pub fn set_collision_energy(&mut self, value: Option<f32>) {
+        self.inner.collision_energy = value;
+    }
+    
+    #[getter]
+    pub fn collision_energy_calibrated(&self) -> Option<f32> {
+        self.inner.collision_energy_calibrated
+    }
+    
+    #[setter]
+    pub fn set_collision_energy_calibrated(&mut self, value: Option<f32>) {
+        self.inner.collision_energy_calibrated = value;
+    }
+    
+    #[getter]
+    pub fn retention_time(&self) -> Option<f32> {
+        self.inner.retention_time
+    }
+    
+    #[setter]
+    pub fn set_retention_time(&mut self, value: Option<f32>) {
+        self.inner.retention_time = value;
+    }
+    
+    #[getter]
+    pub fn retention_time_calibrated(&self) -> Option<f32> {
+        self.inner.retention_time_calibrated
+    }
+    
+    #[setter]
+    pub fn set_retention_time_calibrated(&mut self, value: Option<f32>) {
+        self.inner.retention_time_calibrated = value;
+    }
+    
+    #[getter]
+    pub fn inverse_ion_mobility(&self) -> Option<f32> {
+        self.inner.inverse_ion_mobility
+    }
+    
+    #[setter]
+    pub fn set_inverse_ion_mobility(&mut self, value: Option<f32>) {
+        self.inner.inverse_ion_mobility = value;
+    }
+    
+    #[getter]
+    pub fn inverse_ion_mobility_calibrated(&self) -> Option<f32> {
+        self.inner.inverse_ion_mobility_calibrated
+    }
+    
+    #[setter]
+    pub fn set_inverse_ion_mobility_calibrated(&mut self, value: Option<f32>) {
+        self.inner.inverse_ion_mobility_calibrated = value;
+    }
+    
+    #[getter]
+    pub fn prosit_predicted_intensities(&self) -> Option<Vec<f32>> {
+        self.inner.prosit_predicted_intensities.clone()
+    }
+    
+    #[setter]
+    pub fn set_prosit_predicted_intensities(&mut self, value: Option<Vec<f32>>) {
+        self.inner.prosit_predicted_intensities = value;
+    }
+    
+    #[getter]
+    pub fn re_score(&self) -> Option<f64> {
+        self.inner.re_score
+    }
+    
+    #[setter]
+    pub fn set_re_score(&mut self, value: Option<f64>) {
+        self.inner.re_score = value;
+    }
+    
+    #[getter]
+    pub fn q_value(&self) -> Option<f64> {
+        self.inner.q_value
+    }
+    
+    #[setter]
+    pub fn set_q_value(&mut self, value: Option<f64>) {
+        self.inner.q_value = value;
+    }
+    
+    #[getter]
+    pub fn posterior_error_probability(&self) -> Option<f64> {
+        self.inner.posterior_error_probability
+    }
+    
+    #[setter]
+    pub fn set_posterior_error_probability(&mut self, value: Option<f64>) {
+        self.inner.posterior_error_probability = value;
+    }
+    
+    #[getter]
+    pub fn decoy(&self) -> bool {
+        self.inner.decoy
+    }
+    
+    #[setter]
+    pub fn set_decoy(&mut self, value: bool) {
+        self.inner.decoy = value;
+    }
+    
+    #[getter]
+    pub fn external_features(&self) -> BTreeMap<String, f32> {
+        self.inner.external_features.clone()
+    }
+    
+    #[setter]
+    pub fn set_external_features(&mut self, value: BTreeMap<String, f32>) {
+        self.inner.external_features = value;
+    }
+}
 
 #[pyclass]
 #[derive(Clone, Serialize, Deserialize)]
@@ -519,6 +817,116 @@ impl PyScorer {
 
         result
     }
+    
+    pub fn score_candidates(
+        &self,
+        db: &PyIndexedDatabase,
+        spectra: Vec<PyProcessedSpectrum>,
+        num_threads: usize,
+    ) -> BTreeMap<String, Vec<PyPsm>> {
+        let scorer = Scorer {
+            db: &db.inner,
+            precursor_tol: self.precursor_tolerance.inner.clone(),
+            fragment_tol: self.fragment_tolerance.inner.clone(),
+            min_matched_peaks: self.min_matched_peaks,
+            min_isotope_err: self.min_isotope_err,
+            max_isotope_err: self.max_isotope_err,
+            min_precursor_charge: self.min_precursor_charge,
+            max_precursor_charge: self.max_precursor_charge,
+            max_fragment_charge: self.max_fragment_charge,
+            chimera: self.chimera,
+            report_psms: self.report_psms,
+            wide_window: self.wide_window,
+            annotate_matches: self.annotate_matches,
+            override_precursor_charge: self.override_precursor_charge,
+            score_type: self.score_type.clone().unwrap().inner,
+        };
+
+        let pool = ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build()
+            .unwrap();
+
+        let result: Vec<Vec<Feature>> = pool.install(|| {
+            spectra
+                .par_iter()
+                .map(|spectrum| scorer.score(&spectrum.inner))
+                .collect()
+        });
+        
+        let psm_map: BTreeMap<String, Vec<Psm>> = pool.install(|| {
+            
+            spectra.par_iter().zip(result.into_par_iter())
+                
+                .map(|(spectrum, features)| {
+                    
+                    let mut psms = Vec::new();
+                    
+                    for feature in &features {
+                        
+                        let peptide = &db.inner[feature.peptide_idx];
+                        let decoy = peptide.decoy;
+                        let score = feature.hyperscore;
+                        
+                        let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap_or(0.0)).sum();
+                        let intensity_ms2: f32 = feature.ms2_intensity;
+                        let charge = feature.charge;
+                        let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
+                        
+                        let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
+                        let peptide_sequence = sage_sequence_to_unimod_sequence(sequence, &peptide.modifications, &self.expected_mods);
+                        
+                        let collision_energy = spectrum.collision_energies.first().unwrap_or(&None).unwrap_or(0.0f32);
+                        
+                        let psm = Psm::new(
+                            spectrum.inner.id.clone(),
+                            feature.clone().peptide_idx.0,
+                            proteins,
+                            score,
+                            decoy,
+                            feature.clone(),
+                            Some(peptide_sequence),
+                            Some(charge),
+                            Some(feature.expmass),
+                            Some(intensity_ms1),
+                            Some(intensity_ms2),
+                            Some(collision_energy),
+                            None,
+                            Some(feature.rt),
+                            None,
+                            Some(feature.ims),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        );
+                        psms.push(psm);
+                    }
+                    (spectrum.inner.id.clone(), psms)
+                })
+                .collect()
+        });
+        
+        let mut result: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
+        
+        for (spec_id, psms) in psm_map {
+            result.insert(spec_id, psms.into_iter().map(|psm| PyPsm { inner: psm }).collect());
+        }
+        
+        // sort by spec_id, hyper_score, peptide_idx, decoy
+        for (_, psms) in result.iter_mut() {
+            psms.sort_by(|a, b| {
+                let a = &a.inner;
+                let b = &b.inner;
+                a.hyperscore.partial_cmp(&b.hyperscore).unwrap()
+                    .then_with(|| a.peptide_idx.partial_cmp(&b.peptide_idx).unwrap())
+                    .then_with(|| a.decoy.partial_cmp(&b.decoy).unwrap())
+            });
+        }
+        
+        result
+    }
 
     pub fn score_collection_to_psm_collection(
         &self,
@@ -658,7 +1066,7 @@ impl PyScorer {
             }
         }
 
-        // sort by sec_id, hyper_score, peptide_idx, decoy
+        // sort by spec_id, hyper_score, peptide_idx, decoy
         result.sort_by(|a, b| {
             let a = &a.inner;
             let b = &b.inner;
@@ -1298,6 +1706,14 @@ pub fn psm_from_json(json: &str) -> PyPeptideSpectrumMatch {
 }
 
 #[pyfunction]
+pub fn peptide_spectrum_match_from_json(json: &str) -> PyPsm {
+    let psm: Psm = serde_json::from_str(json).unwrap();
+    PyPsm {
+        inner: psm
+    }
+}
+
+#[pyfunction]
 pub fn prosit_intensities_to_py_fragments(
     flat_intensities: Vec<f32>,
 ) -> PyFragments {
@@ -1666,6 +2082,7 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyFragments>()?;
     m.add_class::<PyFeature>()?;
     m.add_class::<PyScorer>()?;
+    m.add_class::<PyPsm>()?;
     m.add_class::<PyPeptideSpectrumMatch>()?;
     m.add_class::<PyScoreType>()?;
     m.add_function(wrap_pyfunction!(associate_psm_with_prosit_predicted_intensities, m)?)?;
@@ -1674,5 +2091,6 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(prosit_intensities_to_py_fragments_par, m)?)?;
     m.add_function(wrap_pyfunction!(psm_from_json, m)?)?;
     m.add_function(wrap_pyfunction!(merge_psm_maps, m)?)?;
+    m.add_function(wrap_pyfunction!(peptide_spectrum_match_from_json, m)?)?;
     Ok(())
 }

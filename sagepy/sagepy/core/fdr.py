@@ -1,5 +1,5 @@
 from typing import Optional, List
-
+from sagepy.core.scoring import Psm
 from sagepy.core import IndexedDatabase, Feature
 from sagepy.core.database import PeptideIx
 import sagepy_connector
@@ -67,5 +67,27 @@ def picked_protein(feature_collection: List[Feature], indexed_db: IndexedDatabas
     """
     psc.py_picked_protein(
         [feature.get_py_ptr() for feature in feature_collection],
+        indexed_db.get_py_ptr()
+    )
+
+def picked_peptide_psm(psm_collection: List[Psm], indexed_db: IndexedDatabase):
+    """ Perform SAGE picked peptide PSM implementation, calculates q-values and PEPs for a given psm collection.
+    Args:
+        psm_collection: a list of psms
+        indexed_db: an indexed database
+    """
+    psc.py_picked_peptide_psm(
+        [feature.get_py_ptr() for feature in psm_collection],
+        indexed_db.get_py_ptr()
+    )
+
+def picked_protein_psm(psm_collection: List[Psm], indexed_db: IndexedDatabase):
+    """ Perform SAGE picked protein PSM implementation, calculates q-values and PEPs for a given psm collection.
+    Args:
+        psm_collection: a list of psms
+        indexed_db: an indexed database
+    """
+    psc.py_picked_protein_psm(
+        [feature.get_py_ptr() for feature in psm_collection],
         indexed_db.get_py_ptr()
     )
