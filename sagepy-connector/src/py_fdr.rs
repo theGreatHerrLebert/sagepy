@@ -1,9 +1,14 @@
+use numpy::inner;
 use pyo3::prelude::*;
+use pyo3::types::PyList;
+use qfdrust::psm::Psm;
 use sage_core::fdr::{Competition, picked_peptide, picked_protein};
+
 use sage_core::database::{PeptideIx};
 use sage_core::scoring::Feature;
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_scoring::{PyFeature, PyPsm};
+use rayon::prelude::*;
 
 #[pyclass]
 // TODO: Check if it makes sense to tie this to PeptideIx
@@ -46,59 +51,115 @@ impl PyCompetitionPeptideIx {
 }
 
 #[pyfunction]
-pub fn py_picked_peptide(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
-    let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
+pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, indexed_database: &PyIndexedDatabase, use_hyper_score: bool) -> PyResult<()> {
+
+    // Extract the inner collection of Feature objects along with their original indices
+    let mut indexed_inner_collection: Vec<(usize, Feature)> = feature_collection.iter()
+        .enumerate()
+        .map(|(index, item)| {
+            // Extract each item as a PyCell<PyFeature>
+            let feature: &PyCell<PyFeature> = item.extract().expect("Failed to extract PyFeature");
+            // Clone the inner Feature and keep the original index
+            (index, feature.borrow().inner.clone())
+        })
+        .collect();
+
+    // Set discriminant score to hyper score
+    indexed_inner_collection.par_iter_mut().for_each(|(_, feat)| {
+
+        match use_hyper_score {
+            false => {
+                feat.discriminant_score = (-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
+            }
+            true => {
+                feat.discriminant_score = feat.hyperscore as f32;
+            }
+        }
+    });
+
+    // Sort indexed_inner_collection by discriminant_score
+    indexed_inner_collection.par_sort_unstable_by(|(_, a), (_, b)| b.discriminant_score.total_cmp(&a.discriminant_score));
+
+    // Extract the sorted indices
+    let sorted_indices: Vec<usize> = indexed_inner_collection.iter().map(|(index, _)| *index).collect();
+
+    // Perform additional operations on the sorted inner_collection
+    let mut inner_collection: Vec<Feature> = indexed_inner_collection.into_iter().map(|(_, feat)| feat).collect();
+    let _ = sage_core::ml::qvalue::spectrum_q_value(&mut inner_collection);
     let _ = picked_peptide(&indexed_database.inner, &mut inner_collection);
-
-    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
-        feature.inner.peptide_q = inner.peptide_q;
-        feature.inner.protein_q = inner.protein_q;
-        feature.inner.posterior_error = inner.posterior_error;
-    }
-}
-
-#[pyfunction]
-pub fn py_picked_protein(mut feature_collection: Vec<PyFeature>, indexed_database: &PyIndexedDatabase) {
-    let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.clone()).collect();
     let _ = picked_protein(&indexed_database.inner, &mut inner_collection);
 
-    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
-        feature.inner.peptide_q = inner.peptide_q;
-        feature.inner.protein_q = inner.protein_q;
-        feature.inner.posterior_error = inner.posterior_error;
+    // Update the original feature_collection according to the sorted order
+    for (sorted_index, sorted_feature) in sorted_indices.iter().zip(inner_collection.iter()) {
+        let feature: &PyCell<PyFeature> = feature_collection.get_item(*sorted_index).expect("Failed to get PyFeature").extract()?;
+        let mut feature_borrow = feature.borrow_mut();
+        // Update the feature's fields
+        feature_borrow.inner.discriminant_score = sorted_feature.discriminant_score;
+        feature_borrow.inner.spectrum_q = sorted_feature.spectrum_q;
+        feature_borrow.inner.peptide_q = sorted_feature.peptide_q;
+        feature_borrow.inner.protein_q = sorted_feature.protein_q;
     }
+
+    Ok(())
 }
 
 #[pyfunction]
-pub fn py_picked_peptide_psm(mut feature_collection: Vec<PyPsm>, indexed_database: &PyIndexedDatabase) {
-    let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.sage_feature.clone()).collect();
+pub fn py_sage_fdr_psm(_py: Python, psm_collection: &PyList, indexed_database: &PyIndexedDatabase, use_hyper_score: bool) -> PyResult<()> {
+
+    // Extract the inner collection of Feature objects along with their original indices
+    let mut indexed_inner_collection: Vec<(usize, Psm)> = psm_collection.iter()
+        .enumerate()
+        .map(|(index, item)| {
+            // Extract each item as a PyCell<PyFeature>
+            let feature: &PyCell<PyPsm> = item.extract().expect("Failed to extract PyFeature");
+            // Clone the inner Feature and keep the original index
+            (index, feature.borrow().inner.clone())
+        })
+        .collect();
+
+    // Set discriminant score to hyper score
+    indexed_inner_collection.par_iter_mut().for_each(|(_, feat)| {
+
+        match use_hyper_score {
+            false => {
+                feat.sage_feature.discriminant_score = (-feat.sage_feature.poisson as f32).ln_1p() + feat.sage_feature.longest_y_pct / 3.0
+            }
+            true => {
+                feat.sage_feature.discriminant_score = feat.hyperscore as f32;
+            }
+        }
+    });
+
+    // Sort indexed_inner_collection by discriminant_score
+    indexed_inner_collection.par_sort_unstable_by(|(_, a), (_, b)| b.sage_feature.discriminant_score.total_cmp(&a.sage_feature.discriminant_score));
+
+    // Extract the sorted indices
+    let sorted_indices: Vec<usize> = indexed_inner_collection.iter().map(|(index, _)| *index).collect();
+
+    // Perform additional operations on the sorted inner_collection
+    let mut inner_collection: Vec<Feature> = indexed_inner_collection.into_iter().map(|(_, feat)| feat.sage_feature).collect();
+    let _ = sage_core::ml::qvalue::spectrum_q_value(&mut inner_collection);
     let _ = picked_peptide(&indexed_database.inner, &mut inner_collection);
-
-    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
-        feature.inner.sage_feature.peptide_q = inner.peptide_q;
-        feature.inner.sage_feature.protein_q = inner.protein_q;
-        feature.inner.sage_feature.posterior_error = inner.posterior_error;
-    }
-}
-
-#[pyfunction]
-pub fn py_picked_protein_psm(mut feature_collection: Vec<PyPsm>, indexed_database: &PyIndexedDatabase) {
-    let mut inner_collection: Vec<Feature> = feature_collection.iter().map(|feature| feature.inner.sage_feature.clone()).collect();
     let _ = picked_protein(&indexed_database.inner, &mut inner_collection);
 
-    for (feature, inner) in feature_collection.iter_mut().zip(inner_collection.iter()) {
-        feature.inner.sage_feature.peptide_q = inner.peptide_q;
-        feature.inner.sage_feature.protein_q = inner.protein_q;
-        feature.inner.sage_feature.posterior_error = inner.posterior_error;
+    // Update the original feature_collection according to the sorted order
+    for (sorted_index, sorted_feature) in sorted_indices.iter().zip(inner_collection.iter()) {
+        let feature: &PyCell<PyPsm> = psm_collection.get_item(*sorted_index).expect("Failed to get PyFeature").extract()?;
+        let mut feature_borrow = feature.borrow_mut();
+        // Update the feature's fields
+        feature_borrow.inner.sage_feature.discriminant_score = sorted_feature.discriminant_score;
+        feature_borrow.inner.sage_feature.spectrum_q = sorted_feature.spectrum_q;
+        feature_borrow.inner.sage_feature.peptide_q = sorted_feature.peptide_q;
+        feature_borrow.inner.sage_feature.protein_q = sorted_feature.protein_q;
     }
+
+    Ok(())
 }
 
 #[pymodule]
 pub fn fdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyCompetitionPeptideIx>()?;
-    m.add_function(wrap_pyfunction!(py_picked_peptide, m)?)?;
-    m.add_function(wrap_pyfunction!(py_picked_protein, m)?)?;
-    m.add_function(wrap_pyfunction!(py_picked_peptide_psm, m)?)?;
-    m.add_function(wrap_pyfunction!(py_picked_protein_psm, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sage_fdr, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sage_fdr_psm, m)?)?;
     Ok(())
 }
