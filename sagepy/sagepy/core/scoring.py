@@ -1321,9 +1321,9 @@ def psms_to_json_bin(psms) -> bytes:
     return psc_utils.psms_to_json_bin([psm.get_py_ptr() for psm in psms])
 
 
-def merge_psm_dicts(left_psms: Dict[str, List[PeptideSpectrumMatch]],
-                    right_psms: Dict[str, List[PeptideSpectrumMatch]],
-                    max_hits: int = 25) -> Dict[str, List[PeptideSpectrumMatch]]:
+def merge_psm_dicts(left_psms: Dict[str, List[Psm]],
+                    right_psms: Dict[str, List[Psm]],
+                    max_hits: int = 25) -> Dict[str, List[Psm]]:
     """ Merge two dictionaries of peptide spectrum matches.
 
     Args:
@@ -1337,7 +1337,7 @@ def merge_psm_dicts(left_psms: Dict[str, List[PeptideSpectrumMatch]],
     left_map = {key: [psm.get_py_ptr() for psm in value] for key, value in left_psms.items()}
     right_map = {key: [psm.get_py_ptr() for psm in value] for key, value in right_psms.items()}
     result = psc.merge_psm_maps(left_map, right_map, max_hits)
-    return {key: [PeptideSpectrumMatch.from_py_ptr(psm) for psm in value] for key, value in result.items()}
+    return {key: [Psm.from_py_ptr(psm) for psm in value] for key, value in result.items()}
 
 
 def prosit_intensities_to_fragments(
