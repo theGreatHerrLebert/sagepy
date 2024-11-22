@@ -1936,7 +1936,7 @@ pub fn associate_fragment_ions_with_prosit_predicted_intensities_par(
 }
 
 #[pyfunction]
-pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, right_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, max_hits: usize) -> BTreeMap<String, Vec<PyPeptideSpectrumMatch>> {
+pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMap<String, Vec<PyPsm>>, max_hits: usize) -> BTreeMap<String, Vec<PyPsm>> {
 
     // generate correct peptide status and protein ids
     let peptide_map = get_peptide_map(left_map.clone(), right_map.clone());
@@ -1946,7 +1946,7 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, r
     let right_map = update_psm_map(right_map, peptide_map);
 
     // merge the two maps
-    let mut merged_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>> = BTreeMap::new();
+    let mut merged_map: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
 
     for (key, psms) in left_map.iter().chain(right_map.iter()) {
         if !merged_map.contains_key(key) {
@@ -1966,13 +1966,13 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, r
     merged_map
 }
 
-fn update_psm_map(psm_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, peptide_map: BTreeMap<String, (bool, Vec<String>)>) -> BTreeMap<String, Vec<PyPeptideSpectrumMatch>> {
-    let mut new_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>> = BTreeMap::new();
+fn update_psm_map(psm_map: BTreeMap<String, Vec<PyPsm>>, peptide_map: BTreeMap<String, (bool, Vec<String>)>) -> BTreeMap<String, Vec<PyPsm>> {
+    let mut new_map: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
 
     for (key, psms) in psm_map {
-        let mut new_psms: Vec<PyPeptideSpectrumMatch> = Vec::new();
+        let mut new_psms: Vec<PyPsm> = Vec::new();
         for psm in psms {
-            let sequence = psm.clone().inner.peptide_sequence.unwrap().sequence;
+            let sequence = psm.clone().inner.sequence.unwrap().sequence;
 
             // if the peptide is not in the map, skip the psm
             if peptide_map.get(&sequence).is_none() {
@@ -1991,15 +1991,15 @@ fn update_psm_map(psm_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, peptid
     new_map
 }
 
-fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>) -> BTreeMap<String, Vec<PyPeptideSpectrumMatch>> {
-    let mut new_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>> = BTreeMap::new();
+fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, Vec<PyPsm>> {
+    let mut new_map: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
 
     for (key, psms) in psm_map {
-        let mut new_psms: Vec<PyPeptideSpectrumMatch> = Vec::new();
+        let mut new_psms: Vec<PyPsm> = Vec::new();
         let mut seen: HashSet<String> = HashSet::new();
         // sort the psms by hyperscore descending
-        for psm in psms.iter().sorted_by(|a, b| b.inner.hyper_score.partial_cmp(&a.inner.hyper_score).unwrap()) {
-            let sequence = psm.clone().inner.peptide_sequence.unwrap().sequence;
+        for psm in psms.iter().sorted_by(|a, b| b.inner.hyperscore.partial_cmp(&a.inner.hyperscore).unwrap()) {
+            let sequence = psm.clone().inner.sequence.unwrap().sequence;
             if !seen.contains(&sequence) {
                 seen.insert(sequence.clone());
                 new_psms.push(psm.clone());
@@ -2011,7 +2011,7 @@ fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>) -> 
     new_map
 }
 
-fn get_peptide_map(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, right_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>) -> BTreeMap<String, (bool, Vec<String>)> {
+fn get_peptide_map(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, (bool, Vec<String>)> {
 
     let mut peptide_map: BTreeMap<String, (bool, HashSet<String>)> = BTreeMap::new();
 
@@ -2019,7 +2019,7 @@ fn get_peptide_map(left_map: BTreeMap<String, Vec<PyPeptideSpectrumMatch>>, righ
 
     for (_, psms) in psms {
         for psm in psms {
-            let key = psm.inner.peptide_sequence.unwrap().sequence;
+            let key = psm.inner.sequence.unwrap().sequence;
             let decoy = psm.inner.decoy;
             let proteins = psm.inner.proteins;
 
