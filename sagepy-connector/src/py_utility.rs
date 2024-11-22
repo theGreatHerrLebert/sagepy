@@ -1,11 +1,12 @@
 use pyo3::prelude::*;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use qfdrust::dataset::PeptideSpectrumMatch;
+use qfdrust::psm::Psm;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 use sage_core::ion_series::Kind;
 use sage_core::scoring::Fragments;
-use crate::py_scoring::{PyFragments, PyPeptideSpectrumMatch};
+use crate::py_scoring::{PyFragments, PyPeptideSpectrumMatch, PyPsm};
 use crate::utilities::sage_sequence_to_unimod_sequence;
 
 /// Converts a cosine similarity to an angle similarity.
@@ -144,7 +145,7 @@ pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
 }
 
 #[pyfunction]
-pub fn psms_to_json(psms: Vec<PyPeptideSpectrumMatch>, num_threads: usize) -> Vec<String> {
+pub fn psms_to_json(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
     let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
 
     thread_pool.install(|| {
@@ -155,18 +156,16 @@ pub fn psms_to_json(psms: Vec<PyPeptideSpectrumMatch>, num_threads: usize) -> Ve
 }
 
 #[pyfunction]
-pub fn psms_to_json_bin(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<u8> {
+pub fn psms_to_json_bin(psms: Vec<PyPsm>) -> Vec<u8> {
     let inner_psms = psms.iter().map(|psm| psm.inner.clone()).collect::<Vec<_>>();
     bincode::serialize(&inner_psms).unwrap()
 }
 
 #[pyfunction]
-pub fn json_bin_to_psms(json_bin: Vec<u8>) -> Vec<PyPeptideSpectrumMatch> {
-    let inner_psms: Vec<PeptideSpectrumMatch> = bincode::deserialize(&json_bin).unwrap();
-    inner_psms.iter().map(|psm| PyPeptideSpectrumMatch {
+pub fn json_bin_to_psms(json_bin: Vec<u8>) -> Vec<PyPsm> {
+    let inner_psms: Vec<Psm> = bincode::deserialize(&json_bin).unwrap();
+    inner_psms.iter().map(|psm| PyPsm {
         inner: psm.clone(),
-        fragments_observed: None,
-        fragments_predicted: None,
     }).collect()
 }
 

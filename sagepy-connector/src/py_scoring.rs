@@ -1714,17 +1714,7 @@ impl PyPeptideSpectrumMatch {
 }
 
 #[pyfunction]
-pub fn psm_from_json(json: &str) -> PyPeptideSpectrumMatch {
-    let psm: PeptideSpectrumMatch = serde_json::from_str(json).unwrap();
-    PyPeptideSpectrumMatch {
-        inner: psm,
-        fragments_observed: None,
-        fragments_predicted: None,
-    }
-}
-
-#[pyfunction]
-pub fn peptide_spectrum_match_from_json(json: &str) -> PyPsm {
+pub fn psm_from_json(json: &str) -> PyPsm {
     let psm: Psm = serde_json::from_str(json).unwrap();
     PyPsm {
         inner: psm
@@ -2022,6 +2012,5 @@ pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(prosit_intensities_to_py_fragments_par, m)?)?;
     m.add_function(wrap_pyfunction!(psm_from_json, m)?)?;
     m.add_function(wrap_pyfunction!(merge_psm_maps, m)?)?;
-    m.add_function(wrap_pyfunction!(peptide_spectrum_match_from_json, m)?)?;
     Ok(())
 }
