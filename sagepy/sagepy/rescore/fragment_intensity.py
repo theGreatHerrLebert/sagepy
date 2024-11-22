@@ -4,7 +4,7 @@ import numpy as np
 import sagepy_connector
 from numpy.typing import NDArray
 
-from sagepy.core import PeptideSpectrumMatch
+from sagepy.core.scoring import Psm
 
 psc = sagepy_connector.py_intensity
 
@@ -106,7 +106,7 @@ class FragmentIntensity:
         return self.__py_ptr.predicted_intensity_map()
 
 def peptide_spectrum_match_list_to_intensity_feature_matrix(
-        psm_list: List[PeptideSpectrumMatch],
+        psm_list: List[Psm],
         epsilon: float = 1e-7,
         reduce_matched: bool = False,
         num_threads: int = 16,

@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use qfdrust::intensity::FragmentIntensityPrediction;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
-use crate::py_scoring::{PyPeptideSpectrumMatch};
+use crate::py_scoring::{PyPeptideSpectrumMatch, PyPsm};
 
 #[pyclass]
 #[derive(Clone, Debug)]
@@ -137,7 +137,7 @@ impl PyFragmentIntensityPrediction {
 
 #[pyfunction]
 pub fn peptide_spectrum_match_to_feature_vector(
-    psm: &PyPeptideSpectrumMatch,
+    psm: &PyPsm,
     epsilon: f32,
     reduce_matched: bool,
 ) -> Vec<f32> {
@@ -147,7 +147,7 @@ pub fn peptide_spectrum_match_to_feature_vector(
 
 #[pyfunction]
 pub fn peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
-    psms: Vec<PyPeptideSpectrumMatch>,
+    psms: Vec<PyPsm>,
     epsilon: f32,
     reduce_matched: bool,
     num_threads: usize,
