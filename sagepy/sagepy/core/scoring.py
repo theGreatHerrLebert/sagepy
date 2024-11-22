@@ -900,6 +900,7 @@ class Scorer:
 
         return result
 
+    """
     def score_collection_psm(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
                              num_threads: int = 4) -> Dict[str, List[PeptideSpectrumMatch]]:
 
@@ -912,6 +913,7 @@ class Scorer:
             ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
 
         return ret_dict
+    """
 
     def score_candidates(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
                              num_threads: int = 4) -> Dict[str, List[Psm]]:
@@ -1221,33 +1223,33 @@ class Feature:
 
 
 def associate_fragment_ions_with_prosit_predicted_intensities(
-        psms: List[PeptideSpectrumMatch],
-        flat_intensities: List[List[float]], num_threads: int = 16) -> List['PeptideSpectrumMatch']:
+        psms: List[Psm],
+        flat_intensities: List[List[float]], num_threads: int = 16) -> List['Psm']:
     """Associate fragment ions with prosit predicted intensities in parallel
 
     Args:
-        psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        psms (List[Psm]): The peptide spectrum matches
         flat_intensities (List[List[float]]): The flat intensities
         num_threads (int, optional): The number of threads. Defaults to 16.
 
     Returns:
-        List[PeptideSpectrumMatch]: The peptide spectrum matches
+        List[Psm]: The peptide spectrum matches
     """
     result = psc.associate_fragment_ions_with_prosit_predicted_intensities_par(
         [psm.get_py_ptr() for psm in psms], flat_intensities, num_threads
     )
-    return [PeptideSpectrumMatch.from_py_ptr(f) for f in result]
+    return [Psm.from_py_ptr(f) for f in result]
 
 
 def associate_fragment_ions_with_prosit_predicted_intensities_pandas(
-        psms: List[PeptideSpectrumMatch],
+        psms: List[Psm],
         flat_intensities: List[List[float]],
         num_threads: int = 16,
 ) -> pd.DataFrame:
     """Associate fragment ions with prosit predicted intensities in parallel
 
     Args:
-        psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        psms (List[Psm]): The peptide spectrum matches
         flat_intensities (List[List[float]]): The flat intensities
         num_threads (int, optional): The number of threads. Defaults to 16.
 
@@ -1284,16 +1286,16 @@ def associate_fragment_ions_with_prosit_predicted_intensities_pandas(
     return pd.DataFrame(row_list)
 
 
-def json_bin_to_psms(json_bin: bytes) -> List[PeptideSpectrumMatch]:
-    """ Convert a binary JSON string to a list of PeptideSpectrumMatch objects.
+def json_bin_to_psms(json_bin: bytes) -> List[Psm]:
+    """ Convert a binary JSON string to a list of Psm objects.
 
     Args:
         json_bin: a binary JSON string
 
     Returns:
-        a list of PeptideSpectrumMatch objects
+        a list of Psm objects
     """
-    return [PeptideSpectrumMatch.from_py_ptr(json_str) for json_str in psc_utils.json_bin_to_psms(json_bin)]
+    return [Psm.from_py_ptr(json_str) for json_str in psc_utils.json_bin_to_psms(json_bin)]
 
 
 def psms_to_json(psms, num_threads: int = 4) -> List[str]:
