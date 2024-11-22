@@ -126,6 +126,10 @@ impl Psm {
         )
     }
 
+   pub fn calculate_fragment_intensity_prediction(&mut self) {
+        self.fragment_intensity_prediction = Some(self.get_fragment_intensity_prediction());
+    }
+
     pub fn prosit_intensity_to_fragments(&self) -> Option<Fragments> {
         match &self.prosit_predicted_intensities {
             Some(intensities) => Some(prosit_intensities_to_fragments(intensities.clone())),
