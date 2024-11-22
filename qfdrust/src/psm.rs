@@ -2,9 +2,9 @@ use std::collections::BTreeMap;
 use rustms::chemistry::formula::calculate_mz;
 use rustms::proteomics::peptide::{FragmentType, PeptideProductIonSeriesCollection, PeptideSequence};
 use sage_core::ion_series::Kind;
-use sage_core::scoring::{Feature};
+use sage_core::scoring::{Feature, Fragments};
 use serde::{Deserialize, Serialize};
-use crate::intensity::FragmentIntensityPrediction;
+use crate::intensity::{prosit_intensities_to_fragments, FragmentIntensityPrediction};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Psm {
@@ -25,6 +25,7 @@ pub struct Psm {
     pub collision_energy_calibrated: Option<f32>,
     pub retention_time: Option<f32>,
     pub retention_time_calibrated: Option<f32>,
+    pub retention_time_projected: Option<f32>,
     pub inverse_ion_mobility: Option<f32>,
     pub inverse_ion_mobility_calibrated: Option<f32>,
     pub prosit_predicted_intensities: Option<Vec<f32>>,
@@ -32,6 +33,7 @@ pub struct Psm {
     pub q_value: Option<f64>,
     pub posterior_error_probability: Option<f64>,
     pub external_features: BTreeMap<String, f32>,
+    pub fragment_intensity_prediction: Option<FragmentIntensityPrediction>,
 }
 
 impl Psm {
@@ -51,12 +53,14 @@ impl Psm {
         collision_energy_calibrated: Option<f32>,
         retention_time: Option<f32>,
         retention_time_calibrated: Option<f32>,
+        retention_time_projected: Option<f32>,
         inverse_ion_mobility: Option<f32>,
         inverse_ion_mobility_calibrated: Option<f32>,
         prosit_predicted_intensities: Option<Vec<f32>>,
         re_score: Option<f64>,
         q_value: Option<f64>,
         posterior_error_probability: Option<f64>,
+        fragment_intensity_prediction: Option<FragmentIntensityPrediction>,
     ) -> Self {
 
         let peptide_sequence = match &sequence {
@@ -92,6 +96,7 @@ impl Psm {
             collision_energy_calibrated,
             retention_time,
             retention_time_calibrated,
+            retention_time_projected,
             inverse_ion_mobility,
             inverse_ion_mobility_calibrated,
             prosit_predicted_intensities,
@@ -99,6 +104,7 @@ impl Psm {
             q_value,
             posterior_error_probability,
             external_features: BTreeMap::new(),
+            fragment_intensity_prediction,
         }
     }
     pub fn associate_with_prosit_predicted_intensities(&self, flat_intensities: Vec<f64>) -> Option<PeptideProductIonSeriesCollection> {
@@ -118,5 +124,12 @@ impl Psm {
             self.sage_feature.fragments.clone().unwrap().kinds.iter().map(|kind| *kind == Kind::Y).collect(),
             self.prosit_predicted_intensities.clone().unwrap(),
         )
+    }
+
+    pub fn prosit_intensity_to_fragments(&self) -> Option<Fragments> {
+        match &self.prosit_predicted_intensities {
+            Some(intensities) => Some(prosit_intensities_to_fragments(intensities.clone())),
+            None => None,
+        }
     }
 }
