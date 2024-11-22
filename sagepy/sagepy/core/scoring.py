@@ -35,6 +35,7 @@ class Psm:
             collision_energy_calibrated: Optional[float] = None,
             retention_time: Optional[float] = None,
             retention_time_calibrated: Optional[float] = None,
+            retention_time_projected: Optional[float] = None,
             inverse_ion_mobility: Optional[float] = None,
             inverse_ion_mobility_calibrated: Optional[float] = None,
             prosit_predicted_intensities: Optional[List[float]] = None,
@@ -46,7 +47,7 @@ class Psm:
         self.__py_ptr = psc.PyPsm(
             spec_idx, peptide_idx, proteins, hyperscore, decoy, sage_feature.get_py_ptr(), sequence, charge,
             mono_mz_calculated, mono_mass_observed, mono_mass_calculated, intensity_ms1, intensity_ms2,
-            collision_energy, collision_energy_calibrated, retention_time, retention_time_calibrated,
+            collision_energy, collision_energy_calibrated, retention_time, retention_time_calibrated, retention_time_projected,
             inverse_ion_mobility, inverse_ion_mobility_calibrated, prosit_predicted_intensities, re_score, q_value,
             posterior_error_probability, external_features
         )
@@ -193,6 +194,14 @@ class Psm:
         self.__py_ptr.retention_time_calibrated = value
 
     @property
+    def retention_time_projected(self):
+        return self.__py_ptr.retention_time_projected
+
+    @retention_time_projected.setter
+    def retention_time_projected(self, value):
+        self.__py_ptr.retention_time_projected = value
+
+    @property
     def inverse_ion_mobility(self):
         return self.__py_ptr.inverse_ion_mobility
 
@@ -272,7 +281,7 @@ class Psm:
 class ScoreType:
     def __init__(self, name: str):
         name = name.lower()
-        names = {"openmshyperscore", "hyperscore"}
+        names = { "openmshyperscore", "hyperscore" }
         assert name in names, f"Invalid score type: {name}, allowed values are: {names}"
         self.__py_ptr = psc.PyScoreType(name)
 
@@ -952,7 +961,7 @@ class Feature:
                  delta_rt_model: Optional[float] = None,
                  ims: Optional[float] = None,
                  predicted_ims: Optional[float] = None,
-                 delta_ims_model: Optional[float] = None, ):
+                 delta_ims_model: Optional[float] = None):
         """Feature class
 
         Args:
@@ -1314,7 +1323,7 @@ def psms_to_json_bin(psms) -> bytes:
 
 def merge_psm_dicts(left_psms: Dict[str, List[PeptideSpectrumMatch]],
                     right_psms: Dict[str, List[PeptideSpectrumMatch]],
-                    max_hits: int = 5) -> Dict[str, List[PeptideSpectrumMatch]]:
+                    max_hits: int = 25) -> Dict[str, List[PeptideSpectrumMatch]]:
     """ Merge two dictionaries of peptide spectrum matches.
 
     Args:

@@ -15,6 +15,7 @@ use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments, ScoreType};
 use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore};
 use serde::{Deserialize, Serialize};
+use crate::py_intensity::PyFragmentIntensityPrediction;
 use crate::py_ion_series::PyKind;
 use crate::py_utility::{flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
 
@@ -50,6 +51,7 @@ impl PyPsm {
         re_score: Option<f64>,
         q_value: Option<f64>,
         posterior_error_probability: Option<f64>,
+        py_fragment_intensity_prediction: Option<PyFragmentIntensityPrediction>,
     ) -> Self {
         PyPsm {
             inner: Psm::new(
@@ -75,6 +77,7 @@ impl PyPsm {
                 re_score,
                 q_value,
                 posterior_error_probability,
+                py_fragment_intensity_prediction.map(|f| f.inner),
             ),
         }
     }
@@ -274,6 +277,7 @@ impl PyPsm {
     #[setter]
     pub fn set_prosit_predicted_intensities(&mut self, value: Option<Vec<f32>>) {
         self.inner.prosit_predicted_intensities = value;
+        self.inner.calculate_fragment_intensity_prediction();
     }
     
     #[getter]
@@ -903,15 +907,17 @@ impl PyScorer {
                             Some(intensity_ms1),
                             Some(intensity_ms2),
                             Some(collision_energy),
-                            None,
+                            None, // collision_energy_calibrated
                             Some(feature.rt),
-                            None,
+                            None, // retention_time_calibrated
+                            None, // rt projected
                             Some(feature.ims),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
+                            None, // inverse_ion_mobility_calibrated
+                            None, // prosit_predicted_intensities
+                            None, // re_score
+                            None, // q_value
+                            None, // posterior_error_probability
+                            None, // fragment_intensity_prediction
                         );
                         psms.push(psm);
                     }

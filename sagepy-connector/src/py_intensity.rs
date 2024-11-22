@@ -6,6 +6,7 @@ use rayon::ThreadPoolBuilder;
 use crate::py_scoring::{PyPeptideSpectrumMatch};
 
 #[pyclass]
+#[derive(Clone, Debug)]
 pub struct PyFragmentIntensityPrediction {
     pub inner: FragmentIntensityPrediction,
 }
