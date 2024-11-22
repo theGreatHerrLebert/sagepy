@@ -43,6 +43,7 @@ impl PyPsm {
         collision_energy_calibrated: Option<f32>,
         retention_time: Option<f32>,
         retention_time_calibrated: Option<f32>,
+        retention_time_projected: Option<f32>,
         inverse_ion_mobility: Option<f32>,
         inverse_ion_mobility_calibrated: Option<f32>,
         prosit_predicted_intensities: Option<Vec<f32>>,
@@ -67,6 +68,7 @@ impl PyPsm {
                 collision_energy_calibrated,
                 retention_time,
                 retention_time_calibrated,
+                retention_time_projected,
                 inverse_ion_mobility,
                 inverse_ion_mobility_calibrated,
                 prosit_predicted_intensities,
@@ -232,6 +234,16 @@ impl PyPsm {
     #[setter]
     pub fn set_retention_time_calibrated(&mut self, value: Option<f32>) {
         self.inner.retention_time_calibrated = value;
+    }
+
+    #[getter]
+    pub fn retention_time_projected(&self) -> Option<f32> {
+        self.inner.retention_time_projected
+    }
+
+    #[setter]
+    pub fn set_retention_time_projected(&mut self, value: Option<f32>) {
+        self.inner.retention_time_projected = value;
     }
     
     #[getter]
