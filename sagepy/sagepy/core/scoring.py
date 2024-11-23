@@ -900,22 +900,7 @@ class Scorer:
 
         return result
 
-    """
     def score_collection_psm(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
-                             num_threads: int = 4) -> Dict[str, List[PeptideSpectrumMatch]]:
-
-        py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(),
-                                                                       [spec.get_py_ptr() for spec in
-                                                                        spectrum_collection],
-                                                                       num_threads)
-        ret_dict = {}
-        for key, values in py_psms.items():
-            ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
-
-        return ret_dict
-    """
-
-    def score_candidates(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
                              num_threads: int = 4) -> Dict[str, List[Psm]]:
 
         py_psms = self.__scorer_ptr.score_candidates(db.get_py_ptr(),
