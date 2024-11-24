@@ -506,7 +506,7 @@ def extract_mzml_data(file_path: str) -> pd.DataFrame:
     exp_data = pd.DataFrame(d)
     return exp_data
 
-def psm_collection_to_dict(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> List[Dict[str, List[Psm]]]:
+def psm_collection_to_feature_matrix(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> NDArray:
     """Convert a list of peptide spectrum matches to a dictionary
 
     Args:
@@ -526,4 +526,4 @@ def psm_collection_to_dict(psm_collection: Union[List[Psm], Dict[str, List[Psm]]
     else:
         psms = psm_collection
 
-    return psc.psm_to_dict_par([psm.get_py_ptr() for psm in psms], num_threads)
+    return np.array(psc.psm_to_feature_matrix([psm.get_py_ptr() for psm in psms], num_threads))

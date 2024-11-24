@@ -174,12 +174,12 @@ pub fn sage_sequence_to_unimod(sequence: String, modifications: Vec<f32>, expect
 }
 
 #[pyfunction]
-pub fn psm_to_dict_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<BTreeMap<String, f64>> {
+pub fn psm_to_feature_matrix(psms: Vec<PyPsm>, num_threads: usize) -> Vec<Vec<f64>> {
     let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
 
     thread_pool.install(|| {
         psms.par_iter().map(|psm| {
-            psm.to_dict()
+            psm.inner.get_feature_vector()
         }
         ).collect()
     })
