@@ -146,6 +146,9 @@ impl Psm {
         }
 
         feature_vector.push(sage_feature.label as f64);
+        feature_vector.push(sage_feature.spectrum_q as f64);
+        feature_vector.push(sage_feature.peptide_q as f64);
+        feature_vector.push(sage_feature.protein_q as f64);
 
         feature_vector
     }
@@ -190,6 +193,9 @@ impl Psm {
             "spearman_correlation",
             "spectral_entropy_similarity",
             "decoy",
+            "spectrum_q",
+            "peptide_q",
+            "protein_q",
         ]
     }
 }
