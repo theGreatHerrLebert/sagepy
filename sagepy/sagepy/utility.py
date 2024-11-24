@@ -550,7 +550,7 @@ def get_psm_sequences(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], nu
     else:
         psms = psm_collection
 
-    return psc.get_psm_sequences([psm.get_py_ptr() for psm in psms], num_threads)
+    return psc.get_psm_sequences_par([psm.get_py_ptr() for psm in psms], num_threads)
 
 def get_spec_idx(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> List[str]:
     """Get the spectrum indices from a list of peptide spectrum matches
