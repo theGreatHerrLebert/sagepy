@@ -145,6 +145,7 @@ impl Psm {
             }
         }
 
+        feature_vector.push(sage_feature.label as f64);
 
         feature_vector
     }
@@ -188,6 +189,7 @@ impl Psm {
             "pearson_correlation",
             "spearman_correlation",
             "spectral_entropy_similarity",
+            "decoy",
         ]
     }
 }
