@@ -212,17 +212,19 @@ class Psm:
     def to_dict(self) -> Dict[str, float]:
         return self.__py_ptr.to_dict()
 
+    # round all scalar values to 4 decimal places, like mono_mass_observed, mono_mass_calculated, etc.
     def __repr__(self):
         return (f"Psm(spec_idx: {self.spec_idx}, peptide_idx: {self.peptide_idx}, "
-                f"proteins: {self.proteins}, decoy: {self.decoy}, sage_feature: {self.sage_feature}, "
-                f"sequence: {self.sequence}, charge: {self.charge}, mono_mz_calculated: {self.mono_mz_calculated}, "
-                f"mono_mass_observed: {self.mono_mass_observed}, mono_mass_calculated: {self.mono_mass_calculated}, "
-                f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
-                f"collision_energy: {self.collision_energy}, collision_energy_calibrated: {self.collision_energy_calibrated}, "
-                f"retention_time: {self.retention_time}, retention_time_calibrated: {self.retention_time_calibrated}, "
-                f"retention_time_projected: {self.retention_time_projected}, "
-                f"inverse_ion_mobility: {self.inverse_ion_mobility}, "
-                f"prosit_predicted_intensities: {self.prosit_predicted_intensities}, re_score: {self.re_score})")
+                f"proteins: {self.proteins}, decoy: {self.decoy}, "
+                f"sage_feature: {self.sage_feature}, sequence: {self.sequence}, "
+                f"charge: {self.charge}, mono_mz_calculated: {self.mono_mz_calculated:.4f}, "
+                f"mono_mass_observed: {self.mono_mass_observed:.4f}, mono_mass_calculated: {self.mono_mass_calculated:.4f}, "
+                f"intensity_ms1: {self.intensity_ms1:.4f}, intensity_ms2: {self.intensity_ms2:.4f}, "
+                f"collision_energy: {self.collision_energy:.4f}, collision_energy_calibrated: {self.collision_energy_calibrated:.4f}, "
+                f"retention_time: {self.retention_time:.4f}, retention_time_calibrated: {self.retention_time_calibrated:.4f}, "
+                f"retention_time_projected: {self.retention_time_projected:.4f}, "
+                f"inverse_ion_mobility: {self.inverse_ion_mobility:.4f}, "
+                f"prosit_predicted_intensities: {self.prosit_predicted_intensities}, re_score: {self.re_score:.4f})")
 
 
 class ScoreType:
