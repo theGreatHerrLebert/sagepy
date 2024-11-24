@@ -149,7 +149,7 @@ impl Psm {
         feature_vector
     }
 
-    pub fn get_feature_names() -> Vec<&'static str> {
+    pub fn get_feature_names(&self) -> Vec<&str> {
         vec![
             "expmass",
             "calcmass",
