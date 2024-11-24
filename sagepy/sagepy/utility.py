@@ -526,4 +526,4 @@ def psm_collection_to_dict(psm_collection: Union[List[Psm], Dict[str, List[Psm]]
     else:
         psms = psm_collection
 
-    return psc.psm_to_dict_par(psms, num_threads)
+    return psc.psm_to_dict_par([psm.get_py_ptr() for psm in psms], num_threads)
