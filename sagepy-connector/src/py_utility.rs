@@ -1,12 +1,11 @@
 use pyo3::prelude::*;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use qfdrust::dataset::PeptideSpectrumMatch;
 use qfdrust::psm::Psm;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 use sage_core::ion_series::Kind;
 use sage_core::scoring::Fragments;
-use crate::py_scoring::{PyFragments, PyPeptideSpectrumMatch, PyPsm};
+use crate::py_scoring::{PyFragments, PyPsm};
 use crate::utilities::sage_sequence_to_unimod_sequence;
 
 /// Converts a cosine similarity to an angle similarity.
@@ -174,6 +173,18 @@ pub fn sage_sequence_to_unimod(sequence: String, modifications: Vec<f32>, expect
     sage_sequence_to_unimod_sequence(sequence, &modifications, &expected_modifications)
 }
 
+#[pyfunction]
+pub fn psm_to_dict_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<BTreeMap<String, f64>> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            psm.to_dict()
+        }
+        ).collect()
+    })
+}
+
 #[pymodule]
 pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(flat_prosit_array_to_fragments_map, m)?)?;
@@ -183,5 +194,6 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(json_bin_to_psms, m)?)?;
     m.add_function(wrap_pyfunction!(cosim_to_spectral_angle, m)?)?;
     m.add_function(wrap_pyfunction!(sage_sequence_to_unimod, m)?)?;
+    m.add_function(wrap_pyfunction!(psm_to_dict_par, m)?)?;
     Ok(())
 }

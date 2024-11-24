@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use rustms::chemistry::formula::calculate_mz;
-use rustms::proteomics::peptide::{FragmentType, PeptideProductIonSeriesCollection, PeptideSequence};
+use rustms::proteomics::peptide::{PeptideSequence};
 use sage_core::ion_series::Kind;
 use sage_core::scoring::{Feature, Fragments};
 use serde::{Deserialize, Serialize};
@@ -11,28 +11,16 @@ pub struct Psm {
     pub spec_idx: String,
     pub peptide_idx: u32,
     pub proteins: Vec<String>,
-    pub hyperscore: f64,
-    pub decoy: bool,
     pub sage_feature: Feature,
     pub sequence: Option<PeptideSequence>,
-    pub charge: Option<u8>,
     pub mono_mz_calculated: Option<f32>,
-    pub mono_mass_observed: Option<f32>,
-    pub mono_mass_calculated: Option<f32>,
     pub intensity_ms1: Option<f32>,
     pub intensity_ms2: Option<f32>,
     pub collision_energy: Option<f32>,
     pub collision_energy_calibrated: Option<f32>,
-    pub retention_time: Option<f32>,
-    pub retention_time_calibrated: Option<f32>,
     pub retention_time_projected: Option<f32>,
-    pub inverse_ion_mobility: Option<f32>,
-    pub inverse_ion_mobility_calibrated: Option<f32>,
     pub prosit_predicted_intensities: Option<Vec<f32>>,
     pub re_score: Option<f64>,
-    pub q_value: Option<f64>,
-    pub posterior_error_probability: Option<f64>,
-    pub external_features: BTreeMap<String, f32>,
     pub fragment_intensity_prediction: Option<FragmentIntensityPrediction>,
 }
 
@@ -41,26 +29,15 @@ impl Psm {
         spec_idx: String,
         peptide_idx: u32,
         proteins: Vec<String>,
-        hyperscore: f64,
-        decoy: bool,
         sage_feature: Feature,
         sequence: Option<String>,
-        charge: Option<u8>,
-        mono_mass_observed: Option<f32>,
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
         collision_energy: Option<f32>,
         collision_energy_calibrated: Option<f32>,
-        retention_time: Option<f32>,
-        retention_time_calibrated: Option<f32>,
         retention_time_projected: Option<f32>,
-        inverse_ion_mobility: Option<f32>,
-        inverse_ion_mobility_calibrated: Option<f32>,
         prosit_predicted_intensities: Option<Vec<f32>>,
         re_score: Option<f64>,
-        q_value: Option<f64>,
-        posterior_error_probability: Option<f64>,
-        fragment_intensity_prediction: Option<FragmentIntensityPrediction>,
     ) -> Self {
 
         let peptide_sequence = match &sequence {
@@ -68,13 +45,8 @@ impl Psm {
             None => None,
         };
 
-        let mono_mass_calculated = match peptide_sequence.clone() {
-            Some(seq) => Some(seq.mono_isotopic_mass() as f32),
-            _ => None,
-        };
-
-        let mono_mz_calculated = match (peptide_sequence.clone(), charge) {
-            (Some(seq), Some(ch)) => Some(calculate_mz(seq.mono_isotopic_mass(), ch as i32) as f32),
+        let mono_mz_calculated = match (peptide_sequence.clone(), sage_feature.charge as i32) {
+            (Some(seq), charge) => Some(calculate_mz(seq.mono_isotopic_mass(), charge) as f32),
             (_, _) => None,
         };
         
@@ -82,35 +54,25 @@ impl Psm {
             spec_idx,
             peptide_idx,
             proteins,
-            hyperscore,
-            decoy,
             sage_feature,
             sequence: peptide_sequence,
-            charge,
             mono_mz_calculated,
-            mono_mass_observed,
-            mono_mass_calculated,
             intensity_ms1,
             intensity_ms2,
             collision_energy,
             collision_energy_calibrated,
-            retention_time,
-            retention_time_calibrated,
             retention_time_projected,
-            inverse_ion_mobility,
-            inverse_ion_mobility_calibrated,
             prosit_predicted_intensities,
             re_score,
-            q_value,
-            posterior_error_probability,
-            external_features: BTreeMap::new(),
-            fragment_intensity_prediction,
+            fragment_intensity_prediction: None,
         }
     }
-    pub fn associate_with_prosit_predicted_intensities(&self, flat_intensities: Vec<f64>) -> Option<PeptideProductIonSeriesCollection> {
-        match &self.sequence {
-            Some(seq) => Some(seq.associate_with_predicted_intensities(self.charge.unwrap() as i32, FragmentType::B, flat_intensities, false, false)),
-            None => None,
+
+    pub fn set_prosit_intensity_prediction(& mut self, flat_prosit_intensities: Option<Vec<f32>>) {
+        self.prosit_predicted_intensities = flat_prosit_intensities.clone();
+        match flat_prosit_intensities {
+            Some(_intensities) => self.fragment_intensity_prediction = Some(self.get_fragment_intensity_prediction()),
+            None => self.fragment_intensity_prediction = None
         }
     }
 
@@ -135,5 +97,59 @@ impl Psm {
             Some(intensities) => Some(prosit_intensities_to_fragments(intensities.clone())),
             None => None,
         }
+    }
+
+    pub fn to_dict(&self) -> BTreeMap<String, f64> {
+        let mut dict = BTreeMap::new();
+
+        let sage_feature = &self.sage_feature;
+        dict.insert("sage_peptide_len".to_string(), sage_feature.peptide_len as f64);
+        dict.insert("sage_rank".to_string(), sage_feature.rank as f64);
+        dict.insert("sage_expmass".to_string(), sage_feature.expmass as f64);
+        dict.insert("sage_calcmass".to_string(), sage_feature.calcmass as f64);
+        dict.insert("sage_rt".to_string(), sage_feature.rt as f64);
+        dict.insert("sage_aligned_rt".to_string(), sage_feature.aligned_rt as f64);
+        dict.insert("sage_predicted_rt".to_string(), sage_feature.predicted_rt as f64);
+        dict.insert("sage_delta_rt_model".to_string(), sage_feature.delta_rt_model as f64);
+        dict.insert("sage_ims".to_string(), sage_feature.ims as f64);
+        dict.insert("sage_predicted_ims".to_string(), sage_feature.predicted_ims as f64);
+        dict.insert("sage_delta_ims_model".to_string(), sage_feature.delta_ims_model as f64);
+        dict.insert("sage_delta_mass".to_string(), sage_feature.delta_mass as f64);
+        dict.insert("sage_isotope_error".to_string(), sage_feature.isotope_error as f64);
+        dict.insert("sage_average_ppm".to_string(), sage_feature.average_ppm as f64);
+        dict.insert("sage_hyperscore".to_string(), sage_feature.hyperscore);
+        dict.insert("sage_delta_next".to_string(), sage_feature.delta_next);
+        dict.insert("sage_delta_best".to_string(), sage_feature.delta_best);
+        dict.insert("sage_matched_peaks".to_string(), sage_feature.matched_peaks as f64);
+        dict.insert("sage_longest_b".to_string(), sage_feature.longest_b as f64);
+        dict.insert("sage_longest_y".to_string(), sage_feature.longest_y as f64);
+        dict.insert("sage_longest_y_pct".to_string(), sage_feature.longest_y_pct as f64);
+        dict.insert("sage_missed_cleavages".to_string(), sage_feature.missed_cleavages as f64);
+        dict.insert("sage_matched_intensity_pct".to_string(), sage_feature.matched_intensity_pct as f64);
+        dict.insert("sage_scored_candidates".to_string(), sage_feature.scored_candidates as f64);
+        dict.insert("sage_poisson".to_string(), sage_feature.poisson);
+        dict.insert("sage_discriminant_score".to_string(), sage_feature.discriminant_score as f64);
+        dict.insert("sage_posterior_error".to_string(), sage_feature.posterior_error as f64);
+        dict.insert("sage_spectrum_q".to_string(), sage_feature.spectrum_q as f64);
+        dict.insert("sage_peptide_q".to_string(), sage_feature.peptide_q as f64);
+        dict.insert("sage_protein_q".to_string(), sage_feature.protein_q as f64);
+        dict.insert("sage_ms2_intensity".to_string(), sage_feature.ms2_intensity as f64);
+        dict.insert("decoy".to_string(), self.sage_feature.label as f64);
+
+        dict.insert("intensity_ms1".to_string(), self.intensity_ms1.unwrap_or(0.0) as f64);
+        dict.insert("intensity_ms2".to_string(), self.intensity_ms2.unwrap_or(0.0) as f64);
+        dict.insert("collision_energy".to_string(), self.collision_energy.unwrap_or(0.0) as f64);
+        dict.insert("collision_energy_calibrated".to_string(), self.collision_energy_calibrated.unwrap_or(0.0) as f64);
+        dict.insert("retention_time_projected".to_string(), self.retention_time_projected.unwrap_or(0.0) as f64);
+        dict.insert("re_score".to_string(), self.re_score.unwrap_or(0.0));
+
+        let intensity_features = self.fragment_intensity_prediction.clone().unwrap();
+        dict.insert("intensity_cosine_similarity".to_string(), intensity_features.cosine_similarity(0.0, false).unwrap_or(0.0) as f64);
+        dict.insert("intensity_spectral_angle_similarity".to_string(), intensity_features.spectral_angle_similarity(0.0, false) as f64);
+        dict.insert("intensity_pearson_correlation".to_string(), intensity_features.pearson_correlation(0.0, false) as f64);
+        dict.insert("intensity_spearman_correlation".to_string(), intensity_features.spearman_correlation(0.0, false) as f64);
+        dict.insert("intensity_spectral_entropy_similarity".to_string(), intensity_features.spectral_entropy_similarity(0.0, false) as f64);
+
+        dict
     }
 }

@@ -6,6 +6,7 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from sagepy.core import PeptideSpectrumMatch
+from sagepy.core.scoring import Psm
 from sagepy.core.spectrum import ProcessedSpectrum, RawSpectrum, Precursor, SpectrumProcessor, Representation
 from sagepy.core.mass import Tolerance
 from sagepy.core.database import IndexedDatabase, EnzymeBuilder, SageSearchConfiguration
@@ -504,3 +505,25 @@ def extract_mzml_data(file_path: str) -> pd.DataFrame:
     # Convert the list of dictionaries to a pandas DataFrame
     exp_data = pd.DataFrame(d)
     return exp_data
+
+def psm_collection_to_dict(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> List[Dict[str, List[Psm]]]:
+    """Convert a list of peptide spectrum matches to a dictionary
+
+    Args:
+        psm_collection (Union[List[Psm], Dict[str, List[Psm]]): The peptide spectrum matches
+        num_threads (int, optional): The number of threads to use. Defaults to 4.
+
+    Returns:
+        Dict[str, List[Psm]]: The dictionary of peptide spectrum matches
+    """
+
+    psms = []
+
+    if isinstance(psm_collection, dict):
+        for _, psm_candidates in psm_collection.items():
+            psms.extend(psm_candidates)
+
+    else:
+        psms = psm_collection
+
+    return psc.psm_to_dict_par(psms, num_threads)

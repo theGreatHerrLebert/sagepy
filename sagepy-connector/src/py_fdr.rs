@@ -125,7 +125,7 @@ pub fn py_sage_fdr_psm(_py: Python, psm_collection: &PyList, indexed_database: &
                 feat.sage_feature.discriminant_score = (-feat.sage_feature.poisson as f32).ln_1p() + feat.sage_feature.longest_y_pct / 3.0
             }
             true => {
-                feat.sage_feature.discriminant_score = feat.hyperscore as f32;
+                feat.sage_feature.discriminant_score = feat.sage_feature.hyperscore as f32;
             }
         }
     });

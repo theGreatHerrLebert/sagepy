@@ -21,35 +21,19 @@ class Psm:
             spec_idx: str,
             peptide_idx: int,
             proteins: List[str],
-            hyperscore: float,
-            decoy: bool,
             sage_feature: 'Feature',
             sequence: Optional[str] = None,
-            charge: Optional[int] = None,
-            mono_mz_calculated: Optional[float] = None,
-            mono_mass_observed: Optional[float] = None,
-            mono_mass_calculated: Optional[float] = None,
             intensity_ms1: Optional[float] = None,
             intensity_ms2: Optional[float] = None,
             collision_energy: Optional[float] = None,
             collision_energy_calibrated: Optional[float] = None,
-            retention_time: Optional[float] = None,
-            retention_time_calibrated: Optional[float] = None,
             retention_time_projected: Optional[float] = None,
-            inverse_ion_mobility: Optional[float] = None,
-            inverse_ion_mobility_calibrated: Optional[float] = None,
             prosit_predicted_intensities: Optional[List[float]] = None,
             re_score: Optional[float] = None,
-            q_value: Optional[float] = None,
-            posterior_error_probability: Optional[float] = None,
-            external_features: Dict[str, float] = None,
     ):
         self.__py_ptr = psc.PyPsm(
-            spec_idx, peptide_idx, proteins, hyperscore, decoy, sage_feature.get_py_ptr(), sequence, charge,
-            mono_mz_calculated, mono_mass_observed, mono_mass_calculated, intensity_ms1, intensity_ms2,
-            collision_energy, collision_energy_calibrated, retention_time, retention_time_calibrated, retention_time_projected,
-            inverse_ion_mobility, inverse_ion_mobility_calibrated, prosit_predicted_intensities, re_score, q_value,
-            posterior_error_probability, external_features
+            spec_idx, peptide_idx, proteins, sage_feature.get_py_ptr(), sequence, intensity_ms1, intensity_ms2,
+            collision_energy, collision_energy_calibrated, retention_time_projected, prosit_predicted_intensities, re_score
         )
 
     @classmethod
@@ -233,49 +217,21 @@ class Psm:
     def re_score(self, value):
         self.__py_ptr.re_score = value
 
-    @property
-    def q_value(self):
-        return self.__py_ptr.q_value
-
-    @q_value.setter
-    def q_value(self, value):
-        self.__py_ptr.q_value = value
-
-    @property
-    def posterior_error_probability(self):
-        return self.__py_ptr.posterior_error_probability
-
-    @posterior_error_probability.setter
-    def posterior_error_probability(self, value):
-        self.__py_ptr.posterior_error_probability = value
-
-    @property
-    def external_features(self):
-        return self.__py_ptr.external_features
-
-    @external_features.setter
-    def external_features(self, value):
-        self.__py_ptr.external_features = value
+    def to_dict(self) -> Dict[str, float]:
+        return self.__py_ptr.to_dict()
 
     def __repr__(self):
         return (f"Psm(spec_idx: {self.spec_idx}, peptide_idx: {self.peptide_idx}, "
-                f"proteins: {self.proteins}, hyperscore: {self.hyperscore}, "
-                f"decoy: {self.decoy}, sage_feature: {self.sage_feature}, "
-                f"sequence: {self.sequence}, charge: {self.charge}, "
-                f"mono_mz_calculated: {self.mono_mz_calculated}, "
-                f"mono_mass_observed: {self.mono_mass_observed}, "
-                f"mono_mass_calculated: {self.mono_mass_calculated}, "
+                f"proteins: {self.proteins}, decoy: {self.decoy}, sage_feature: {self.sage_feature}, "
+                f"sequence: {self.sequence}, charge: {self.charge}, mono_mz_calculated: {self.mono_mz_calculated}, "
+                f"mono_mass_observed: {self.mono_mass_observed}, mono_mass_calculated: {self.mono_mass_calculated}, "
                 f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
-                f"collision_energy: {self.collision_energy}, "
-                f"collision_energy_calibrated: {self.collision_energy_calibrated}, "
-                f"retention_time: {self.retention_time}, "
-                f"retention_time_calibrated: {self.retention_time_calibrated}, "
+                f"collision_energy: {self.collision_energy}, collision_energy_calibrated: {self.collision_energy_calibrated}, "
+                f"retention_time: {self.retention_time}, retention_time_calibrated: {self.retention_time_calibrated}, "
+                f"retention_time_projected: {self.retention_time_projected}, "
                 f"inverse_ion_mobility: {self.inverse_ion_mobility}, "
                 f"inverse_ion_mobility_calibrated: {self.inverse_ion_mobility_calibrated}, "
-                f"prosit_predicted_intensities: {self.prosit_predicted_intensities}, "
-                f"re_score: {self.re_score}, q_value: {self.q_value}, "
-                f"posterior_error_probability: {self.posterior_error_probability}, "
-                f"external_features: {self.external_features})")
+                f"prosit_predicted_intensities: {self.prosit_predicted_intensities}, re_score: {self.re_score})")
 
 
 class ScoreType:
