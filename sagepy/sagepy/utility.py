@@ -573,3 +573,47 @@ def get_spec_idx(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_thr
         psms = psm_collection
 
     return psc.get_psm_spec_idx_par([psm.get_py_ptr() for psm in psms], num_threads)
+
+
+def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm]]],
+                             num_threads: int = 4) -> pd.DataFrame:
+    """Convert a list of peptide spectrum matches to a pandas dataframe
+
+    Args:
+        psm_collection (Union[List[Psm], Dict[str, List[Psm]]): The peptide spectrum matches
+        num_threads (int, optional): The number of threads to use. Defaults to 4.
+
+    Returns:
+        pd.DataFrame: The pandas dataframe
+    """
+
+    psms = []
+
+    if isinstance(psm_collection, dict):
+        for _, item in psm_collection.items():
+            psms.extend(item)
+
+    else:
+        psms = psm_collection
+
+    # extract the numeric features
+    D = psc.psm_collection_to_feature_matrix([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+
+    # extract the peptide sequences and spectrum indices
+    sequence = psc.get_psm_sequences_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+    spec_idx = psc.get_psm_spec_idx_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+
+    # get the feature names
+    names = psms[0].get_feature_names()
+
+    # create the pandas dataframe
+    PSM_pandas = pd.DataFrame(D, columns=names)
+
+    # convert the decoy column to boolean
+    PSM_pandas["decoy"] = [True if d == -1 else False for d in PSM_pandas.decoy]
+
+    # add the sequence and spectrum index columns
+    PSM_pandas.insert(0, "spec_idx", spec_idx)
+    PSM_pandas.insert(1, "sequence", sequence)
+
+    return PSM_pandas
