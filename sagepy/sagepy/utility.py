@@ -527,3 +527,49 @@ def psm_collection_to_feature_matrix(psm_collection: Union[List[Psm], Dict[str, 
         psms = psm_collection
 
     return np.array(psc.psms_to_feature_matrix([psm.get_py_ptr() for psm in psms], num_threads))
+
+# get_psm_sequences_par
+
+def get_psm_sequences(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> List[str]:
+    """Get the peptide sequences from a list of peptide spectrum matches
+
+    Args:
+        psm_collection (Union[List[Psm], Dict[str, List[Psm]]): The peptide spectrum matches
+        num_threads (int, optional): The number of threads to use. Defaults to 4.
+
+    Returns:
+        List[str]: The list of peptide sequences
+    """
+
+    psms = []
+
+    if isinstance(psm_collection, dict):
+        for _, psm_candidates in psm_collection.items():
+            psms.extend(psm_candidates)
+
+    else:
+        psms = psm_collection
+
+    return psc.get_psm_sequences([psm.get_py_ptr() for psm in psms], num_threads)
+
+def get_spec_idx(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> List[str]:
+    """Get the spectrum indices from a list of peptide spectrum matches
+
+    Args:
+        psm_collection (Union[List[Psm], Dict[str, List[Psm]]): The peptide spectrum matches
+        num_threads (int, optional): The number of threads to use. Defaults to 4.
+
+    Returns:
+        List[str]: The list of spectrum indices
+    """
+
+    psms = []
+
+    if isinstance(psm_collection, dict):
+        for _, psm_candidates in psm_collection.items():
+            psms.extend(psm_candidates)
+
+    else:
+        psms = psm_collection
+
+    return psc.get_psm_spec_idx_par([psm.get_py_ptr() for psm in psms], num_threads)
