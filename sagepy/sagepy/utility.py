@@ -597,7 +597,7 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
         psms = psm_collection
 
     # extract the numeric features
-    D = psc.psm_collection_to_feature_matrix([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+    D = psc.psms_to_feature_matrix([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
 
     # extract the peptide sequences and spectrum indices
     sequence = psc.get_psm_sequences_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
