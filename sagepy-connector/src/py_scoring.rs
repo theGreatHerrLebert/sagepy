@@ -275,6 +275,10 @@ impl PyPsm {
     pub fn set_decoy(&mut self, value: bool) {
         self.inner.sage_feature.label = if value { -1 } else { 1 };
     }
+
+    pub fn get_feature_names(&self) -> Vec<&str> {
+        self.inner.get_feature_names()
+    }
 }
 
 #[pyclass]
