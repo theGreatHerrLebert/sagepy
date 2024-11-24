@@ -121,6 +121,7 @@ impl Psm {
         feature_vector.push(sage_feature.discriminant_score as f64);
         feature_vector.push(sage_feature.posterior_error as f64);
         feature_vector.push(sage_feature.ms2_intensity as f64);
+        feature_vector.push(sage_feature.rank as f64);
 
         feature_vector.push(self.intensity_ms1.unwrap_or(0.0) as f64);
         feature_vector.push(self.intensity_ms2.unwrap_or(0.0) as f64);
@@ -182,6 +183,7 @@ impl Psm {
             "discriminant_score",
             "posterior_error",
             "ms2_intensity",
+            "rank",
             "intensity_ms1",
             "intensity_ms2",
             "collision_energy",
