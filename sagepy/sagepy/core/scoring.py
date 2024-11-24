@@ -209,8 +209,8 @@ class Psm:
     def re_score(self, value):
         self.__py_ptr.re_score = value
 
-    def to_dict(self) -> Dict[str, float]:
-        return self.__py_ptr.to_dict()
+    def get_feature_names(self):
+        return self.__py_ptr.get_feature_names()
 
     def __repr__(self):
         return (f"Psm(spec_idx: {self.spec_idx}, peptide_idx: {self.peptide_idx}, "
