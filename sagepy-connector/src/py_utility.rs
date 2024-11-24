@@ -185,6 +185,17 @@ pub fn psm_to_dict_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<BTreeMap<Str
     })
 }
 
+#[pyfunction]
+pub fn get_psm_sequences_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            psm.inner.sequence.clone().unwrap().sequence
+        }).collect()
+    })
+}
+
 #[pymodule]
 pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(flat_prosit_array_to_fragments_map, m)?)?;
@@ -195,5 +206,6 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(cosim_to_spectral_angle, m)?)?;
     m.add_function(wrap_pyfunction!(sage_sequence_to_unimod, m)?)?;
     m.add_function(wrap_pyfunction!(psm_to_dict_par, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_sequences_par, m)?)?;
     Ok(())
 }

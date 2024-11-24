@@ -194,14 +194,6 @@ class Psm:
         self.__py_ptr.inverse_ion_mobility = value
 
     @property
-    def inverse_ion_mobility_calibrated(self):
-        return self.__py_ptr.inverse_ion_mobility_calibrated
-
-    @inverse_ion_mobility_calibrated.setter
-    def inverse_ion_mobility_calibrated(self, value):
-        self.__py_ptr.inverse_ion_mobility_calibrated = value
-
-    @property
     def prosit_predicted_intensities(self):
         return np.array(self.__py_ptr.prosit_predicted_intensities)
 
@@ -230,7 +222,6 @@ class Psm:
                 f"retention_time: {self.retention_time}, retention_time_calibrated: {self.retention_time_calibrated}, "
                 f"retention_time_projected: {self.retention_time_projected}, "
                 f"inverse_ion_mobility: {self.inverse_ion_mobility}, "
-                f"inverse_ion_mobility_calibrated: {self.inverse_ion_mobility_calibrated}, "
                 f"prosit_predicted_intensities: {self.prosit_predicted_intensities}, re_score: {self.re_score})")
 
 
