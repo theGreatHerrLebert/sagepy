@@ -526,4 +526,4 @@ def psm_collection_to_feature_matrix(psm_collection: Union[List[Psm], Dict[str, 
     else:
         psms = psm_collection
 
-    return np.array(psc.psm_to_feature_matrix([psm.get_py_ptr() for psm in psms], num_threads))
+    return np.array(psc.psms_to_feature_matrix([psm.get_py_ptr() for psm in psms], num_threads))
