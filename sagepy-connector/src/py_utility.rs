@@ -205,7 +205,7 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(json_bin_to_psms, m)?)?;
     m.add_function(wrap_pyfunction!(cosim_to_spectral_angle, m)?)?;
     m.add_function(wrap_pyfunction!(sage_sequence_to_unimod, m)?)?;
-    m.add_function(wrap_pyfunction!(psm_to_feature_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(psms_to_feature_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_sequences_par, m)?)?;
     Ok(())
 }

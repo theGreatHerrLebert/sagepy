@@ -275,10 +275,6 @@ impl PyPsm {
     pub fn set_decoy(&mut self, value: bool) {
         self.inner.sage_feature.label = if value { -1 } else { 1 };
     }
-
-    pub fn to_dict(&self) -> BTreeMap<String, f64> {
-        self.inner.to_dict()
-    }
 }
 
 #[pyclass]
