@@ -68,14 +68,6 @@ impl Psm {
         }
     }
 
-    pub fn set_prosit_intensity_prediction(& mut self, flat_prosit_intensities: Option<Vec<f32>>) {
-        self.prosit_predicted_intensities = flat_prosit_intensities.clone();
-        match flat_prosit_intensities {
-            Some(_intensities) => self.fragment_intensity_prediction = Some(self.get_fragment_intensity_prediction()),
-            None => self.fragment_intensity_prediction = None
-        }
-    }
-
     pub fn get_fragment_intensity_prediction(&self) -> FragmentIntensityPrediction {
         FragmentIntensityPrediction::new(
             self.sage_feature.fragments.clone().unwrap().intensities,

@@ -252,7 +252,8 @@ impl PyPsm {
     
     #[setter]
     pub fn set_prosit_predicted_intensities(&mut self, value: Option<Vec<f32>>) {
-        self.set_prosit_predicted_intensities(value);
+        self.inner.prosit_predicted_intensities = value;
+        self.inner.calculate_fragment_intensity_prediction();
     }
     
     #[getter]
