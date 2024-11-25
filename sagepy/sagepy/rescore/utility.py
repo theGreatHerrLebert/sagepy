@@ -6,7 +6,7 @@ import scipy.stats
 from numpy.typing import NDArray
 from typing import Optional, Tuple, List
 
-from sagepy.core import PeptideSpectrumMatch
+from sagepy.core.scoring import Psm
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
 from sagepy.utility import peptide_spectrum_match_collection_to_pandas
 
@@ -209,7 +209,7 @@ def get_features(
 
 
 def generate_training_data(
-        psm_list: List[PeptideSpectrumMatch],
+        psm_list: List[Psm],
         method: str = "psm",
         q_max: float = 0.01,
         balance: bool = True,

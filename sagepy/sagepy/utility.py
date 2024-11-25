@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from sagepy.core import PeptideSpectrumMatch
 from sagepy.core.scoring import Psm
 from sagepy.core.spectrum import ProcessedSpectrum, RawSpectrum, Precursor, SpectrumProcessor, Representation
 from sagepy.core.mass import Tolerance
@@ -67,136 +66,6 @@ def py_fragments_to_fragments_map(fragments, normalize: bool = True) -> Dict[Tup
         a fragment map (ion_type, charge, ordinal) -> intensity
     """
     return psc.py_fragments_to_fragments_map(fragments.get_py_ptr(), normalize)
-
-
-def peptide_spectrum_match_collection_to_pandas(
-        psm_collection: Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]],
-        re_score: bool = False,
-        use_sequence_as_match_idx: bool = True,
-        project_rt: bool = True,
-) -> pd.DataFrame:
-    """Convert a list of peptide spectrum matches to a pandas dataframe
-
-    Args:
-        psm_collection (Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]): The peptide spectrum matches
-        re_score (bool, optional): Should re-score be used. Defaults to False.
-        use_sequence_as_match_idx (bool, optional): Should the sequence be used as the match index. Defaults to True.
-        project_rt (bool, optional): Should the retention time be projected. Defaults to False.
-
-    Returns:
-        pd.DataFrame: The pandas dataframe
-    """
-
-    psm_list = []
-
-    if isinstance(psm_collection, dict):
-        for spec_id, psm_candidates in psm_collection.items():
-            psm_list.extend(psm_candidates)
-
-    else:
-        psm_list = psm_collection
-
-    row_list = []
-    for match in psm_list:
-        if project_rt:
-            if match.retention_time_predicted is not None and match.projected_rt is not None:
-                delta_rt = match.retention_time_predicted - match.projected_rt
-            else:
-                delta_rt = None
-        else:
-            if match.retention_time_predicted is not None and match.retention_time_observed is not None:
-                delta_rt = match.retention_time_predicted - match.retention_time_observed
-            else:
-                delta_rt = None
-
-        if re_score:
-            score = match.re_score
-        else:
-            score = match.hyper_score
-
-        if use_sequence_as_match_idx:
-            match_idx = match.sequence
-        else:
-            match_idx = str(match.peptide_idx)
-
-        if match.inverse_mobility_predicted is not None:
-            delta_ims = match.inverse_mobility_predicted - match.inverse_mobility_observed
-        else:
-            delta_ims = None
-
-        if match.beta_score is not None:
-            beta_score = match.beta_score
-        else:
-            beta_score = None
-
-        if match.posterior_error_prob is not None:
-            pep = match.posterior_error_prob
-        else:
-            pep = None
-
-        if match.fragments_observed is not None:
-            match_median_ppm = median_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated)
-        else:
-            match_median_ppm = None
-
-        if match.fragments_observed is not None:
-            match_mean_ppm = mean_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated)
-        else:
-            match_mean_ppm = None
-
-
-        row_list.append({
-            "spec_idx": match.spec_idx,
-            "match_idx": match_idx,
-            "proteins": match.proteins,
-            "decoy": match.decoy,
-            "score": score,
-            "re_score": match.re_score,
-            "hyper_score": match.hyper_score,
-            "rank": match.rank,
-            "mono_mz_calculated": match.mono_mz_calculated,
-            "mono_mass_observed": match.mono_mass_observed,
-            "mono_mass_calculated": match.mono_mass_calculated,
-            "delta_mass": match.mono_mass_calculated - match.mono_mass_observed,
-            "isotope_error": match.isotope_error,
-            "average_ppm": match.average_ppm,
-            "delta_next": match.delta_next,
-            "delta_best": match.delta_best,
-            "matched_peaks": match.matched_peaks,
-            "longest_b": match.longest_b,
-            "longest_y": match.longest_y,
-            "longest_y_pct": match.longest_y_pct,
-            "missed_cleavages": match.missed_cleavages,
-            "matched_intensity_pct": match.matched_intensity_pct,
-            "scored_candidates": match.scored_candidates,
-            "poisson": match.poisson,
-            "sequence": match.sequence,
-            "charge": match.charge,
-            "retention_time_observed": match.retention_time_observed,
-            "retention_time_predicted": match.retention_time_predicted,
-            "delta_rt": delta_rt,
-            "inverse_mobility_observed": match.inverse_mobility_observed,
-            "inverse_mobility_predicted": match.inverse_mobility_predicted,
-            "delta_ims": delta_ims,
-            "intensity_ms1": match.intensity_ms1,
-            "intensity_ms2": match.intensity_ms2,
-            "q_value": match.q_value,
-            "collision_energy": match.collision_energy,
-            "cosine_similarity": match.cosine_similarity,
-            "mean_ppm": match_mean_ppm,
-            "median_ppm": match_median_ppm,
-            "fragments_observed": match.fragments_observed,
-            "fragments_predicted": match.fragments_predicted,
-            "projected_rt": match.projected_rt,
-            "beta_score": beta_score,
-            "posterior_error_prob": pep,
-            "spectral_entropy_similarity": match.spectral_entropy_similarity,
-            "spectral_correlation_similarity_pearson": match.spectral_correlation_similarity_pearson,
-            "spectral_correlation_similarity_spearman": match.spectral_correlation_similarity_spearman,
-            "spectral_normalized_intensity_difference": match.spectral_normalized_intensity_difference,
-        })
-
-    return pd.DataFrame(row_list)
 
 
 def get_features(ds: pd.DataFrame, score: Optional[str] = None) -> (NDArray, NDArray):
@@ -264,8 +133,9 @@ def apply_mz_calibration(psm, fragments: pd.DataFrame, use_median: bool = True,
     for _, item in psm.items():
         psms.extend(item)
 
-    P = peptide_spectrum_match_collection_to_pandas(psms)
-    TDC = target_decoy_competition_pandas(P)
+    P = psm_collection_to_pandas(psms)
+    P["match_idx"] = P.sequence
+    TDC = target_decoy_competition_pandas(P, method="psm", score="hyperscore")
     TDC = TDC[TDC.q_value <= target_q]
 
     B = pd.merge(P, TDC, on=["spec_idx", "match_idx"])
@@ -378,8 +248,6 @@ def create_sage_database(
     bucket_size: int = 16384,
     static_mods: Union[Dict[str, str], Dict[int, str]] = {"C": "[UNIMOD:4]"},
     variable_mods: Union[Dict[str, List[int]], Dict[int, List[str]]] = {"M": ["[UNIMOD:35]"], "[": ["[UNIMOD:1]"]},
-    fragment_min_mz: float = 100.0,
-    fragment_max_mz: float = 2000.0,
 ) -> IndexedDatabase:
     """Create a SAGE database
 
@@ -422,8 +290,6 @@ def create_sage_database(
         enzyme_builder=enzyme_builder,
         generate_decoys=generate_decoys,
         bucket_size=bucket_size,
-        fragment_min_mz=fragment_min_mz,
-        fragment_max_mz=fragment_max_mz
     )
 
     # Generate and return the indexed database
