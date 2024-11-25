@@ -1,9 +1,6 @@
 use std::collections::BTreeMap;
 use pyo3::prelude::*;
 use qfdrust::intensity::FragmentIntensityPrediction;
-use rayon::prelude::*;
-use rayon::ThreadPoolBuilder;
-use crate::py_scoring::PyPsm;
 
 #[pyclass]
 #[derive(Clone, Debug)]
@@ -135,35 +132,8 @@ impl PyFragmentIntensityPrediction {
     }
 }
 
-#[pyfunction]
-pub fn peptide_spectrum_match_to_feature_vector(
-    psm: &PyPsm,
-    epsilon: f32,
-    reduce_matched: bool,
-) -> Vec<f32> {
-    let fragment_intensity_prediction = psm.inner.get_fragment_intensity_prediction();
-    fragment_intensity_prediction.get_feature_vector(epsilon, reduce_matched)
-}
-
-#[pyfunction]
-pub fn peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
-    psms: Vec<PyPsm>,
-    epsilon: f32,
-    reduce_matched: bool,
-    num_threads: usize,
-) -> Vec<Vec<f32>> {
-    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
-    thread_pool.install(|| {
-        psms.par_iter().map(|psm| {
-            peptide_spectrum_match_to_feature_vector(psm, epsilon, reduce_matched)
-        }).collect()
-    })
-}
-
 #[pymodule]
 pub fn intensity(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyFragmentIntensityPrediction>()?;
-    m.add_function(wrap_pyfunction!(peptide_spectrum_match_to_feature_vector, m)?)?;
-    m.add_function(wrap_pyfunction!(peptide_spectrum_match_list_to_intensity_feature_matrix_parallel, m)?)?;
     Ok(())
 }

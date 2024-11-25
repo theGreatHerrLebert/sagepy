@@ -8,7 +8,7 @@ from typing import Optional, Tuple, List
 
 from sagepy.core.scoring import Psm
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
-from sagepy.utility import peptide_spectrum_match_collection_to_pandas
+from sagepy.utility import psm_collection_to_pandas
 
 
 def dict_to_dense_array(peak_dict, array_length=174):
@@ -227,7 +227,7 @@ def generate_training_data(
         Tuple[NDArray, NDArray]: X_train and Y_train
     """
     # create pandas table from psms
-    PSM_pandas = peptide_spectrum_match_collection_to_pandas(psm_list)
+    PSM_pandas = psm_collection_to_pandas(psm_list)
 
     # calculate q-values to get inital "good" hits
     PSM_q = target_decoy_competition_pandas(PSM_pandas, method=method)
@@ -262,7 +262,7 @@ def generate_training_data(
     return X_train, Y_train
 
 
-def split_psm_list(psm_list: List[PeptideSpectrumMatch], num_splits: int = 5) -> List[List[PeptideSpectrumMatch]]:
+def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
     """ Split PSMs into multiple splits.
 
     Args:

@@ -1,10 +1,5 @@
 from typing import List, Tuple, Dict
-
-import numpy as np
 import sagepy_connector
-from numpy.typing import NDArray
-
-from sagepy.core.scoring import Psm
 
 psc = sagepy_connector.py_intensity
 
@@ -104,14 +99,3 @@ class FragmentIntensity:
 
     def predicted_intensity_map(self) -> Dict[Tuple[int, int, int], float]:
         return self.__py_ptr.predicted_intensity_map()
-
-def peptide_spectrum_match_list_to_intensity_feature_matrix(
-        psm_list: List[Psm],
-        epsilon: float = 1e-7,
-        reduce_matched: bool = False,
-        num_threads: int = 16,
-) -> NDArray:
-    features = psc.peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
-        [p.get_py_ptr() for p in psm_list], epsilon, reduce_matched, num_threads
-    )
-    return np.array(features)

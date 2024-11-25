@@ -5,19 +5,19 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from typing import Union, List, Dict
 
-from sagepy.core import PeptideSpectrumMatch
+from sagepy.core import Psm
 from sagepy.rescore.utility import get_features, generate_training_data, split_psm_list
-from sagepy.utility import peptide_spectrum_match_collection_to_pandas
+from sagepy.utility import psm_collection_to_pandas
 
 
 def rescore_lda(
-        psm_collection: Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]],
+        psm_collection: Union[List[Psm], Dict[str, List[Psm]]],
         num_splits: int = 5,
         verbose: bool = True,
         balance: bool = True,
         replace_nan: bool = True,
         score: str = "hyper_score",
-) -> List[PeptideSpectrumMatch]:
+) -> List[Psm]:
     """ Re-score PSMs using Linear Discriminant Analysis (LDA).
     Args:
         psm_collection: A collection of PSMs
@@ -40,7 +40,7 @@ def rescore_lda(
         psm_list = psm_collection
 
 
-    X_all, _ = get_features(peptide_spectrum_match_collection_to_pandas(psm_list), score=score, replace_nan=replace_nan)
+    X_all, _ = get_features(psm_collection_to_pandas(psm_list), score=score, replace_nan=replace_nan)
     scaler = StandardScaler()
     scaler.fit(X_all)
 
@@ -61,7 +61,7 @@ def rescore_lda(
         X_train, Y_train = generate_training_data(features, balance=balance, replace_nan=replace_nan)
 
         # get features for target that we want to re-score
-        X, _ = get_features(peptide_spectrum_match_collection_to_pandas(target), replace_nan=replace_nan)
+        X, _ = get_features(psm_collection_to_pandas(target), replace_nan=replace_nan)
 
         # experimenting with different settings for LDA showed that shrinkage should be used, which tries to
         # keep model weights small and helps to prevent overfitting

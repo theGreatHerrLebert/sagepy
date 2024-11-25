@@ -1,9 +1,11 @@
 import warnings
-from typing import Optional, List, Union, Tuple, Dict
+from typing import Optional, List, Union, Dict
 
 import numpy as np
 import pandas as pd
 import sagepy_connector
+from numpy._typing import NDArray
+
 from sagepy.rescore.fragment_intensity import FragmentIntensity
 
 from .spectrum import ProcessedSpectrum
@@ -936,3 +938,15 @@ def prosit_intensities_to_fragments_par(
     """
 
     return [Fragments.from_py_fragments(f) for f in psc.prosit_intensities_to_py_fragments_par(flat_intensities, num_threads)]
+
+def peptide_spectrum_match_list_to_intensity_feature_matrix(
+        psm_list: List[Psm],
+        epsilon: float = 1e-7,
+        reduce_matched: bool = False,
+        num_threads: int = 16,
+) -> NDArray:
+    features = psc.peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
+        [p.get_py_ptr() for p in psm_list], epsilon, reduce_matched, num_threads
+    )
+    return np.array(features)
+
