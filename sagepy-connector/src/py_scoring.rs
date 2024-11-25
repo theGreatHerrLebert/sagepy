@@ -265,6 +265,16 @@ impl PyPsm {
         self.inner.prosit_predicted_intensities = value;
         self.inner.calculate_fragment_intensity_prediction();
     }
+
+    #[getter]
+    pub fn rank(&self) -> u32 {
+        self.inner.sage_feature.rank
+    }
+
+    #[setter]
+    pub fn set_rank(&mut self, value: u32) {
+        self.inner.sage_feature.rank = value;
+    }
     
     #[getter]
     pub fn re_score(&self) -> Option<f64> {
