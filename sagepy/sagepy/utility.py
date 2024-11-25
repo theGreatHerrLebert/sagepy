@@ -480,6 +480,7 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
 
     # add the sequence and spectrum index columns
     PSM_pandas.insert(0, "spec_idx", spec_idx)
-    PSM_pandas.insert(1, "sequence", sequence)
+    PSM_pandas.insert(1, "match_idx", sequence)
+    PSM_pandas.insert(2, "sequence", sequence)
 
     return PSM_pandas
