@@ -4,6 +4,8 @@ from typing import Optional, List, Union, Tuple, Dict
 import numpy as np
 import pandas as pd
 import sagepy_connector
+from sagepy.rescore.fragment_intensity import FragmentIntensity
+
 from .spectrum import ProcessedSpectrum
 from .unimod import variable_unimod_mods_to_set, static_unimod_mods_to_set
 from .modification import process_variable_start_end_mods
@@ -225,11 +227,22 @@ class Psm:
     def rank(self, value):
         self.__py_ptr.rank = value
 
+    @property
+    def spectral_angle_similarity(self):
+        return self.__py_ptr.spectral_angle_similarity
+
     def get_feature_names(self):
         return self.__py_ptr.get_feature_names()
 
     def to_json(self) -> str:
         return self.__py_ptr.to_json()
+
+    def prosit_intensities_to_fragments(self) -> 'Fragments':
+        return Fragments.from_py_fragments(self.__py_ptr.prosit_intensities_to_fragments())
+
+    def get_fragment_intensity_prediction(self) -> FragmentIntensity:
+        return FragmentIntensity.from_py_ptr(self.__py_ptr.get_fragment_intensity_prediction())
+
 
     def __repr__(self):
         return (f"Psm(spec_idx: {self.spec_idx}, peptide_idx: {self.peptide_idx}, "

@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, HashSet};
 use itertools::Itertools;
 use pyo3::prelude::*;
-use qfdrust::dataset::{PeptideSpectrumMatch};
 use qfdrust::psm::Psm;
 use crate::utilities::sage_sequence_to_unimod_sequence;
 use rayon::prelude::*;
@@ -14,8 +13,9 @@ use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments, ScoreType};
 use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore};
 use serde::{Deserialize, Serialize};
+use crate::py_intensity::PyFragmentIntensityPrediction;
 use crate::py_ion_series::PyKind;
-use crate::py_utility::{flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
+use crate::py_utility::{flat_prosit_array_to_fragments_map};
 
 #[pyclass]
 #[derive(Clone, Serialize)]
@@ -296,12 +296,31 @@ impl PyPsm {
         self.inner.sage_feature.label = if value { -1 } else { 1 };
     }
 
+    #[getter]
+    pub fn get_spectral_angle_similarity(&self) -> f32 {
+        self.inner.fragment_intensity_prediction.clone().unwrap().spectral_angle_similarity(0.001, false)
+    }
+
+    #[getter]
+    pub fn get_intensity_prediction(&self) -> PyFragmentIntensityPrediction {
+    PyFragmentIntensityPrediction {
+            inner: self.inner.fragment_intensity_prediction.clone().unwrap(),
+        }
+    }
+
     pub fn get_feature_names(&self) -> Vec<&str> {
         self.inner.get_feature_names()
     }
 
     pub fn to_json(&self) -> String {
         serde_json::to_string(&self.inner).unwrap()
+    }
+
+    pub fn prosit_intensities_to_fragments(&self) -> PyFragments {
+        let fragments = self.inner.prosit_intensity_to_fragments();
+        PyFragments {
+            inner: fragments.unwrap(),
+        }
     }
 }
 

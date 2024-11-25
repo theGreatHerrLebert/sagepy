@@ -133,7 +133,7 @@ impl Psm {
 
         match intensity_features {
             Some(intensity_features) => {
-                let features = intensity_features.get_feature_vector(0.001, false);
+                let features = intensity_features.get_feature_vector(0.00001, false);
                 for feature in features {
                     feature_vector.push(feature as f64);
                 }
