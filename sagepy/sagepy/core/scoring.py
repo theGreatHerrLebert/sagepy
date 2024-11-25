@@ -217,6 +217,14 @@ class Psm:
     def re_score(self, value):
         self.__py_ptr.re_score = value
 
+    @property
+    def rank(self):
+        return self.__py_ptr.rank
+
+    @rank.setter
+    def rank(self, value):
+        self.__py_ptr.rank = value
+
     def get_feature_names(self):
         return self.__py_ptr.get_feature_names()
 
