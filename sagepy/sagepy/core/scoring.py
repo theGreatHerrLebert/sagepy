@@ -194,6 +194,14 @@ class Psm:
         self.__py_ptr.inverse_ion_mobility = value
 
     @property
+    def inverse_ion_mobility_predicted(self):
+        return self.__py_ptr.inverse_ion_mobility_predicted
+
+    @inverse_ion_mobility_predicted.setter
+    def inverse_ion_mobility_predicted(self, value):
+        self.__py_ptr.inverse_ion_mobility_predicted = value
+
+    @property
     def prosit_predicted_intensities(self):
         return np.array(self.__py_ptr.prosit_predicted_intensities)
 
