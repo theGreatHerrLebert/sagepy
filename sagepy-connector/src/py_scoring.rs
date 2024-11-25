@@ -301,9 +301,8 @@ impl PyPsm {
         self.inner.fragment_intensity_prediction.clone().unwrap().spectral_angle_similarity(0.001, false)
     }
 
-    #[getter]
-    pub fn get_intensity_prediction(&self) -> PyFragmentIntensityPrediction {
-    PyFragmentIntensityPrediction {
+    pub fn get_fragment_intensity_prediction(&self) -> PyFragmentIntensityPrediction { 
+        PyFragmentIntensityPrediction {
             inner: self.inner.fragment_intensity_prediction.clone().unwrap(),
         }
     }

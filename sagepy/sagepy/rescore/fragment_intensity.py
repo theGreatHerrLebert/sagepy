@@ -4,14 +4,21 @@ import sagepy_connector
 psc = sagepy_connector.py_intensity
 
 class FragmentIntensity:
-    def __init__(self, intensities_observed: List[float], mz_observed: List[float], mz_calculated: List[float],
-                 charges: List[int], ordinals: List[int], ion_types: List[bool], prosit_intensity_predicted: List[float]):
+    def __init__(self,
+                 intensities_observed: List[float],
+                 mz_observed: List[float],
+                 mz_calculated: List[float],
+                 charges: List[int],
+                 ordinals: List[int],
+                 ion_types: List[bool],
+                 prosit_intensity_predicted: List[float]):
         self.__py_ptr = psc.PyFragmentIntensityPrediction(
             intensities_observed, mz_observed, mz_calculated, charges, ordinals, ion_types, prosit_intensity_predicted)
 
     def get_py_ptr(self):
         return self.__py_ptr
 
+    @classmethod
     def from_py_ptr(cls, py_ptr):
         instance = cls.__new__(cls)
         instance.__py_ptr = py_ptr
