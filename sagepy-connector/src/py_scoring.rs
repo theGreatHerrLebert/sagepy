@@ -216,6 +216,16 @@ impl PyPsm {
     }
 
     #[getter]
+    pub fn retention_time_predicted(&self) -> f32 {
+        self.inner.sage_feature.predicted_rt
+    }
+
+    #[setter]
+    pub fn set_retention_time_predicted(&mut self, value: f32) {
+        self.inner.sage_feature.predicted_rt = value;
+    }
+
+    #[getter]
     pub fn retention_time_projected(&self) -> Option<f32> {
         self.inner.retention_time_projected
     }
