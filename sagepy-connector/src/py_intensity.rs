@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use pyo3::prelude::*;
 use qfdrust::intensity::FragmentIntensityPrediction;
+use crate::py_scoring::PyFragments;
 
 #[pyclass]
 #[derive(Clone, Debug)]
@@ -12,85 +13,15 @@ pub struct PyFragmentIntensityPrediction {
 impl PyFragmentIntensityPrediction {
     #[new]
     fn new(
-        intensities_observed: Vec<f32>,
-        mz_observed: Vec<f32>,
-        mz_calculated: Vec<f32>,
-        charges: Vec<i32>,
-        ordinals: Vec<i32>,
-        ion_types: Vec<bool>,
+        fragments: PyFragments,
         prosit_intensity_predicted: Vec<f32>,
     ) -> Self {
         PyFragmentIntensityPrediction {
             inner: FragmentIntensityPrediction {
-                intensities_observed,
-                mz_observed,
-                mz_calculated,
-                charges,
-                ordinals,
-                ion_types,
+                fragments: fragments.inner.clone(),
                 prosit_intensity_predicted,
             },
         }
-    }
-
-    #[getter]
-    fn intensities_observed(&self) -> Vec<f32> {
-        self.inner.intensities_observed.clone()
-    }
-
-    #[setter]
-    fn set_intensities_observed(&mut self, intensities_observed: Vec<f32>) {
-        self.inner.intensities_observed = intensities_observed;
-    }
-
-    #[getter]
-    fn mz_observed(&self) -> Vec<f32> {
-        self.inner.mz_observed.clone()
-    }
-
-    #[setter]
-    fn set_mz_observed(&mut self, mz_observed: Vec<f32>) {
-        self.inner.mz_observed = mz_observed;
-    }
-
-    #[getter]
-    fn mz_calculated(&self) -> Vec<f32> {
-        self.inner.mz_calculated.clone()
-    }
-
-    #[setter]
-    fn set_mz_calculated(&mut self, mz_calculated: Vec<f32>) {
-        self.inner.mz_calculated = mz_calculated;
-    }
-
-    #[getter]
-    fn charges(&self) -> Vec<i32> {
-        self.inner.charges.clone()
-    }
-
-    #[setter]
-    fn set_charges(&mut self, charges: Vec<i32>) {
-        self.inner.charges = charges;
-    }
-
-    #[getter]
-    fn ordinals(&self) -> Vec<i32> {
-        self.inner.ordinals.clone()
-    }
-
-    #[setter]
-    fn set_ordinals(&mut self, ordinals: Vec<i32>) {
-        self.inner.ordinals = ordinals;
-    }
-
-    #[getter]
-    fn ion_types(&self) -> Vec<bool> {
-        self.inner.ion_types.clone()
-    }
-
-    #[setter]
-    fn set_ion_types(&mut self, ion_types: Vec<bool>) {
-        self.inner.ion_types = ion_types;
     }
 
     #[getter]

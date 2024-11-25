@@ -223,33 +223,17 @@ pub fn reshape_prosit_array(flat_array: Vec<f32>) -> Vec<Vec<Vec<f32>>> {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FragmentIntensityPrediction {
-    pub intensities_observed: Vec<f32>,
-    pub mz_observed: Vec<f32>,
-    pub mz_calculated: Vec<f32>,
-    pub charges: Vec<i32>,
-    pub ordinals: Vec<i32>,
-    // 0: b, 1: y
-    pub ion_types: Vec<bool>,
+    pub fragments: Fragments,
     pub prosit_intensity_predicted: Vec<f32>,
 }
 
 impl FragmentIntensityPrediction {
     pub fn new(
-        intensities_observed: Vec<f32>,
-        mz_observed: Vec<f32>,
-        mz_calculated: Vec<f32>,
-        charges: Vec<i32>,
-        ordinals: Vec<i32>,
-        ion_types: Vec<bool>,
+        fragments: Fragments,
         prosit_intensity_predicted:Vec<f32>,
     ) -> Self {
         FragmentIntensityPrediction {
-            intensities_observed,
-            mz_observed,
-            mz_calculated,
-            charges,
-            ordinals,
-            ion_types,
+            fragments,
             prosit_intensity_predicted,
         }
     }
@@ -259,12 +243,16 @@ impl FragmentIntensityPrediction {
 
     pub fn observed_intensity_to_fragments_map(&self) -> BTreeMap<(u32, i32, i32), f32> {
         let mut fragments: BTreeMap<(u32, i32, i32), f32> = BTreeMap::new();
-        let max_intensity = self.intensities_observed.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+        let max_intensity = self.fragments.intensities.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
 
-        for i in 0..self.mz_calculated.len() {
-            let kind = self.ion_types[i] as u32;
-            let intensity = self.intensities_observed[i] / max_intensity;
-            fragments.insert((kind, self.charges[i], self.ordinals[i]), intensity);
+        for i in 0..self.fragments.mz_calculated.len() {
+            let kind = match self.fragments.kinds[i] {
+                Kind::B => 0,
+                Kind::Y => 1,
+                _ => panic!("Invalid kind"),
+            };
+            let intensity = self.fragments.intensities[i] / max_intensity;
+            fragments.insert((kind, self.fragments.charges[i], self.fragments.fragment_ordinals[i]), intensity);
         }
 
         fragments

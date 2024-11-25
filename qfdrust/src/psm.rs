@@ -69,12 +69,7 @@ impl Psm {
 
     pub fn get_fragment_intensity_prediction(&self) -> FragmentIntensityPrediction {
         FragmentIntensityPrediction::new(
-            self.sage_feature.fragments.clone().unwrap().intensities,
-            self.sage_feature.fragments.clone().unwrap().mz_experimental,
-            self.sage_feature.fragments.clone().unwrap().mz_calculated,
-            self.sage_feature.fragments.clone().unwrap().charges,
-            self.sage_feature.fragments.clone().unwrap().fragment_ordinals,
-            self.sage_feature.fragments.clone().unwrap().kinds.iter().map(|kind| *kind == Kind::Y).collect(),
+            self.sage_feature.fragments.clone().unwrap(),
             self.prosit_predicted_intensities.clone().unwrap(),
         )
     }
