@@ -163,10 +163,6 @@ def get_features(
         "delta_rt",
         "delta_ims",
         "cosine_similarity",
-        'spectral_entropy_similarity',
-        'spectral_correlation_similarity_pearson',
-        'spectral_correlation_similarity_spearman',
-        'spectral_normalized_intensity_difference',
         "delta_mass",
         "rank",
         "isotope_error",
@@ -183,7 +179,12 @@ def get_features(
         "charge",
         "intensity_ms1",
         "intensity_ms2",
-        "collision_energy"
+        "collision_energy",
+        "cosine_similarity",
+        "spectral_angle_similarity",
+        "pearson_correlation",
+        "spearman_correlation",
+        "spectral_entropy_similarity",
     ]
     ds = ds.copy()
 
@@ -193,9 +194,6 @@ def get_features(
 
     # avoid none values for cosine similarity
     ds["cosine_similarity"] = ds["cosine_similarity"].apply(lambda x: 0.0 if x is None else x)
-
-    # transform cosine similarity to spectral angle similarity
-    ds["cosine_similarity"] = ds["cosine_similarity"].apply(cosim_to_spectral_angle_sim)
 
     X = ds[features].to_numpy().astype(np.float32)
 
@@ -308,7 +306,7 @@ def transform_psm_to_mokapot_pin(psm_df):
         'proteins': 'Proteins',
 
         # feature mapping for re-scoring
-        'hyper_score': 'Feature1',
+        'hyperscore': 'Feature1',
         'isotope_error': 'Feature2',
         'delta_mass': 'Feature3',
         'delta_rt': 'Feature4',
@@ -320,9 +318,9 @@ def transform_psm_to_mokapot_pin(psm_df):
         'average_ppm': 'Feature1ß',
         'poisson': 'Feature11',
         'spectral_entropy_similarity': 'Feature12',
-        'spectral_correlation_similarity_pearson': 'Feature13',
-        'spectral_correlation_similarity_spearman': 'Feature14',
-        'spectral_normalized_intensity_difference': 'Feature15',
+        'pearson_correlation': 'Feature13',
+        'spearman_correlation': 'Feature14',
+        'spectral_angle_similarity': 'Feature15',
         'collision_energy': 'Feature16',
         'delta_next': 'Feature17',
         'delta_best': 'Feature18',

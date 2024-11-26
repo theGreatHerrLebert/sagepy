@@ -16,7 +16,7 @@ def rescore_lda(
         verbose: bool = True,
         balance: bool = True,
         replace_nan: bool = True,
-        score: str = "hyper_score",
+        score: str = "hyperscore",
 ) -> List[Psm]:
     """ Re-score PSMs using Linear Discriminant Analysis (LDA).
     Args:
