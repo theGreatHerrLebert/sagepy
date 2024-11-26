@@ -15,6 +15,7 @@ use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore};
 use serde::{Deserialize, Serialize};
 use crate::py_intensity::PyFragmentIntensityPrediction;
 use crate::py_ion_series::PyKind;
+use crate::py_peptide::peptide;
 use crate::py_utility::{flat_prosit_array_to_fragments_map};
 
 #[pyclass]
@@ -872,14 +873,18 @@ impl PyScorer {
                     
                     for feature in &features {
                         
-                        let peptide = &db.inner[feature.peptide_idx];
+                        let peptide = db.inner[feature.peptide_idx].clone();
                         
                         let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap_or(0.0)).sum();
                         let intensity_ms2: f32 = feature.ms2_intensity;
 
                         let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
-                        
-                        let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
+
+                        let sequence = match peptide.decoy && db.inner.generate_decoys {
+                            true => std::str::from_utf8(&peptide.reverse().sequence).unwrap().to_string(),
+                            false => std::str::from_utf8(&peptide.sequence).unwrap().to_string(),
+                        };
+
                         let peptide_sequence = sage_sequence_to_unimod_sequence(sequence, &peptide.modifications, &self.expected_mods);
                         
                         let collision_energy = spectrum.collision_energies.first().unwrap_or(&None).unwrap_or(0.0f32);
