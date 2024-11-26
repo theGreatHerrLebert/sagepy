@@ -28,7 +28,7 @@ fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>, epsilon: f32) -> Option<f
 }
 
 fn cosim_to_spectral_angle(cosim: f32) -> f32 {
-    let angle = (1.0 - cosim).acos();
+    let angle = cosim.acos(); // Use cosim directly
     1.0 - angle / std::f32::consts::PI
 }
 
@@ -337,6 +337,10 @@ impl FragmentIntensityPrediction {
     pub fn spectral_angle_similarity(&self, epsilon: f32, reduce_matched: bool) -> f32 {
         let cosim = self.cosine_similarity(epsilon, reduce_matched).unwrap_or(0.0);
         cosim_to_spectral_angle(cosim)
+    }
+
+    pub fn prosit_intensity_to_fragments(&self) -> Fragments {
+        prosit_intensities_to_fragments(self.prosit_intensity_predicted.clone())
     }
 
     pub fn get_feature_vector(&self, epsilon: f32, reduce_matched: bool) -> Vec<f32> {

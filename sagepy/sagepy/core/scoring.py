@@ -60,6 +60,9 @@ class FragmentIntensity:
     def predicted_intensity_map(self) -> Dict[Tuple[int, int, int], float]:
         return self.__py_ptr.predicted_intensity_map()
 
+    def prosit_intensity_to_fragments(self) -> 'Fragments':
+        return Fragments.from_py_fragments(self.__py_ptr.prosit_intensity_to_fragments())
+
     def __repr__(self):
         return f"FragmentIntensity(prosit_intensity_predicted={self.prosit_intensity_predicted})"
 
@@ -389,7 +392,7 @@ class Scorer:
             min_matched_peaks: int = 6,
             min_isotope_err: int = -1,
             max_isotope_err: int = 3,
-            min_precursor_charge: int = 2,
+            min_precursor_charge: int = 1,
             max_precursor_charge: int = 4,
             chimera: bool = False,
             report_psms: int = 1,
@@ -397,7 +400,7 @@ class Scorer:
             annotate_matches: bool = True,
             override_precursor_charge: bool = False,
             score_type: ScoreType = ScoreType("openmshyperscore"),
-            max_fragment_charge: Optional[int] = 1,
+            max_fragment_charge: Optional[int] = 3,
             variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
             static_mods: Union[Dict[str, str], Dict[str, int]] = None,
     ):
