@@ -144,9 +144,9 @@ def apply_mz_calibration(psm, fragments: pd.DataFrame, use_median: bool = True,
     ppm_error = 0.0
 
     if use_median:
-        ppm_error = np.median(B.median_ppm)
+        ppm_error = np.median(B.delta_mass)
     else:
-        ppm_error = np.mean(B.mean_ppm)
+        ppm_error = np.mean(B.delta_mass)
 
     fragments.apply(lambda row: row.processed_spec.calibrate_mz_ppm(ppm_error), axis=1)
 

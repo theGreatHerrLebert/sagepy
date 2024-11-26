@@ -222,6 +222,14 @@ class Psm:
         self.__py_ptr.retention_time = value
 
     @property
+    def retention_time_predicted(self):
+        return self.sage_feature.predicted_rt
+
+    @retention_time_predicted.setter
+    def retention_time_predicted(self, value):
+        self.__py_ptr.retention_time_predicted = value
+
+    @property
     def retention_time_calibrated(self):
         return self.__py_ptr.retention_time_calibrated
 
@@ -684,6 +692,10 @@ class Feature:
     def rt(self) -> float:
         return self.__feature_ptr.rt
 
+    @rt.setter
+    def rt(self, value):
+        self.__feature_ptr.rt = value
+
     @property
     def aligned_rt(self) -> float:
         return self.__feature_ptr.aligned_rt
@@ -691,6 +703,10 @@ class Feature:
     @property
     def predicted_rt(self) -> float:
         return self.__feature_ptr.predicted_rt
+
+    @predicted_rt.setter
+    def predicted_rt(self, value):
+        self.__feature_ptr.predicted_rt = value
 
     @property
     def delta_rt_model(self) -> float:
@@ -787,9 +803,17 @@ class Feature:
     def ims(self) -> Optional[float]:
         return self.__feature_ptr.ims
 
+    @ims.setter
+    def ims(self, value):
+        self.__feature_ptr.ims = value
+
     @property
     def predicted_ims(self) -> Optional[float]:
         return self.__feature_ptr.predicted_ims
+
+    @predicted_ims.setter
+    def predicted_ims(self, value):
+        self.__feature_ptr.predicted_ims = value
 
     @property
     def delta_ims_model(self) -> Optional[float]:
