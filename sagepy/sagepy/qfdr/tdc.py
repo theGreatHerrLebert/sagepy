@@ -89,7 +89,7 @@ def target_decoy_competition_pandas(
         'spec_idx': spec_idx,
         'match_idx': match_idx,
         'decoy': target,
-        'score': scores,
+        f'{score_col}': scores,
         'q_value': q_values
     }).sort_values(by=['q_value'], ascending=True)
 

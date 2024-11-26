@@ -16,7 +16,7 @@ def rescore_psms(
         verbose: bool = True,
         balance: bool = True,
         replace_nan: bool = True,
-        score: str = "hyper_score",
+        score: str = "hyperscore",
 ) -> List[Psm]:
     """ Re-score PSMs using a model (e.g. Random Forest, Gradient Boosting, etc.).
     Args:

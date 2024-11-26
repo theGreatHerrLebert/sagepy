@@ -154,7 +154,7 @@ def get_features(
         A tuple containing the features and labels.
     """
 
-    score = score if score is not None else "score"
+    score = score if score is not None else "hyperscore"
 
     # The currently used features for the model fit
     # TODO: extend this list with additional features
@@ -229,7 +229,7 @@ def generate_training_data(
 
     # calculate q-values to get inital "good" hits
     PSM_q = target_decoy_competition_pandas(PSM_pandas, method=method)
-    PSM_pandas = PSM_pandas.drop(columns=["q_value", "score"])
+    PSM_pandas = PSM_pandas.drop(columns=["hyperscore"])
 
     # merge data with q-values
     TDC = pd.merge(
@@ -315,7 +315,7 @@ def transform_psm_to_mokapot_pin(psm_df):
         'matched_intensity_pct': 'Feature7',
         'intensity_ms1': 'Feature8',
         'intensity_ms2': 'Feature9',
-        'average_ppm': 'Feature1ß',
+        'average_ppm': 'Feature10',
         'poisson': 'Feature11',
         'spectral_entropy_similarity': 'Feature12',
         'pearson_correlation': 'Feature13',
