@@ -697,6 +697,41 @@ impl PyFeature {
     pub fn delta_ims_model(&self) -> f32 {
         self.inner.delta_ims_model
     }
+
+    #[setter]
+    pub fn set_ims(&mut self, value: f32) {
+        self.inner.ims = value;
+    }
+
+    #[setter]
+    pub fn set_predicted_ims(&mut self, value: f32) {
+        self.inner.predicted_ims = value;
+    }
+
+    #[setter]
+    pub fn set_delta_ims_model(&mut self, value: f32) {
+        self.inner.delta_ims_model = value;
+    }
+
+    #[setter]
+    pub fn set_rt(&mut self, value: f32) {
+        self.inner.rt = value;
+    }
+
+    #[setter]
+    pub fn set_aligned_rt(&mut self, value: f32) {
+        self.inner.aligned_rt = value;
+    }
+
+    #[setter]
+    pub fn set_predicted_rt(&mut self, value: f32) {
+        self.inner.predicted_rt = value;
+    }
+
+    #[setter]
+    pub fn set_delta_rt_model(&mut self, value: f32) {
+        self.inner.delta_rt_model = value;
+    }
 }
 
 #[pyclass]

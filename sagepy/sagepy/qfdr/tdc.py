@@ -72,7 +72,7 @@ def target_decoy_competition_pandas(
         assert col in df.columns, f"{col} column not found"
 
     # Ensure score column is present
-    score_col = score if score else 'score'
+    score_col = score if score else 'hyperscore'
     assert score_col in df.columns, f"{score_col} column not found"
 
     target_score = df[score_col]
