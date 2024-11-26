@@ -103,6 +103,7 @@ impl Psm {
         feature_vector.push(sage_feature.isotope_error as f64);
         feature_vector.push(sage_feature.average_ppm as f64);
         feature_vector.push(sage_feature.hyperscore);
+        feature_vector.push(self.re_score.unwrap_or(0.0));
         feature_vector.push(sage_feature.delta_next);
         feature_vector.push(sage_feature.delta_best);
         feature_vector.push(sage_feature.matched_peaks as f64);
@@ -141,7 +142,11 @@ impl Psm {
             }
         }
 
+        feature_vector.push(sage_feature.delta_rt_model as f64);
+        feature_vector.push(sage_feature.delta_ims_model as f64);
+
         feature_vector.push(sage_feature.label as f64);
+
         feature_vector.push(sage_feature.spectrum_q as f64);
         feature_vector.push(sage_feature.peptide_q as f64);
         feature_vector.push(sage_feature.protein_q as f64);
@@ -165,6 +170,7 @@ impl Psm {
             "isotope_error",
             "average_ppm",
             "hyperscore",
+            "re_score",
             "delta_next",
             "delta_best",
             "matched_peaks",
@@ -189,6 +195,8 @@ impl Psm {
             "pearson_correlation",
             "spearman_correlation",
             "spectral_entropy_similarity",
+            "delta_rt",
+            "delta_ims",
             "decoy",
             "spectrum_q",
             "peptide_q",

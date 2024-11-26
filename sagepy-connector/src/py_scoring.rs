@@ -224,6 +224,7 @@ impl PyPsm {
     #[setter]
     pub fn set_retention_time_predicted(&mut self, value: f32) {
         self.inner.sage_feature.predicted_rt = value;
+        self.inner.sage_feature.delta_rt_model = value - self.inner.retention_time_projected.unwrap_or(0.0);
     }
 
     #[getter]
@@ -254,6 +255,7 @@ impl PyPsm {
     #[setter]
     pub fn set_inverse_ion_mobility_predicted(&mut self, value: f32) {
         self.inner.sage_feature.predicted_ims = value;
+        self.inner.sage_feature.delta_ims_model = value - self.inner.sage_feature.ims;
     }
     
     #[getter]
