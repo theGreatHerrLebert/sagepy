@@ -918,7 +918,7 @@ impl PyScorer {
                         let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
 
                         let sequence = match peptide.decoy && db.inner.generate_decoys {
-                            true => std::str::from_utf8(&peptide.reverse().sequence).unwrap().to_string(),
+                            true => std::str::from_utf8(&peptide.reverse(true).sequence).unwrap().to_string(),
                             false => std::str::from_utf8(&peptide.sequence).unwrap().to_string(),
                         };
 
