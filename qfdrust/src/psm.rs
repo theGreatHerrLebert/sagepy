@@ -1,6 +1,5 @@
 use rustms::chemistry::formula::calculate_mz;
 use rustms::proteomics::peptide::{PeptideSequence};
-use sage_core::ion_series::Kind;
 use sage_core::scoring::{Feature, Fragments};
 use serde::{Deserialize, Serialize};
 use crate::intensity::{prosit_intensities_to_fragments, FragmentIntensityPrediction};
