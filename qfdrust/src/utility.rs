@@ -107,7 +107,7 @@ fn _estimate_pi0(pval_list: &Vec<f64>) -> f64 {
     let max_lambda = 0.5;
     let num_boot = 100;
     let max_size = 1000;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let n_pval = pval_list.len();
     let mut pi0s_list = Vec::new();
