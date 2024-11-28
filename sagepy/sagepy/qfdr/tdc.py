@@ -28,14 +28,16 @@ class TDCMethod:
 def target_decoy_competition(
         spectra_idx: List[str],
         match_idx: List[str],
+        match_identity_candidates: List[List[str]],
         decoy: List[bool],
         scores: List[float],
-        method: str = "peptide_psm_peptide") -> Tuple[List[str], List[str], List[bool], List[float], List[float]]:
+        method: str = "peptide_psm_peptide") -> Tuple[List[str], List[str], List[List[str]], List[bool], List[float], List[float]]:
     """ Perform target-decoy competition.
 
     Args:
         spectra_idx: a list of spectrum indices
         match_idx: a list of match indices
+        match_identity_candidates: a list of match identity candidates
         decoy: a list of decoy flags
         scores: a list of scores
         method: the method to use, allowed values are: psm, peptide_psm_only, peptide_peptide_only, peptide_psm_peptide
@@ -46,8 +48,8 @@ def target_decoy_competition(
     tdc_method = TDCMethod(method)
     spec_idx, match_idx, decoy, scores, q_values = psc.target_decoy_competition(
         tdc_method.get_py_ptr(), spectra_idx,
-        match_idx, decoy, scores)
-    return spec_idx, match_idx, decoy, scores, q_values
+        match_idx, decoy, scores, match_identity_candidates)
+    return spec_idx, match_idx, match_identity_candidates, decoy, scores, q_values
 
 
 def target_decoy_competition_pandas(
@@ -67,7 +69,7 @@ def target_decoy_competition_pandas(
     """
 
     # Ensure necessary columns are present
-    required_columns = ['spec_idx', 'match_idx', 'decoy']
+    required_columns = ['spec_idx', 'match_idx', 'match_identity_candidates', 'decoy']
     for col in required_columns:
         assert col in df.columns, f"{col} column not found"
 
@@ -76,18 +78,27 @@ def target_decoy_competition_pandas(
     assert score_col in df.columns, f"{score_col} column not found"
 
     target_score = df[score_col]
-    spec_idx, match_idx, target, scores = (df['spec_idx'].tolist(),
-                                           df['match_idx'].tolist(),
-                                           df['decoy'].tolist(),
-                                           target_score.tolist())
+    spec_idx, match_idx, match_identity_candidates, target, scores = (
+        df['spec_idx'].tolist(),
+        df['match_idx'].tolist(),
+        df['match_identity_candidates'].tolist(),
+        df['decoy'].tolist(),
+        target_score.tolist())
 
-    spec_idx, match_idx, target, scores, q_values = target_decoy_competition(spec_idx,
-                                                                             match_idx, target, scores, method)
+    spec_idx, match_idx, match_identity_candidates, target, scores, q_values = target_decoy_competition(
+        spec_idx,
+        match_idx,
+        match_identity_candidates,
+        target,
+        scores,
+        method
+    )
 
     # Create df with TDC results
     df_tdc = pd.DataFrame({
         'spec_idx': spec_idx,
         'match_idx': match_idx,
+        'match_identity_candidates': match_identity_candidates,
         'decoy': target,
         f'{score_col}': scores,
         'q_value': q_values
