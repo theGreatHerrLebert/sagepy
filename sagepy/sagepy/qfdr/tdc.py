@@ -46,7 +46,7 @@ def target_decoy_competition(
         a tuple of spectrum indices, match indices, decoy flags, scores, and q-values
     """
     tdc_method = TDCMethod(method)
-    spec_idx, match_idx, decoy, scores, q_values = psc.target_decoy_competition(
+    spec_idx, match_idx, match_identity_candidates, decoy, scores, q_values = psc.target_decoy_competition(
         tdc_method.get_py_ptr(), spectra_idx,
         match_idx, decoy, scores, match_identity_candidates)
     return spec_idx, match_idx, match_identity_candidates, decoy, scores, q_values
@@ -99,7 +99,7 @@ def target_decoy_competition_pandas(
     df_tdc = pd.DataFrame({
         'spec_idx': spec_idx,
         'match_idx': match_idx,
-        'match_identity_candidates': pd.Series(match_identity_candidates),
+        'match_identity_candidates': match_identity_candidates,
         'decoy': target,
         f'{score_col}': scores,
         'q_value': q_values

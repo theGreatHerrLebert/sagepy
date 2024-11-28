@@ -62,9 +62,10 @@ impl MatchDataset {
         MatchDataset::new(map)
     }
 
-    pub fn to_vectors(&self) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
+    pub fn to_vectors(&self) -> (Vec<String>, Vec<String>, Vec<Vec<String>>, Vec<bool>, Vec<f32>, Vec<f64>) {
         let mut spectrum_idx: Vec<String> = Vec::new();
         let mut match_idx: Vec<String> = Vec::new();
+        let mut match_identity_candidates: Vec<Vec<String>> = Vec::new();
         let mut decoy: Vec<bool> = Vec::new();
         let mut score: Vec<f32> = Vec::new();
         let mut q_value: Vec<f64> = Vec::new();
@@ -73,13 +74,14 @@ impl MatchDataset {
             for m in matches {
                 spectrum_idx.push(spec_idx.clone());
                 match_idx.push(m.match_idx.clone());
+                match_identity_candidates.push(m.match_identity_candidates.clone().unwrap_or(Vec::new()));
                 decoy.push(m.decoy);
                 score.push(m.score);
                 q_value.push(m.q_value.unwrap_or(1.0));
             }
         }
 
-        (spectrum_idx, match_idx, decoy, score, q_value)
+        (spectrum_idx, match_idx, match_identity_candidates, decoy, score, q_value)
     }
 
     pub fn get_best_target_match(&self, spec_id: &str) -> Option<&Match> {
@@ -416,7 +418,7 @@ pub fn target_decoy_competition(
     is_decoy: Vec<bool>,
     scores: Vec<f32>,
     match_identity_candidates: Vec<Option<Vec<String>>>, // Added parameter
-) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
+) -> (Vec<String>, Vec<String>, Vec<Vec<String>>, Vec<bool>, Vec<f32>, Vec<f64>) {
     // Build the initial collection of Matches
     let mut collection = Vec::new();
     for (spec_idx, match_idx, decoy, score, mic) in multizip((
@@ -447,8 +449,8 @@ pub fn target_decoy_competition(
         TDCMethod::PickedProtein => tdc_picked_protein_match(&ds),    // New method
     };
 
-    let (spectrum_idx, match_idx, decoy, score, q_value) =
+    let (spectrum_idx, match_idx, match_identity, decoy, score, q_value) =
         MatchDataset::from_collection(result).to_vectors();
 
-    (spectrum_idx, match_idx, decoy, score, q_value)
+    (spectrum_idx, match_idx, match_identity, decoy, score, q_value)
 }
