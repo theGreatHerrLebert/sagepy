@@ -136,6 +136,7 @@ def apply_mz_calibration(psm, fragments: pd.DataFrame, use_median: bool = True,
 
     P = psm_collection_to_pandas(psms)
     P["match_idx"] = P.sequence
+    P["match_identity_candidates"] = P.proteins
     TDC = target_decoy_competition_pandas(P, method="psm", score="hyperscore")
     TDC = TDC[TDC.q_value <= target_q]
 
