@@ -8,7 +8,7 @@ psc = sagepy_connector.py_qfdr
 
 class TDCMethod:
     def __init__(self, method: str):
-        self.methods = {"psm", "peptide_psm_only", "peptide_peptide_only", "peptide_psm_peptide"}
+        self.methods = {"psm", "peptide_psm_only", "peptide_peptide_only", "peptide_psm_peptide", "picked_peptide", "picked_protein"}
         assert method in self.methods, f"Invalid method: {method}, allowed values are: {self.methods}"
         self.__py_ptr = psc.PyTDCMethod(method)
 
