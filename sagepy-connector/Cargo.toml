@@ -8,6 +8,7 @@ name = "sagepy_connector"
 crate-type = ["cdylib"]
 
 [dependencies]
+# sage-core = {path = "../../sage/crates/sage" }
 sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git" }
 qfdrust = { path  = "../qfdrust" }
 unimod = { path = "../unimod" }

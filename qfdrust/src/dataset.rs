@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap};
 use itertools::multizip;
+use crate::picked::{tdc_picked_peptide_match, tdc_picked_protein_match};
 use crate::utility;
 
 #[derive(Clone, Debug)]
@@ -136,6 +137,8 @@ pub enum TDCMethod {
     PeptideLevelPsmOnly,
     PeptideLevelPeptideOnly,
     PeptideLevelPsmPeptide,
+    PickedPeptide,  // New variant
+    PickedProtein,  // New variant
 }
 
 impl TDCMethod {
@@ -145,6 +148,8 @@ impl TDCMethod {
             "peptide_psm_only" => TDCMethod::PeptideLevelPsmOnly,
             "peptide_peptide_only" => TDCMethod::PeptideLevelPeptideOnly,
             "peptide_psm_peptide" => TDCMethod::PeptideLevelPsmPeptide,
+            "picked_peptide" => TDCMethod::PickedPeptide,
+            "picked_protein" => TDCMethod::PickedProtein,
             _ => panic!("Invalid TDC method"),
         }
     }
@@ -155,6 +160,8 @@ impl TDCMethod {
             1 => TDCMethod::PeptideLevelPsmOnly,
             2 => TDCMethod::PeptideLevelPeptideOnly,
             3 => TDCMethod::PeptideLevelPsmPeptide,
+            4 => TDCMethod::PickedPeptide,
+            5 => TDCMethod::PickedProtein,
             _ => panic!("Invalid TDC method"),
         }
     }
@@ -165,6 +172,8 @@ impl TDCMethod {
             TDCMethod::PeptideLevelPsmOnly => "PeptideLevelPsmOnly",
             TDCMethod::PeptideLevelPeptideOnly => "PeptideLevelPeptideOnly",
             TDCMethod::PeptideLevelPsmPeptide => "PeptideLevelPsmAndPeptide",
+            TDCMethod::PickedPeptide => "PickedPeptide",
+            TDCMethod::PickedProtein => "PickedProtein",
         }
     }
 }
@@ -400,16 +409,46 @@ fn tdc_peptide_psm_peptide_match(ds: &MatchDataset) -> Vec<Match> {
     }).collect()
 }
 
-pub fn target_decoy_competition(method: TDCMethod, spectra_idx: Vec<String>, match_idx: Vec<String>, is_decoy: Vec<bool>, scores: Vec<f32>) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
-    let ds = MatchDataset::from_vectors(spectra_idx, match_idx, is_decoy, scores);
+pub fn target_decoy_competition(
+    method: TDCMethod,
+    spectra_idx: Vec<String>,
+    match_idx: Vec<String>,
+    is_decoy: Vec<bool>,
+    scores: Vec<f32>,
+    match_identity_candidates: Vec<Option<Vec<String>>>, // Added parameter
+) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
+    // Build the initial collection of Matches
+    let mut collection = Vec::new();
+    for (spec_idx, match_idx, decoy, score, mic) in multizip((
+        spectra_idx,
+        match_idx,
+        is_decoy,
+        scores,
+        match_identity_candidates,
+    )) {
+        collection.push(Match {
+            spectrum_idx: spec_idx,
+            match_idx,
+            match_identity_candidates: mic,
+            decoy,
+            score,
+            q_value: None,
+        });
+    }
+
+    let ds = MatchDataset::from_collection(collection);
 
     let result = match method {
         TDCMethod::PsmLevel => tdc_psm_match(&ds),
         TDCMethod::PeptideLevelPsmOnly => tdc_peptide_psm_only_match(&ds),
         TDCMethod::PeptideLevelPeptideOnly => tdc_peptide_peptide_only_match(&ds),
         TDCMethod::PeptideLevelPsmPeptide => tdc_peptide_psm_peptide_match(&ds),
+        TDCMethod::PickedPeptide => tdc_picked_peptide_match(&ds),    // New method
+        TDCMethod::PickedProtein => tdc_picked_protein_match(&ds),    // New method
     };
 
-    let (spectrum_idx, match_idx, decoy, score, q_value) = MatchDataset::from_collection(result).to_vectors();
+    let (spectrum_idx, match_idx, decoy, score, q_value) =
+        MatchDataset::from_collection(result).to_vectors();
+
     (spectrum_idx, match_idx, decoy, score, q_value)
 }

@@ -26,11 +26,13 @@ pub fn target_decoy_competition(
     spectra_idx: Vec<String>,
     match_idx: Vec<String>,
     target: Vec<bool>,
-    scores: Vec<f32>) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
+    scores: Vec<f32>,
+    match_identiy_candidates: Vec<Option<Vec<String>>>,
+) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
 
     let method = method.inner.clone();
 
-    let (spec_idx, match_idx, decoy, scores, q_values) = qfdrust::dataset::target_decoy_competition(method, spectra_idx, match_idx, target, scores);
+    let (spec_idx, match_idx, decoy, scores, q_values) = qfdrust::dataset::target_decoy_competition(method, spectra_idx, match_idx, target, scores, match_identiy_candidates);
 
     (spec_idx, match_idx, decoy, scores, q_values)
 }
