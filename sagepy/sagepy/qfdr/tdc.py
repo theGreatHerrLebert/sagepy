@@ -83,7 +83,8 @@ def target_decoy_competition_pandas(
         df['match_idx'].tolist(),
         df['match_identity_candidates'].tolist(),
         df['decoy'].tolist(),
-        target_score.tolist())
+        target_score.tolist()
+    )
 
     spec_idx, match_idx, match_identity_candidates, target, scores, q_values = target_decoy_competition(
         spec_idx,
@@ -98,7 +99,7 @@ def target_decoy_competition_pandas(
     df_tdc = pd.DataFrame({
         'spec_idx': spec_idx,
         'match_idx': match_idx,
-        'match_identity_candidates': match_identity_candidates,
+        'match_identity_candidates': pd.Series(match_identity_candidates),
         'decoy': target,
         f'{score_col}': scores,
         'q_value': q_values
