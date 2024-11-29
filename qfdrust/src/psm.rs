@@ -11,6 +11,7 @@ pub struct Psm {
     pub proteins: Vec<String>,
     pub sage_feature: Feature,
     pub sequence: Option<PeptideSequence>,
+    pub sequence_decoy: Option<PeptideSequence>,
     pub mono_mz_calculated: Option<f32>,
     pub intensity_ms1: Option<f32>,
     pub intensity_ms2: Option<f32>,
@@ -29,6 +30,7 @@ impl Psm {
         proteins: Vec<String>,
         sage_feature: Feature,
         sequence: Option<String>,
+        sequence_decoy: Option<String>,
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
         collision_energy: Option<f32>,
@@ -39,6 +41,11 @@ impl Psm {
     ) -> Self {
 
         let peptide_sequence = match &sequence {
+            Some(seq) => Some(PeptideSequence::new(seq.clone(), Some(peptide_idx as i32))),
+            None => None,
+        };
+
+        let sequence_decoy = match &sequence_decoy {
             Some(seq) => Some(PeptideSequence::new(seq.clone(), Some(peptide_idx as i32))),
             None => None,
         };
@@ -54,6 +61,7 @@ impl Psm {
             proteins,
             sage_feature,
             sequence: peptide_sequence,
+            sequence_decoy,
             mono_mz_calculated,
             intensity_ms1,
             intensity_ms2,
