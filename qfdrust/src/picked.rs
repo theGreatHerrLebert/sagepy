@@ -28,7 +28,7 @@ pub struct Row {
     pub q_value: f64,
 }
 
-fn assign_q_value(
+pub fn assign_q_value(
     rows: Vec<Row>,
 ) -> HashMap<(String, String), f64> {
     let mut q_values: HashMap<(String, String), f64> = HashMap::new();
