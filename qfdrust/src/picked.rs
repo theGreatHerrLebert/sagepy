@@ -37,7 +37,7 @@ pub fn assign_q_value(
     let mut sorted_rows = rows;
     sorted_rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
-    let mut decoy_count: f64 = 0.0;
+    let mut decoy_count: f64 = 1.0;
     let mut target_count: f64 = 0.0;
     let mut q_values_list: Vec<f64> = Vec::new();
 
