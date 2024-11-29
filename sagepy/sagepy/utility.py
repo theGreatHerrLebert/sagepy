@@ -486,7 +486,7 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
     PSM_pandas.insert(0, "spec_idx", spec_idx)
     PSM_pandas.insert(1, "match_idx", sequence)
     PSM_pandas.insert(2, "sequence", sequence)
-    PSM_pandas.instert(3, "sequence_decoy", sequence_decoy)
+    PSM_pandas.insert(3, "sequence_decoy", sequence_decoy)
     PSM_pandas.insert(4, "proteins", proteins)
 
     return PSM_pandas
