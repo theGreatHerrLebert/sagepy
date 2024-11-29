@@ -939,6 +939,10 @@ impl PyScorer {
                         };
 
                         let peptide_sequence = sage_sequence_to_unimod_sequence(sequence.clone(), &peptide.modifications, &self.expected_mods);
+                        let peptide_sequence_decoy = match &sequence_decoy {
+                            Some(seq) => Some(sage_sequence_to_unimod_sequence(seq.clone(), &peptide.modifications, &self.expected_mods)),
+                            None => None,
+                        };
                         
                         let collision_energy = spectrum.collision_energies.first().unwrap_or(&None).unwrap_or(0.0f32);
                         
@@ -949,7 +953,7 @@ impl PyScorer {
                             feature.clone(),
                             Some(sequence),
                             Some(peptide_sequence), // sequence_modified
-                            sequence_decoy,
+                            peptide_sequence_decoy,
                             Some(intensity_ms1),
                             Some(intensity_ms2),
                             Some(collision_energy),
