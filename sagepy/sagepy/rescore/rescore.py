@@ -17,6 +17,7 @@ def rescore_psms(
         balance: bool = True,
         replace_nan: bool = True,
         score: str = "hyperscore",
+        num_threads: int = 16,
 ) -> List[Psm]:
     """ Re-score PSMs using a model (e.g. Random Forest, Gradient Boosting, etc.).
     Args:
@@ -28,6 +29,7 @@ def rescore_psms(
         balance: Whether to balance the dataset (equal number of target and decoy examples)
         replace_nan: Whether to replace NaN values with 0
         score: Score to use for re-scoring
+        num_threads: Number of threads to use for feature extraction
 
     Returns:
         List[PeptideSpectrumMatch]: List of PeptideSpectrumMatch objects
@@ -42,7 +44,7 @@ def rescore_psms(
         psm_list = psm_collection
 
     # get features for all PSMs, which will be a matrix of shape (n_samples, n_features)
-    X_all, _ = get_features(psm_collection_to_pandas(psm_list), score=score, replace_nan=replace_nan)
+    X_all, _ = get_features(psm_collection_to_pandas(psm_list, num_threads=num_threads), score=score, replace_nan=replace_nan)
 
     # use a scaler to scale the features
     if use_min_max_scaler:
@@ -66,7 +68,7 @@ def rescore_psms(
                 features.extend(splits[j])
 
         # generate training data
-        X_train, Y_train = generate_training_data(features, balance=balance, replace_nan=replace_nan)
+        X_train, Y_train = generate_training_data(features, balance=balance, replace_nan=replace_nan, num_threads=num_threads)
 
         # get features for target that we want to re-score
         X, _ = get_features(psm_collection_to_pandas(target), replace_nan=replace_nan)
