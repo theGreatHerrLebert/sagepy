@@ -940,7 +940,7 @@ impl PyScorer {
 
                         let peptide_sequence = sage_sequence_to_unimod_sequence(sequence.clone(), &peptide.modifications, &self.expected_mods);
                         let peptide_sequence_decoy = match &sequence_decoy {
-                            Some(seq) => Some(sage_sequence_to_unimod_sequence(seq.clone(), &peptide.modifications, &self.expected_mods)),
+                            Some(seq) => Some(sage_sequence_to_unimod_sequence(seq.clone(), &peptide.reverse(true).modifications, &self.expected_mods)),
                             None => None,
                         };
                         
