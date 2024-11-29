@@ -200,7 +200,7 @@ def transform_psm_to_mokapot_pin(psm_df):
         'spec_idx': 'SpecId',
         'decoy': 'Label',
         'charge': 'Charge',
-        'sequence': 'Peptide',
+        'sequence_modified': 'Peptide',
         'proteins': 'Proteins',
 
         # feature mapping for re-scoring
