@@ -932,17 +932,10 @@ impl PyScorer {
                         let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
 
                         let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
+                        let sequence_with_mods = sage_sequence_to_unimod_sequence(sequence.clone(), &peptide.modifications, &self.expected_mods);
 
-                        let sequence_decoy = match peptide.decoy && db.inner.generate_decoys {
-                            true => Some(std::str::from_utf8(&peptide.reverse(true).sequence).unwrap().to_string()),
-                            false => None,
-                        };
-
-                        let peptide_sequence = sage_sequence_to_unimod_sequence(sequence.clone(), &peptide.modifications, &self.expected_mods);
-                        let peptide_sequence_decoy = match &sequence_decoy {
-                            Some(seq) => Some(sage_sequence_to_unimod_sequence(seq.clone(), &peptide.reverse(true).modifications, &self.expected_mods)),
-                            None => None,
-                        };
+                        let sequence_decoy = std::str::from_utf8(&peptide.reverse(true).sequence).unwrap().to_string();
+                        let sequence_decoy_with_mods = sage_sequence_to_unimod_sequence(sequence_decoy.clone(), &peptide.reverse(true).modifications, &self.expected_mods);
                         
                         let collision_energy = spectrum.collision_energies.first().unwrap_or(&None).unwrap_or(0.0f32);
                         
@@ -952,8 +945,8 @@ impl PyScorer {
                             proteins,
                             feature.clone(),
                             Some(sequence),
-                            Some(peptide_sequence), // sequence_modified
-                            peptide_sequence_decoy,
+                            Some(sequence_with_mods), // sequence_modified
+                            Some(sequence_decoy_with_mods), // sequence_decoy
                             Some(intensity_ms1),
                             Some(intensity_ms2),
                             Some(collision_energy),
