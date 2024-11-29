@@ -947,8 +947,8 @@ impl PyScorer {
                             feature.clone().peptide_idx.0,
                             proteins,
                             feature.clone(),
-                            Some(peptide_sequence),
-                            Some(sequence), // sequence_modified
+                            Some(sequence),
+                            Some(peptide_sequence), // sequence_modified
                             sequence_decoy,
                             Some(intensity_ms1),
                             Some(intensity_ms2),
