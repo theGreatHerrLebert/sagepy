@@ -28,23 +28,21 @@ pub struct Row {
     pub q_value: f64,
 }
 
-pub fn assign_q_value(
+fn assign_q_value(
     rows: Vec<Row>,
 ) -> HashMap<(String, String), f64> {
-    // Initialize the HashMap
     let mut q_values: HashMap<(String, String), f64> = HashMap::new();
 
     // Sort rows by descending score
     let mut sorted_rows = rows;
     sorted_rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
-    // Initialize counts
     let mut decoy_count: f64 = 0.0;
     let mut target_count: f64 = 0.0;
-    let mut q_min: f64 = 1.0;
+    let mut q_values_list: Vec<f64> = Vec::new();
 
-    // Calculate q-values
-    for row in sorted_rows.iter_mut() {
+    // First pass: Calculate the raw q-values
+    for row in sorted_rows.iter() {
         if row.decoy {
             decoy_count += 1.0;
         } else {
@@ -53,14 +51,23 @@ pub fn assign_q_value(
 
         // Avoid division by zero
         if target_count == 0.0 {
+            q_values_list.push(1.0);
             continue;
         }
 
-        let q = (decoy_count / target_count).min(q_min);
-        q_min = q;
-        row.q_value = q;
+        let q = decoy_count / target_count;
+        q_values_list.push(q);
+    }
 
-        q_values.insert(row.key.clone(), q);
+    // Second pass: Compute the cumulative minimum from the end
+    let mut q_min = 1.0;
+    for (i, row) in sorted_rows.iter_mut().enumerate().rev() {
+        let q = q_values_list[i];
+        if q < q_min {
+            q_min = q;
+        }
+        row.q_value = q_min;
+        q_values.insert(row.key.clone(), row.q_value);
     }
 
     q_values
