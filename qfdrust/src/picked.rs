@@ -121,6 +121,8 @@ pub fn tdc_picked_peptide_match(ds: &MatchDataset) -> Vec<Match> {
     // Assign q-values
     let q_values = assign_q_value(rows);
 
+    println!("{:?}", q_values);
+
     // Update matches with q-values
     let mut result = Vec::new();
     for matches in ds.matches.values() {
