@@ -5,8 +5,8 @@ use crate::utility;
 
 #[derive(Clone, Debug)]
 pub struct Match {
-    pub match_idx: String,
     pub spectrum_idx: String,
+    pub match_idx: String,
     pub match_identity_candidates: Option<Vec<String>>,
     pub decoy: bool,
     pub score: f32,

@@ -20,14 +20,15 @@ impl Competition {
     }
 }
 
-struct Row {
-    key: (String, String), // (spectrum_idx, match_idx)
-    decoy: bool,
-    score: f32,
-    q_value: f64,
+#[derive(Clone, Debug)]
+pub struct Row {
+    pub key: (String, String), // (spectrum_idx, match_idx)
+    pub decoy: bool,
+    pub score: f32,
+    pub q_value: f64,
 }
 
-fn assign_q_value(
+pub fn assign_q_value(
     rows: Vec<Row>,
 ) -> HashMap<(String, String), f64> {
     // Initialize the HashMap
@@ -120,8 +121,6 @@ pub fn tdc_picked_peptide_match(ds: &MatchDataset) -> Vec<Match> {
 
     // Assign q-values
     let q_values = assign_q_value(rows);
-
-    println!("{:?}", q_values);
 
     // Update matches with q-values
     let mut result = Vec::new();

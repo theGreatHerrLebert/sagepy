@@ -1,5 +1,28 @@
+use std::collections::HashMap;
 use pyo3::prelude::*;
 use qfdrust::dataset::{TDCMethod};
+use qfdrust::picked::{Row};
+
+#[pyclass]
+#[derive(Clone)]
+pub struct PyRow {
+    pub inner: Row
+}
+
+#[pymethods]
+impl PyRow {
+    #[new]
+    fn new(spec_idx: String, match_idx: String, decoy: bool, score: f32, q_value: f64) -> Self {
+        PyRow {
+            inner: Row {
+                key: (spec_idx, match_idx),
+                decoy,
+                score,
+                q_value
+            }
+        }
+    }
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -37,9 +60,19 @@ pub fn target_decoy_competition(
     (spec_idx, match_idx, match_identity, decoy, scores, q_values)
 }
 
+#[pyfunction]
+pub fn assign_q_values(
+    rows: Vec<PyRow>,
+) -> HashMap<(String, String), f64> {
+    let rows = rows.iter().map(|row| row.inner.clone()).collect();
+    qfdrust::picked::assign_q_value(rows)
+}
+
 #[pymodule]
 pub fn qfdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyTDCMethod>()?;
     m.add_function(wrap_pyfunction!(target_decoy_competition, m)?)?;
+    m.add_function(wrap_pyfunction!(assign_q_values, m)?)?;
+    m.add_class::<PyRow>()?;
     Ok(())
 }
