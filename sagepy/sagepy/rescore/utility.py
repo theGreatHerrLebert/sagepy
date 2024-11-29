@@ -34,110 +34,6 @@ def dict_to_dense_array(peak_dict, array_length=174):
 
     return intensities
 
-
-def spectral_entropy_similarity(observed_intensities, predicted_intensities,
-                                epsilon: float = 1e-7) -> float:
-    """
-    Calculate the spectral entropy similarity between observed and predicted intensities
-    Args:
-        observed_intensities: the observed intensities
-        predicted_intensities: the predicted intensities
-        epsilon: small value to avoid division by zero
-
-    Returns:
-        The spectral entropy similarity between observed and predicted intensities.
-    """
-
-    valid_ion_mask = predicted_intensities > epsilon
-
-    observed_filtered = observed_intensities[valid_ion_mask]
-    predicted_filtered = predicted_intensities[valid_ion_mask]
-
-    entropy_merged = scipy.stats.entropy(observed_filtered + predicted_filtered)
-    entropy_obs = scipy.stats.entropy(observed_filtered)
-    entropy_pred = scipy.stats.entropy(predicted_filtered)
-
-    # calculate the spectral entropy similarity
-    entropy = 1 - (2 * entropy_merged - entropy_obs - entropy_pred) / np.log(4)
-
-    # handle cases where the entropy is NaN (set them to 0)
-    if np.isnan(entropy):
-        entropy = 0
-
-    return entropy
-
-
-def spectral_correlation(
-        observed_intensities,
-        predicted_intensities,
-        method: str = "pearson", epsilon: float = 1e-7,
-) -> float:
-    """
-    Calculate the spectral correlation between observed and predicted intensities.
-    Args:
-        observed_intensities: intensities observed in the spectrum
-        predicted_intensities: intensities predicted by the model
-        method: correlation method (pearson or spearman)
-        epsilon: small value to avoid division by zero
-
-    Returns:
-        The spectral correlation between observed and predicted intensities.
-    """
-
-    if method not in ["pearson", "spearman"]:
-        raise ValueError(f"Invalid correlation method: {method}. Choose 'pearson' or 'spearman'.")
-
-    valid_ion_mask = predicted_intensities > epsilon
-
-    observed_filtered = observed_intensities[valid_ion_mask]
-    predicted_filtered = predicted_intensities[valid_ion_mask]
-
-    observed_filtered = observed_filtered[~np.isnan(observed_filtered)]
-    predicted_filtered = predicted_filtered[~np.isnan(predicted_filtered)]
-
-    if len(observed_filtered) <= 2 or len(predicted_filtered) <= 2:
-        return 0
-
-    if method == "pearson":
-        corr, _ = scipy.stats.pearsonr(observed_filtered, predicted_filtered)
-    else:
-        corr, _ = scipy.stats.spearmanr(observed_filtered, predicted_filtered)
-
-    if np.isnan(corr):
-        corr = 0
-
-    return corr
-
-
-def spectral_coverage(observed_intensities, predicted_intensities):
-    """
-    Calculate the spectral coverage between observed and predicted intensities
-    Args:
-        observed_intensities: the observed intensities
-        predicted_intensities: the predicted intensities
-
-    Returns:
-        The spectral coverage between observed and predicted intensities.
-    """
-    predicted = predicted_intensities
-    observed = observed_intensities
-
-    intensity_covered = 0.0
-    total_intensity = 0.0
-
-    for key, value in predicted.items():
-        total_intensity += value
-
-        if key in observed:
-            intensity_covered += value
-
-    return intensity_covered / total_intensity
-
-
-def cosim_to_spectral_angle_sim(cosim: float) -> float:
-    return 1 - ((np.arccos(cosim) * (180 / np.pi)) / 180)
-
-
 def get_features(
         ds: pd.DataFrame,
         score: Optional[str] = None,
@@ -212,6 +108,7 @@ def generate_training_data(
         q_max: float = 0.01,
         balance: bool = True,
         replace_nan: bool = True,
+        num_threads: int = 16,
 ) -> Tuple[NDArray, NDArray]:
     """ Generate training data.
     Args:
@@ -220,12 +117,13 @@ def generate_training_data(
         q_max: Maximum q-value allowed for positive examples
         balance: Whether to balance the dataset
         replace_nan: Whether to replace NaN values with 0
+        num_threads: Number of threads to use for feature extraction
 
     Returns:
         Tuple[NDArray, NDArray]: X_train and Y_train
     """
     # create pandas table from psms
-    PSM_pandas = psm_collection_to_pandas(psm_list)
+    PSM_pandas = psm_collection_to_pandas(psm_list, num_threads=num_threads)
 
     # calculate q-values to get inital "good" hits
     PSM_q = target_decoy_competition_pandas(PSM_pandas, method=method)
