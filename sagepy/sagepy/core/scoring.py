@@ -75,6 +75,7 @@ class Psm:
             proteins: List[str],
             sage_feature: 'Feature',
             sequence: Optional[str] = None,
+            sequence_modified: Optional[str] = None,
             sequence_decoy: Optional[str] = None,
             intensity_ms1: Optional[float] = None,
             intensity_ms2: Optional[float] = None,
@@ -85,8 +86,10 @@ class Psm:
             re_score: Optional[float] = None,
     ):
         self.__py_ptr = psc.PyPsm(
-            spec_idx, peptide_idx, proteins, sage_feature.get_py_ptr(), sequence, sequence_decoy, intensity_ms1, intensity_ms2,
-            collision_energy, collision_energy_calibrated, retention_time_projected, prosit_predicted_intensities, re_score
+            spec_idx, peptide_idx, proteins, sage_feature.get_py_ptr(), sequence, sequence_modified,
+            sequence_decoy, intensity_ms1, intensity_ms2,
+            collision_energy, collision_energy_calibrated,
+            retention_time_projected, prosit_predicted_intensities, re_score
         )
 
     @classmethod
@@ -149,6 +152,10 @@ class Psm:
     @property
     def sequence(self):
         return self.__py_ptr.sequence
+
+    @property
+    def sequence_modified(self):
+        return self.__py_ptr.sequence_modified
 
     @property
     def sequence_decoy(self):

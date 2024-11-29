@@ -33,6 +33,7 @@ impl PyPsm {
         proteins: Vec<String>,
         sage_feature: PyFeature,
         sequence: Option<String>,
+        sequence_modified: Option<String>,
         sequence_decoy: Option<String>,
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
@@ -49,6 +50,7 @@ impl PyPsm {
                 proteins,
                 sage_feature.inner.clone(),
                 sequence,
+                sequence_modified,
                 sequence_decoy,
                 intensity_ms1,
                 intensity_ms2,
@@ -116,6 +118,11 @@ impl PyPsm {
     #[getter]
     pub fn sequence(&self) -> Option<String> {
         Some(self.inner.clone().sequence?.sequence)
+    }
+
+    #[getter]
+    pub fn sequence_modified(&self) -> Option<String> {
+        Some(self.inner.clone().sequence_modified?.sequence)
     }
 
     #[getter]
@@ -931,7 +938,7 @@ impl PyScorer {
                             false => None,
                         };
 
-                        let peptide_sequence = sage_sequence_to_unimod_sequence(sequence, &peptide.modifications, &self.expected_mods);
+                        let peptide_sequence = sage_sequence_to_unimod_sequence(sequence.clone(), &peptide.modifications, &self.expected_mods);
                         
                         let collision_energy = spectrum.collision_energies.first().unwrap_or(&None).unwrap_or(0.0f32);
                         
@@ -941,6 +948,7 @@ impl PyScorer {
                             proteins,
                             feature.clone(),
                             Some(peptide_sequence),
+                            Some(sequence), // sequence_modified
                             sequence_decoy,
                             Some(intensity_ms1),
                             Some(intensity_ms2),

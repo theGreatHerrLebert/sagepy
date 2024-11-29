@@ -197,6 +197,17 @@ pub fn get_psm_sequences_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String
 }
 
 #[pyfunction]
+pub fn get_psm_sequences_modified_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            psm.inner.sequence_modified.clone().unwrap().sequence
+        }).collect()
+    })
+}
+
+#[pyfunction]
 pub fn get_psm_sequences_decoy_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
     let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
 
@@ -247,6 +258,7 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sage_sequence_to_unimod, m)?)?;
     m.add_function(wrap_pyfunction!(psms_to_feature_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_sequences_par, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_sequences_modified_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_sequences_decoy_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_spec_idx_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_proteins_par, m)?)?;
