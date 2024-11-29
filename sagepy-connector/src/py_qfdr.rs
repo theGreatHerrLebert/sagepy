@@ -22,6 +22,26 @@ impl PyRow {
             }
         }
     }
+
+    #[getter]
+    fn spec_idx(&self) -> &str {
+        &self.inner.key.0
+    }
+
+    #[getter]
+    fn match_idx(&self) -> &str {
+        &self.inner.key.1
+    }
+
+    #[getter]
+    fn decoy(&self) -> bool {
+        self.inner.decoy
+    }
+
+    #[getter]
+    fn score(&self) -> f32 {
+        self.inner.score
+    }
 }
 
 #[pyclass]
