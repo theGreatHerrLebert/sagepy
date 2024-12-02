@@ -117,15 +117,15 @@ pub fn spectrum_q_value(scores: &Vec<Psm>, use_hyper_score: bool) -> Vec<f32> {
         .map(|(index, item)| (index, item.clone()))
         .collect();
 
-    // sort either by hyperscore or PSM discriminant score
+    // sort either by hyperscore or PSM re_score
     match use_hyper_score {
         // Sort by hyperscore
         true => {
             indexed_inner_collection.par_sort_unstable_by(|(_, a), (_, b)| b.sage_feature.hyperscore.total_cmp(&a.sage_feature.hyperscore));
         }
-        // Sort by PSM discriminant score
+        // Sort by PSM re_score
         false => {
-            indexed_inner_collection.par_sort_unstable_by(|(_, a), (_, b)| b.sage_feature.discriminant_score.total_cmp(&a.sage_feature.discriminant_score));
+            indexed_inner_collection.par_sort_unstable_by(|(_, a), (_, b)| b.re_score.unwrap().total_cmp(&a.re_score.unwrap()));
         }
     }
 
@@ -179,7 +179,7 @@ pub fn picked_peptide(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
                     }
                     false => {
                         entry.reverse_ix = Some(feat.sequence_decoy.clone().unwrap().sequence);
-                        entry.reverse = entry.reverse.max(feat.sage_feature.discriminant_score);
+                        entry.reverse = entry.reverse.max(feat.re_score.unwrap() as f32);
                     }
                 }
             }
@@ -191,7 +191,7 @@ pub fn picked_peptide(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
                     }
                     false => {
                         entry.forward_ix = Some(feat.sequence.clone().unwrap().sequence);
-                        entry.forward = entry.forward.max(feat.sage_feature.discriminant_score);
+                        entry.forward = entry.forward.max(feat.re_score.unwrap() as f32);
                     }
                 }
             }
@@ -222,7 +222,7 @@ pub fn picked_protein(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
                     }
                     false => {
                         entry.reverse_ix = Some(protein_id_from_psm(feat, "rev_", true));
-                        entry.reverse = entry.reverse.max(feat.sage_feature.discriminant_score);
+                        entry.reverse = entry.reverse.max(feat.re_score.unwrap() as f32);
                     }
                 }
             }
@@ -234,7 +234,7 @@ pub fn picked_protein(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
                     }
                     false => {
                         entry.forward_ix = Some(protein_id_from_psm(feat, "rev_", true));
-                        entry.forward = entry.forward.max(feat.sage_feature.discriminant_score);
+                        entry.forward = entry.forward.max(feat.re_score.unwrap() as f32);
                     }
                 }
             }
