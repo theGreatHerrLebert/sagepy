@@ -1233,16 +1233,9 @@ pub fn associate_fragment_ions_with_prosit_predicted_intensities_par(
 #[pyfunction]
 pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMap<String, Vec<PyPsm>>, max_hits: usize) -> BTreeMap<String, Vec<PyPsm>> {
 
-    // generate correct peptide status and protein ids
-    let peptide_map = get_peptide_map(left_map.clone(), right_map.clone());
-
-    // update left and right map with decoy status and protein ids from the peptide map
-    let left_map = update_psm_map(left_map, peptide_map.clone());
-    let right_map = update_psm_map(right_map, peptide_map);
-
-    // merge the two maps
     let mut merged_map: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
 
+    // merge the maps
     for (key, psms) in left_map.iter().chain(right_map.iter()) {
         if !merged_map.contains_key(key) {
             merged_map.insert(key.clone(), Vec::new());
@@ -1252,6 +1245,8 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMa
 
     // remove duplicates
     merged_map = remove_duplicates(merged_map);
+
+    // TODO: need to add peptide to protein mapping
 
     // clip the number of hits
     for (_, psms) in merged_map.iter_mut() {
@@ -1287,22 +1282,36 @@ fn update_psm_map(psm_map: BTreeMap<String, Vec<PyPsm>>, peptide_map: BTreeMap<S
 }
 
 fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, Vec<PyPsm>> {
+
     let mut new_map: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
 
     for (key, psms) in psm_map {
         let mut new_psms: Vec<PyPsm> = Vec::new();
-        let mut seen: HashSet<String> = HashSet::new();
+        let mut target_seen: HashSet<String> = HashSet::new();
+        let mut decoy_seen: HashSet<String> = HashSet::new();
         // sort the psms by hyperscore descending
         for psm in psms.iter().sorted_by(|a, b| b.inner.sage_feature.hyperscore.partial_cmp(&a.inner.sage_feature.hyperscore).unwrap()) {
-            let sequence = psm.clone().inner.sequence.unwrap().sequence;
-            if !seen.contains(&sequence) {
-                seen.insert(sequence.clone());
+            let sequence = match psm.inner.sage_feature.label == -1 {
+                true => psm.inner.sequence_decoy.clone().unwrap().sequence,
+                false => psm.inner.sequence.clone().unwrap().sequence,
+            };
+
+            if psm.inner.sage_feature.label == -1 {
+                if decoy_seen.contains(&sequence) {
+                    continue;
+                }
+                decoy_seen.insert(sequence.clone());
+                new_psms.push(psm.clone());
+            } else {
+                if target_seen.contains(&sequence) {
+                    continue;
+                }
+                target_seen.insert(sequence.clone());
                 new_psms.push(psm.clone());
             }
         }
-        new_map.insert(key, new_psms);
+        new_map.insert(key, new_psms.iter().sorted_by(|a, b| a.inner.sage_feature.hyperscore.partial_cmp(&b.inner.sage_feature.hyperscore).unwrap()).cloned().collect());
     }
-
     new_map
 }
 
