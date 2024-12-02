@@ -987,7 +987,7 @@ impl PyScorer {
             });
         }
         
-        result
+        remove_duplicates(result)
     }
 
     pub fn score_chimera_fast(
