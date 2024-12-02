@@ -549,7 +549,7 @@ def split_fasta(fasta: str, num_splits: int = 16, randomize: bool = True, verbos
 def generate_search_configurations(
     fasta_path: str,
     num_splits: int = 25,
-    missed_cleavages: int = 2,
+    missed_cleavages: int = 1,
     min_len: int = 8,
     max_len: int = 30,
     cleave_at: str = "KR",
