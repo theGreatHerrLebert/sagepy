@@ -116,4 +116,4 @@ def assign_sage_spectrum_q(psm_list: List[Psm], use_hyper_score: bool = True):
         use_hyper_score: whether to use hyper score or discriminant score for q-value calculation
     """
     # Perform SAGE FDR
-    return psc.assign_spectrum_q([psm.get_py_ptr() for psm in psm_list], use_hyper_score)
+    psc.assign_spectrum_q([psm.get_py_ptr() for psm in psm_list], use_hyper_score)

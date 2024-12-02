@@ -84,9 +84,10 @@ pub fn target_decoy_competition(
 }
 
 #[pyfunction]
-pub fn assign_spectrum_q(_py: Python, psm_collection: &PyList, use_hyper_score: bool) -> Vec<f32> {
+pub fn assign_spectrum_q(_py: Python, psm_collection: &PyList, use_hyper_score: bool) -> PyResult<()> {
+
     // Extract the inner collection of Feature objects along with their original indices
-    let mut inner_collection: Vec<Psm> = psm_collection.iter().map(|item| {
+    let inner_collection: Vec<Psm> = psm_collection.iter().map(|item| {
             // Extract each item as a PyCell<PyPsm>
             let feature: &PyCell<PyPsm> = item.extract().expect("Failed to extract PyPsm");
             // Clone the inner Feature and keep the original index
@@ -95,12 +96,14 @@ pub fn assign_spectrum_q(_py: Python, psm_collection: &PyList, use_hyper_score: 
 
     let q_values = qfdrust::picked::spectrum_q_value(&inner_collection, use_hyper_score);
 
-    // Update the q_values in the inner collection
-    for (psm, q_value) in inner_collection.iter_mut().zip(q_values.iter()) {
-        psm.sage_feature.spectrum_q = *q_value;
+    // Update the q_values of the inner collection IN PLACE, meaning its necessarry to fetch them by index for PyO3 to work
+    for (index, q_value) in q_values.iter().enumerate() {
+        let feature: &PyCell<PyPsm> = psm_collection.get_item(index).expect("Failed to get PyFeature").extract()?;
+        let mut feature_borrow = feature.borrow_mut();
+        feature_borrow.inner.sage_feature.spectrum_q = q_value.clone();
     }
 
-    q_values
+    Ok(())
 }
 
 #[pyfunction]
