@@ -1256,31 +1256,6 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMa
     merged_map
 }
 
-fn update_psm_map(psm_map: BTreeMap<String, Vec<PyPsm>>, peptide_map: BTreeMap<String, (bool, Vec<String>)>) -> BTreeMap<String, Vec<PyPsm>> {
-    let mut new_map: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
-
-    for (key, psms) in psm_map {
-        let mut new_psms: Vec<PyPsm> = Vec::new();
-        for psm in psms {
-            let sequence = psm.clone().inner.sequence.unwrap().sequence;
-
-            // if the peptide is not in the map, skip the psm
-            if peptide_map.get(&sequence).is_none() {
-                continue;
-            }
-
-            let (decoy, proteins) = peptide_map.get(&sequence).unwrap();
-            let mut new_psm = psm.clone();
-            new_psm.inner.sage_feature.label = if *decoy { -1 } else { 1 };
-            new_psm.inner.proteins = proteins.clone();
-            new_psms.push(new_psm);
-        }
-        new_map.insert(key, new_psms);
-    }
-
-    new_map
-}
-
 fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, Vec<PyPsm>> {
 
     let mut new_map: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
@@ -1323,67 +1298,6 @@ fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, 
         new_map.insert(key, new_psms.iter().sorted_by(|a, b| b.inner.sage_feature.hyperscore.partial_cmp(&a.inner.sage_feature.hyperscore).unwrap()).cloned().collect());
     }
     new_map
-}
-
-fn get_peptide_map(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, (bool, Vec<String>)> {
-
-    let mut peptide_map: BTreeMap<String, (bool, HashSet<String>)> = BTreeMap::new();
-
-    let psms = left_map.into_iter().chain(right_map.into_iter()).collect::<Vec<_>>();
-
-    for (_, psms) in psms {
-        for psm in psms {
-            let key = psm.inner.sequence.unwrap().sequence;
-            let decoy = psm.inner.sage_feature.label == -1;
-            let proteins = psm.inner.proteins;
-
-            // if the peptide is already in the map
-            if peptide_map.contains_key(&key) {
-
-                let (current_decoy, current_proteins) = peptide_map.get_mut(&key).unwrap();
-
-                // if decoy of the current peptide is false and the new decoy is also false, add the proteins to the current proteins
-                if !decoy && !*current_decoy {
-                    current_proteins.extend(proteins);
-                }
-
-                // if both are decoy, merge the proteins
-                else if decoy && *current_decoy {
-                    current_proteins.extend(proteins);
-                }
-
-                // if new is not decoy, set the peptide to the new peptide and the proteins to the new proteins
-                else if !decoy && *current_decoy {
-                    *current_decoy = decoy;
-                    *current_proteins = proteins.into_iter().collect();
-                }
-
-                // if the new is decoy but the current is not decoy, do nothing
-                else if decoy && !*current_decoy {
-                    continue;
-                }
-
-                /*
-                // if new is not decoy but current is decoy, remove this peptide from the map since no overlap between decoy and target should exist
-                else if !decoy && *current_decoy {
-                    peptide_map.remove(&key);
-                }
-
-                // also, if the peptide is not decoy but the current peptide is decoy, remove the current peptide from the map
-                else if decoy && !*current_decoy {
-                    peptide_map.remove(&key);
-                }
-                 */
-
-            // if the peptide is not in the map, add it
-            } else {
-                peptide_map.insert(key, (decoy, proteins.into_iter().collect()));
-            }
-        }
-    }
-
-    // return the peptide map by converting the hashset to a vector
-    peptide_map.into_iter().map(|(k, (d, p))| (k, (d, p.into_iter().collect()))).collect()
 }
 
 #[pyfunction]

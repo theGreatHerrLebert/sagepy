@@ -1,4 +1,3 @@
-use numpy::inner;
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 use qfdrust::psm::Psm;
