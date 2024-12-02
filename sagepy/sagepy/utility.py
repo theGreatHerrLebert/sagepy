@@ -17,6 +17,7 @@ from pyteomics import mzml
 
 import sagepy_connector
 psc = sagepy_connector.py_utility
+from typing import Iterator
 
 
 @jit(nopython=True)
@@ -545,12 +546,6 @@ def split_fasta(fasta: str, num_splits: int = 16, randomize: bool = True, verbos
 
     return fastas
 
-from sagepy.core import (
-    EnzymeBuilder,
-    SageSearchConfiguration,
-)
-from typing import Iterator
-
 def generate_search_configurations(
     fasta_path: str,
     num_splits: int = 25,
@@ -603,9 +598,9 @@ def generate_search_configurations(
     )
 
     # Generate configurations for each split
-    for split_fasta in fastas:
+    for fasta in fastas:
         sage_config = SageSearchConfiguration(
-            fasta=split_fasta,
+            fasta=fasta,
             static_mods=static_mods,
             variable_mods=variable_mods,
             enzyme_builder=enzyme_builder,
@@ -618,4 +613,3 @@ def generate_search_configurations(
 
         # Yield the configuration with the indexed database
         yield indexed_db
-
