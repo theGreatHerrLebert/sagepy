@@ -559,6 +559,7 @@ def generate_search_configurations(
     variable_mods: dict = {"M": ["[UNIMOD:35]"]},  # Oxidation on methionine
     bucket_size: int = 2**14,
     generate_decoys: bool = True,
+    randomize_split: bool = True,
 ) -> Iterator[SageSearchConfiguration]:
     """
     Generates an iterator of indexed databases for each split of a FASTA file.
@@ -576,6 +577,7 @@ def generate_search_configurations(
         variable_mods (dict): Variable modifications in UNIMOD notation. Default is {"M": ["[UNIMOD:35]"]}.
         bucket_size (int): Size of the bucket for indexing. Default is 2^14.
         generate_decoys (bool): Whether to generate decoys in the database. Default is True.
+        randomize_split (bool): Whether to randomize the order of sequences before splitting. Default is True.
 
     Yields:
         SageSearchConfiguration: Indexed database configuration for each split.
@@ -585,7 +587,7 @@ def generate_search_configurations(
         fasta = infile.read()
 
     # Split the FASTA file
-    fastas = split_fasta(fasta, num_splits=num_splits)
+    fastas = split_fasta(fasta, num_splits=num_splits, randomize=randomize_split)
 
     # Configure the enzyme builder
     enzyme_builder = EnzymeBuilder(
