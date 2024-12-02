@@ -78,7 +78,6 @@ pub fn assign_peptide_q(_py: Python, psm_collection: &PyList, use_hyper_score: b
 
     let q_values = qfdrust::picked::picked_peptide(&mut inner_collection, use_hyper_score);
 
-    /*
     // Update the q_values of the inner collection IN PLACE, meaning its necessary to fetch them by index for PyO3 to work
     for (index, _) in psm_collection.iter().enumerate() {
         let feature: &PyCell<PyPsm> = psm_collection.get_item(index).expect("Failed to get PyFeature").extract()?;
@@ -91,7 +90,6 @@ pub fn assign_peptide_q(_py: Python, psm_collection: &PyList, use_hyper_score: b
 
         feature_borrow.inner.sage_feature.peptide_q = q_values.get(&key).unwrap().clone() as f32;
     }
-     */
 
     Ok(q_values)
 }

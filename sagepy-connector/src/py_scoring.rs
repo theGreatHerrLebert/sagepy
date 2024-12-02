@@ -35,6 +35,7 @@ impl PyPsm {
         sequence: Option<String>,
         sequence_modified: Option<String>,
         sequence_decoy: Option<String>,
+        sequence_decoy_modified: Option<String>,
         intensity_ms1: Option<f32>,
         intensity_ms2: Option<f32>,
         collision_energy: Option<f32>,
@@ -52,6 +53,7 @@ impl PyPsm {
                 sequence,
                 sequence_modified,
                 sequence_decoy,
+                sequence_decoy_modified,
                 intensity_ms1,
                 intensity_ms2,
                 collision_energy,
@@ -944,9 +946,10 @@ impl PyScorer {
                             feature.clone().peptide_idx.0,
                             proteins,
                             feature.clone(),
-                            Some(sequence),
+                            Some(sequence), // sequence
                             Some(sequence_with_mods), // sequence_modified
-                            Some(sequence_decoy_with_mods), // sequence_decoy
+                            Some(sequence_decoy), // sequence_decoy
+                            Some(sequence_decoy_with_mods), // sequence_decoy_modified
                             Some(intensity_ms1),
                             Some(intensity_ms2),
                             Some(collision_energy),

@@ -469,6 +469,7 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
     sequence = psc.get_psm_sequences_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
     sequence_modified = psc.get_psm_sequences_modified_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
     sequence_decoy = psc.get_psm_sequences_decoy_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+    sequence_decoy_modified = psc.get_psm_sequences_decoy_modified_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
     spec_idx = psc.get_psm_spec_idx_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
     proteins = psc.get_psm_proteins_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
 
@@ -488,6 +489,7 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
     PSM_pandas.insert(3, "sequence", sequence)
     PSM_pandas.insert(4, "sequence_modified", sequence_modified)
     PSM_pandas.insert(5, "sequence_decoy", sequence_decoy)
-    PSM_pandas.insert(6, "proteins", proteins)
+    PSM_pandas.insert(6, "sequence_decoy_modified", sequence_decoy_modified)
+    PSM_pandas.insert(7, "proteins", proteins)
 
     return PSM_pandas

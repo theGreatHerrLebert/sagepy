@@ -213,8 +213,19 @@ pub fn get_psm_sequences_decoy_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<
 
     thread_pool.install(|| {
         psms.par_iter().map(|psm| {
+            psm.inner.sequence_decoy.clone().unwrap().sequence
+        }).collect()
+    })
+}
 
-            let sequence = match &psm.inner.sequence_decoy {
+#[pyfunction]
+pub fn get_psm_sequences_decoy_modified_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+
+            let sequence = match &psm.inner.sequence_decoy_modified {
                 Some(seq) => seq.sequence.clone(),
                 None => "".to_string(),
             };
@@ -260,6 +271,7 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_psm_sequences_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_sequences_modified_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_sequences_decoy_par, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_sequences_decoy_modified_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_spec_idx_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_proteins_par, m)?)?;
     Ok(())
