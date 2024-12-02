@@ -30,16 +30,18 @@ struct Row {
 
 #[derive(Clone, Debug)]
 struct Competition {
-    ix: Option<String>,
+    forward_ix: Option<String>,
     forward: f32,
+    reverse_ix: Option<String>,
     reverse: f32,
 }
 
 impl Default for Competition {
     fn default() -> Self {
         Competition {
-            ix: None,
+            forward_ix: None,
             forward: f32::MIN,
+            reverse_ix: None,
             reverse: f32::MIN,
         }
     }
@@ -55,8 +57,8 @@ fn assign_q_value(
         .into_par_iter()
         .flat_map(|(_, comp)| {
             [
-                (comp.ix.clone(), false, comp.forward),
-                (comp.ix.clone(), true, comp.reverse),
+                (comp.forward_ix.clone(), false, comp.forward),
+                (comp.reverse_ix.clone(), true, comp.reverse),
             ]
         })
         .filter_map(|(ix, decoy, score)| {
@@ -172,11 +174,11 @@ pub fn picked_peptide(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
             true => {
                 match use_hyper_score {
                     true => {
-                        entry.ix = Some(feat.sequence_decoy.clone().unwrap().sequence);
+                        entry.reverse_ix = Some(feat.sequence_decoy.clone().unwrap().sequence);
                         entry.reverse = entry.reverse.max(feat.sage_feature.hyperscore as f32);
                     }
                     false => {
-                        entry.ix = Some(feat.sequence_decoy.clone().unwrap().sequence);
+                        entry.reverse_ix = Some(feat.sequence_decoy.clone().unwrap().sequence);
                         entry.reverse = entry.reverse.max(feat.re_score.unwrap() as f32);
                     }
                 }
@@ -184,11 +186,11 @@ pub fn picked_peptide(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
             false => {
                 match use_hyper_score {
                     true => {
-                        entry.ix = Some(feat.sequence.clone().unwrap().sequence);
+                        entry.forward_ix = Some(feat.sequence.clone().unwrap().sequence);
                         entry.forward = entry.forward.max(feat.sage_feature.hyperscore as f32);
                     }
                     false => {
-                        entry.ix = Some(feat.sequence.clone().unwrap().sequence);
+                        entry.forward_ix = Some(feat.sequence.clone().unwrap().sequence);
                         entry.forward = entry.forward.max(feat.re_score.unwrap() as f32);
                     }
                 }
@@ -215,11 +217,11 @@ pub fn picked_protein(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
             true => {
                 match use_hyper_score {
                     true => {
-                        entry.ix = Some(protein_id_from_psm(feat, "rev_", true));
+                        entry.reverse_ix = Some(protein_id_from_psm(feat, "rev_", true));
                         entry.reverse = entry.reverse.max(feat.sage_feature.hyperscore as f32);
                     }
                     false => {
-                        entry.ix = Some(protein_id_from_psm(feat, "rev_", true));
+                        entry.reverse_ix = Some(protein_id_from_psm(feat, "rev_", true));
                         entry.reverse = entry.reverse.max(feat.re_score.unwrap() as f32);
                     }
                 }
@@ -227,11 +229,11 @@ pub fn picked_protein(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
             false => {
                 match use_hyper_score {
                     true => {
-                        entry.ix = Some(protein_id_from_psm(feat, "rev_", true));
+                        entry.forward_ix = Some(protein_id_from_psm(feat, "rev_", true));
                         entry.forward = entry.forward.max(feat.sage_feature.hyperscore as f32);
                     }
                     false => {
-                        entry.ix = Some(protein_id_from_psm(feat, "rev_", true));
+                        entry.forward_ix = Some(protein_id_from_psm(feat, "rev_", true));
                         entry.forward = entry.forward.max(feat.re_score.unwrap() as f32);
                     }
                 }
