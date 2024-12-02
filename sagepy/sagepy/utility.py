@@ -1,5 +1,7 @@
 from typing import Dict, Tuple, List, Optional, Union
 
+import re
+
 from numba import jit
 import numpy as np
 import pandas as pd
@@ -493,3 +495,52 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
     PSM_pandas.insert(7, "proteins", proteins)
 
     return PSM_pandas
+
+def split_fasta(fasta: str, num_splits: int = 16, randomize: bool = True, verbose: bool = False) -> List[str]:
+    """ Split a fasta file into multiple fasta files.
+    Args:
+        fasta: Fasta file as string.
+        num_splits: Number of splits fasta file should be split into.
+        randomize: Whether to randomize the order of sequences before splitting.
+
+    Returns:
+        List of fasta files as strings, will contain num_splits fasta files with equal number of sequences.
+    """
+
+    if num_splits == 1:
+        return [fasta]
+
+    split_strings = re.split(r'\n>', fasta)
+
+    if verbose:
+        print(f"Total number of sequences: {len(split_strings)} ...")
+
+    if randomize:
+        np.random.shuffle(split_strings)
+
+    if not split_strings[0].startswith('>'):
+        split_strings[0] = '>' + split_strings[0]
+
+    total_items = len(split_strings)
+    items_per_batch = total_items // num_splits
+    remainder = total_items % num_splits
+
+    fastas = []
+    start_index = 0
+
+    for i in range(num_splits):
+        extra = 1 if i < remainder else 0
+        stop_index = start_index + items_per_batch + extra
+
+        if start_index >= total_items:
+            break
+
+        batch = '\n>'.join(split_strings[start_index:stop_index])
+
+        if not batch.startswith('>'):
+            batch = '>' + batch
+
+        fastas.append(batch)
+        start_index = stop_index
+
+    return fastas
