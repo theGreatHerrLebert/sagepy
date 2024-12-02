@@ -1246,8 +1246,6 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMa
     // remove duplicates
     merged_map = remove_duplicates(merged_map);
 
-    // TODO: need to add peptide to protein mapping
-
     // clip the number of hits
     for (_, psms) in merged_map.iter_mut() {
         psms.truncate(max_hits);
@@ -1276,18 +1274,34 @@ fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, 
 
             // if the psm is a decoy
             if psm.inner.sage_feature.label == -1 {
-                // if the decoy is already in the set, skip the psm
+                // if the decoy is already in the set, skip the psm but check if proteins need to be extended
                 if decoy_seen.contains(&sequence) {
-                    continue;
+                    let existing_psm = new_psms.iter().find(|p| p.inner.sequence_decoy.clone().unwrap().sequence == sequence).unwrap();
+                    let mut existing_proteins = existing_psm.inner.proteins.clone();
+                    let new_proteins = psm.inner.proteins.clone();
+                    // add new proteins to existing proteins, so check if the proteins to add are not already in the existing proteins
+                    for protein in new_proteins {
+                        if !existing_proteins.contains(&protein) {
+                            existing_proteins.push(protein);
+                        }
+                    }
                 }
                 decoy_seen.insert(sequence.clone());
                 new_psms.push(psm.clone());
 
             // if the psm is a target
             } else {
-                // if the target is already in the set, skip the psm
+                // if the target is already in the set, skip the psm but check if proteins need to be extended
                 if target_seen.contains(&sequence) {
-                    continue;
+                    let existing_psm = new_psms.iter().find(|p| p.inner.sequence.clone().unwrap().sequence == sequence).unwrap();
+                    let mut existing_proteins = existing_psm.inner.proteins.clone();
+                    let new_proteins = psm.inner.proteins.clone();
+                    // add new proteins to existing proteins, so check if the proteins to add are not already in the existing proteins
+                    for protein in new_proteins {
+                        if !existing_proteins.contains(&protein) {
+                            existing_proteins.push(protein);
+                        }
+                    }
                 }
                 target_seen.insert(sequence.clone());
                 new_psms.push(psm.clone());
