@@ -1,7 +1,9 @@
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union, Dict
 
 import pandas as pd
 import sagepy_connector
+
+from sagepy.core import Psm
 
 psc = sagepy_connector.py_qfdr
 
@@ -106,3 +108,12 @@ def target_decoy_competition_pandas(
     }).sort_values(by=['q_value'], ascending=True)
 
     return df_tdc
+
+def assign_sage_spectrum_q(psm_list: List[Psm], use_hyper_score: bool = True):
+    """ Assign SAGE spectrum q-values to PSMs.
+    Args:
+        psm_list: a list of PeptideSpectrumMatch objects
+        use_hyper_score: whether to use hyper score or discriminant score for q-value calculation
+    """
+    # Perform SAGE FDR
+    sagepy_connector.assign_spectrum_q([psm.get_py_ptr() for psm in psm_list], use_hyper_score)
