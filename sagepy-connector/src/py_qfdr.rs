@@ -66,7 +66,7 @@ pub fn assign_spectrum_q(_py: Python, psm_collection: &PyList, use_hyper_score: 
 }
 
 #[pyfunction]
-pub fn assign_peptide_q(_py: Python, psm_collection: &PyList, use_hyper_score: bool) -> PyResult<HashMap<String, f64>> {
+pub fn assign_peptide_q(_py: Python, psm_collection: &PyList, use_hyper_score: bool) -> PyResult<()> {
 
     // Extract the inner collection of Feature objects along with their original indices
     let mut  inner_collection: Vec<Psm> = psm_collection.iter().map(|item| {
@@ -91,7 +91,7 @@ pub fn assign_peptide_q(_py: Python, psm_collection: &PyList, use_hyper_score: b
         feature_borrow.inner.sage_feature.peptide_q = q_values.get(&key).unwrap().clone() as f32;
     }
 
-    Ok(q_values)
+    Ok(())
 }
 
 #[pyfunction]
