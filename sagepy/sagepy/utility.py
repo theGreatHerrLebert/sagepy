@@ -544,3 +544,78 @@ def split_fasta(fasta: str, num_splits: int = 16, randomize: bool = True, verbos
         start_index = stop_index
 
     return fastas
+
+from sagepy.core import (
+    EnzymeBuilder,
+    SageSearchConfiguration,
+)
+from typing import Iterator
+
+def generate_search_configurations(
+    fasta_path: str,
+    num_splits: int = 25,
+    missed_cleavages: int = 2,
+    min_len: int = 5,
+    max_len: int = 50,
+    cleave_at: str = "KR",
+    restrict: str = "P",
+    c_terminal: bool = True,
+    static_mods: dict = {"C": "[UNIMOD:4]"},  # Static cysteine modification
+    variable_mods: dict = {"M": ["[UNIMOD:35]"]},  # Oxidation on methionine
+    bucket_size: int = 2**14,
+    generate_decoys: bool = True,
+) -> Iterator[SageSearchConfiguration]:
+    """
+    Generates an iterator of indexed databases for each split of a FASTA file.
+
+    Args:
+        fasta_path (str): Path to the unsplit FASTA file.
+        num_splits (int): Number of splits for the FASTA file. Default is 25.
+        missed_cleavages (int): Allowed missed cleavages for the enzyme. Default is 2.
+        min_len (int): Minimum peptide length. Default is 5.
+        max_len (int): Maximum peptide length. Default is 50.
+        cleave_at (str): Amino acids where cleavage occurs. Default is "KR".
+        restrict (str): Restriction amino acids. Default is "P".
+        c_terminal (bool): Whether cleavage is C-terminal. Default is True.
+        static_mods (dict): Static modifications in UNIMOD notation. Default is {"C": "[UNIMOD:4]"}.
+        variable_mods (dict): Variable modifications in UNIMOD notation. Default is {"M": ["[UNIMOD:35]"]}.
+        bucket_size (int): Size of the bucket for indexing. Default is 2^14.
+        generate_decoys (bool): Whether to generate decoys in the database. Default is True.
+
+    Yields:
+        SageSearchConfiguration: Indexed database configuration for each split.
+    """
+    # Read the full FASTA file
+    with open(fasta_path, "r") as infile:
+        fasta = infile.read()
+
+    # Split the FASTA file
+    fastas = split_fasta(fasta, num_splits=num_splits)
+
+    # Configure the enzyme builder
+    enzyme_builder = EnzymeBuilder(
+        missed_cleavages=missed_cleavages,
+        min_len=min_len,
+        max_len=max_len,
+        cleave_at=cleave_at,
+        restrict=restrict,
+        c_terminal=c_terminal,
+    )
+
+    # Generate configurations for each split
+    for split_fasta in fastas:
+        sage_config = SageSearchConfiguration(
+            fasta=split_fasta,
+            static_mods=static_mods,
+            variable_mods=variable_mods,
+            enzyme_builder=enzyme_builder,
+            generate_decoys=generate_decoys,
+            bucket_size=bucket_size,
+        )
+
+        # Generate the indexed database
+        indexed_db = sage_config.generate_indexed_database()
+
+        # Yield the configuration with the indexed database
+        yield indexed_db
+
