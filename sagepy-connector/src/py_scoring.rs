@@ -133,6 +133,11 @@ impl PyPsm {
     }
 
     #[getter]
+    pub fn sequence_decoy_modified(&self) -> Option<String> {
+        Some(self.inner.clone().sequence_decoy_modified?.sequence)
+    }
+
+    #[getter]
     pub fn charge(&self) -> u8 {
         self.inner.sage_feature.charge
     }
