@@ -125,7 +125,7 @@ def assign_peptide_q(psm_list: List[Psm], use_hyper_score: bool = True):
         use_hyper_score: whether to use hyper score or discriminant score for q-value calculation
     """
     # Perform SAGE FDR
-    psc.assign_peptide_q([psm.get_py_ptr() for psm in psm_list], use_hyper_score)
+    return psc.assign_peptide_q([psm.get_py_ptr() for psm in psm_list], use_hyper_score)
 
 def assign_protein_q(psm_list: List[Psm], use_hyper_score: bool = True):
     """ Assign SAGE protein q-values to PSMs.

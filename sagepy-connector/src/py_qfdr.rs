@@ -1,3 +1,4 @@
+use std::collections::{BTreeMap, HashMap};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 use qfdrust::dataset::{TDCMethod};
@@ -65,7 +66,7 @@ pub fn assign_spectrum_q(_py: Python, psm_collection: &PyList, use_hyper_score: 
 }
 
 #[pyfunction]
-pub fn assign_peptide_q(_py: Python, psm_collection: &PyList, use_hyper_score: bool) -> PyResult<()> {
+pub fn assign_peptide_q(_py: Python, psm_collection: &PyList, use_hyper_score: bool) -> HashMap<String, f64> {
 
     // Extract the inner collection of Feature objects along with their original indices
     let mut  inner_collection: Vec<Psm> = psm_collection.iter().map(|item| {
@@ -87,10 +88,10 @@ pub fn assign_peptide_q(_py: Python, psm_collection: &PyList, use_hyper_score: b
             _ => feature_borrow.inner.sequence.clone().unwrap().sequence.clone(),
         };
 
-        feature_borrow.inner.sage_feature.peptide_q = q_values.get(&key).unwrap_or(&1.0).clone() as f32;
+        feature_borrow.inner.sage_feature.peptide_q = q_values.get(&key).unwrap().clone() as f32;
     }
 
-    Ok(())
+    q_values
 }
 
 #[pyfunction]

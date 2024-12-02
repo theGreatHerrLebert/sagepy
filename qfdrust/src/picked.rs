@@ -185,7 +185,7 @@ fn assign_q_value(
         .flat_map(|(_, comp)| {
             [
                 (comp.ix.clone(), false, comp.forward),
-                (comp.ix, true, comp.reverse),
+                (comp.ix.clone(), true, comp.reverse),
             ]
         })
         .filter_map(|(ix, decoy, score)| {
