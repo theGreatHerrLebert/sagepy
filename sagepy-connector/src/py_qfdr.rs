@@ -84,7 +84,7 @@ pub fn target_decoy_competition(
 }
 
 #[pyfunction]
-pub fn assign_spectrum_q(_py: Python, psm_collection: &PyList, use_hyper_score: bool) -> PyResult<()> {
+pub fn assign_spectrum_q(_py: Python, psm_collection: &PyList, use_hyper_score: bool) -> Vec<f32> {
     // Extract the inner collection of Feature objects along with their original indices
     let mut inner_collection: Vec<Psm> = psm_collection.iter().map(|item| {
             // Extract each item as a PyCell<PyPsm>
@@ -100,7 +100,7 @@ pub fn assign_spectrum_q(_py: Python, psm_collection: &PyList, use_hyper_score: 
         psm.sage_feature.spectrum_q = *q_value;
     }
 
-    Ok(())
+    q_values
 }
 
 #[pyfunction]
