@@ -118,7 +118,7 @@ def assign_sage_spectrum_q(psm_list: List[Psm], use_hyper_score: bool = True):
     # Perform SAGE FDR
     psc.assign_spectrum_q([psm.get_py_ptr() for psm in psm_list], use_hyper_score)
 
-def assign_peptide_q(psm_list: List[Psm], use_hyper_score: bool = True):
+def assign_sage_peptide_q(psm_list: List[Psm], use_hyper_score: bool = True):
     """ Assign SAGE peptide q-values to PSMs.
     Args:
         psm_list: a list of PeptideSpectrumMatch objects
@@ -127,7 +127,7 @@ def assign_peptide_q(psm_list: List[Psm], use_hyper_score: bool = True):
     # Perform SAGE FDR
     psc.assign_peptide_q([psm.get_py_ptr() for psm in psm_list], use_hyper_score)
 
-def assign_protein_q(psm_list: List[Psm], use_hyper_score: bool = True):
+def assign_sage_protein_q(psm_list: List[Psm], use_hyper_score: bool = True):
     """ Assign SAGE protein q-values to PSMs.
     Args:
         psm_list: a list of PeptideSpectrumMatch objects
