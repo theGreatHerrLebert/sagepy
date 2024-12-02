@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use pyo3::prelude::*;
+use pyo3::types::PyList;
 use qfdrust::dataset::{TDCMethod};
 use qfdrust::picked::{Row};
+use qfdrust::psm::Psm;
+use crate::py_scoring::PyPsm;
 
 #[pyclass]
 #[derive(Clone)]
@@ -81,6 +84,26 @@ pub fn target_decoy_competition(
 }
 
 #[pyfunction]
+pub fn assign_spectrum_q(_py: Python, psm_collection: &PyList, use_hyper_score: bool) -> PyResult<()> {
+    // Extract the inner collection of Feature objects along with their original indices
+    let mut inner_collection: Vec<Psm> = psm_collection.iter().map(|item| {
+            // Extract each item as a PyCell<PyPsm>
+            let feature: &PyCell<PyPsm> = item.extract().expect("Failed to extract PyPsm");
+            // Clone the inner Feature and keep the original index
+            feature.borrow().inner.clone()
+        }).collect();
+
+    let q_values = qfdrust::picked::spectrum_q_value(&inner_collection, use_hyper_score);
+
+    // Update the q_values in the inner collection
+    for (psm, q_value) in inner_collection.iter_mut().zip(q_values.iter()) {
+        psm.sage_feature.spectrum_q = *q_value;
+    }
+
+    Ok(())
+}
+
+#[pyfunction]
 pub fn assign_q_values(
     rows: Vec<PyRow>,
 ) -> HashMap<(String, String), f64> {
@@ -93,6 +116,7 @@ pub fn qfdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyTDCMethod>()?;
     m.add_function(wrap_pyfunction!(target_decoy_competition, m)?)?;
     m.add_function(wrap_pyfunction!(assign_q_values, m)?)?;
+    m.add_function(wrap_pyfunction!(assign_spectrum_q, m)?)?;
     m.add_class::<PyRow>()?;
     Ok(())
 }

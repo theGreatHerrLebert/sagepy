@@ -1,5 +1,55 @@
 use std::collections::HashMap;
 use crate::dataset::{Match, MatchDataset};
+use crate::psm::Psm;
+use rayon::prelude::*;
+
+pub fn spectrum_q_value(scores: &Vec<Psm>, use_hyper_score: bool) -> Vec<f32> {
+
+    // create a collection of PSMs sorted by score and keep the index
+    let mut indexed_inner_collection: Vec<(usize, Psm)> = scores.iter()
+        .enumerate()
+        .map(|(index, item)| (index, item.clone()))
+        .collect();
+
+    // sort either by hyperscore or PSM re_score
+    match use_hyper_score {
+        // Sort by hyperscore
+        true => {
+            indexed_inner_collection.par_sort_unstable_by(|(_, a), (_, b)| b.sage_feature.hyperscore.total_cmp(&a.sage_feature.hyperscore));
+        }
+        // Sort by PSM re_score
+        false => {
+            indexed_inner_collection.par_sort_unstable_by(|(_, a), (_, b)| b.re_score.unwrap().total_cmp(&a.re_score.unwrap()));
+        }
+    }
+
+    // Calculate the spectrum q-value
+    let mut decoy = 1;
+    let mut target = 0;
+
+    for (_, psm) in indexed_inner_collection.iter_mut() {
+        match psm.sage_feature.label == -1 {
+            true => decoy += 1,
+            false => target += 1,
+        }
+        psm.sage_feature.spectrum_q = decoy as f32 / target as f32;
+    }
+
+    // Reverse slice, and calculate the cumulative minimum
+    let mut q_min = 1.0f32;
+    for (_, psm) in indexed_inner_collection.iter_mut().rev() {
+        q_min = q_min.min(psm.sage_feature.spectrum_q);
+        psm.sage_feature.spectrum_q = q_min;
+    }
+
+    // sort the q_values by the original index
+    let mut q_values = vec![0.0; scores.len()];
+    for (sorted_index, psm) in indexed_inner_collection.iter() {
+        q_values[*sorted_index] = psm.sage_feature.spectrum_q;
+    }
+
+    q_values
+}
 
 #[derive(Clone, Debug)]
 struct Competition {
