@@ -3,6 +3,23 @@ use itertools::Itertools;
 use crate::psm::Psm;
 use rayon::prelude::*;
 
+pub fn protein_id_from_psm(psm: &Psm, decoy_tag: &str, generate_decoys: bool) -> String {
+    if psm.sage_feature.label == -1 {
+        psm.proteins
+            .iter()
+            .map(|s| {
+                if generate_decoys {
+                    format!("{}{}", decoy_tag, s)
+                } else {
+                    s.to_string()
+                }
+            })
+            .join(";")
+    } else {
+        psm.proteins.iter().join(";")
+    }
+}
+
 #[derive(Default)]
 struct Row {
     ix: String,
@@ -26,6 +43,68 @@ impl Default for Competition {
             reverse: f32::MIN,
         }
     }
+}
+
+fn assign_q_value(
+    scores: HashMap<String, Competition>,
+) -> HashMap<String, f64> {
+
+    let mut q_values: HashMap<String, f64> = HashMap::new();
+
+    let mut scores = scores
+        .into_par_iter()
+        .flat_map(|(_, comp)| {
+            [
+                (comp.ix.clone(), false, comp.forward),
+                (comp.ix.clone(), true, comp.reverse),
+            ]
+        })
+        .filter_map(|(ix, decoy, score)| {
+            ix.map(|ix| Row {
+                ix,
+                decoy,
+                score,
+                q: 1.0,
+            })
+        })
+        .collect::<Vec<Row>>();
+
+    scores.par_sort_by(|a, b| b.score.total_cmp(&a.score));
+
+    let mut decoy_count: f64 = 1.0;
+    let mut target_count: f64 = 0.0;
+    let mut q_values_list: Vec<f64> = Vec::new();
+
+    // First pass: Calculate the raw q-values
+    for row in scores.iter() {
+        if row.decoy {
+            decoy_count += 1.0;
+        } else {
+            target_count += 1.0;
+        }
+
+        // Avoid division by zero
+        if target_count == 0.0 {
+            q_values_list.push(1.0);
+            continue;
+        }
+
+        let q = decoy_count / target_count;
+        q_values_list.push(q);
+    }
+
+    // Second pass: Compute the cumulative minimum from the end
+    let mut q_min = 1.0;
+    for (i, row) in scores.iter_mut().enumerate().rev() {
+        let q = q_values_list[i];
+        if q < q_min {
+            q_min = q;
+        }
+        row.q = q_min as f32;
+        q_values.insert(row.ix.clone(), row.q as f64);
+    }
+
+    q_values
 }
 
 pub fn spectrum_q_value(scores: &Vec<Psm>, use_hyper_score: bool) -> Vec<f32> {
@@ -93,9 +172,11 @@ pub fn picked_peptide(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
             true => {
                 match use_hyper_score {
                     true => {
+                        entry.ix = Some(feat.sequence_decoy.clone().unwrap().sequence);
                         entry.reverse = entry.reverse.max(feat.sage_feature.hyperscore as f32);
                     }
                     false => {
+                        entry.ix = Some(feat.sequence_decoy.clone().unwrap().sequence);
                         entry.reverse = entry.reverse.max(feat.re_score.unwrap() as f32);
                     }
                 }
@@ -103,9 +184,11 @@ pub fn picked_peptide(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
             false => {
                 match use_hyper_score {
                     true => {
+                        entry.ix = Some(feat.sequence.clone().unwrap().sequence);
                         entry.forward = entry.forward.max(feat.sage_feature.hyperscore as f32);
                     }
                     false => {
+                        entry.ix = Some(feat.sequence.clone().unwrap().sequence);
                         entry.forward = entry.forward.max(feat.re_score.unwrap() as f32);
                     }
                 }
@@ -132,9 +215,11 @@ pub fn picked_protein(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
             true => {
                 match use_hyper_score {
                     true => {
+                        entry.ix = Some(protein_id_from_psm(feat, "rev_", true));
                         entry.reverse = entry.reverse.max(feat.sage_feature.hyperscore as f32);
                     }
                     false => {
+                        entry.ix = Some(protein_id_from_psm(feat, "rev_", true));
                         entry.reverse = entry.reverse.max(feat.re_score.unwrap() as f32);
                     }
                 }
@@ -142,9 +227,11 @@ pub fn picked_protein(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
             false => {
                 match use_hyper_score {
                     true => {
+                        entry.ix = Some(protein_id_from_psm(feat, "rev_", true));
                         entry.forward = entry.forward.max(feat.sage_feature.hyperscore as f32);
                     }
                     false => {
+                        entry.ix = Some(protein_id_from_psm(feat, "rev_", true));
                         entry.forward = entry.forward.max(feat.re_score.unwrap() as f32);
                     }
                 }
@@ -155,83 +242,4 @@ pub fn picked_protein(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap
     let q_value_map = assign_q_value(map);
 
     q_value_map
-}
-
-pub fn protein_id_from_psm(psm: &Psm, decoy_tag: &str, generate_decoys: bool) -> String {
-    if psm.sage_feature.label == -1 {
-        psm.proteins
-            .iter()
-            .map(|s| {
-                if generate_decoys {
-                    format!("{}{}", decoy_tag, s)
-                } else {
-                    s.to_string()
-                }
-            })
-            .join(";")
-    } else {
-        psm.proteins.iter().join(";")
-    }
-}
-
-fn assign_q_value(
-    scores: HashMap<String, Competition>,
-) -> HashMap<String, f64> {
-
-    let mut q_values: HashMap<String, f64> = HashMap::new();
-
-    let mut scores = scores
-        .into_par_iter()
-        .flat_map(|(_, comp)| {
-            [
-                (comp.ix.clone(), false, comp.forward),
-                (comp.ix.clone(), true, comp.reverse),
-            ]
-        })
-        .filter_map(|(ix, decoy, score)| {
-            ix.map(|ix| Row {
-                ix,
-                decoy,
-                score,
-                q: 1.0,
-            })
-        })
-        .collect::<Vec<Row>>();
-
-    scores.par_sort_by(|a, b| b.score.total_cmp(&a.score));
-
-    let mut decoy_count: f64 = 1.0;
-    let mut target_count: f64 = 0.0;
-    let mut q_values_list: Vec<f64> = Vec::new();
-
-    // First pass: Calculate the raw q-values
-    for row in scores.iter() {
-        if row.decoy {
-            decoy_count += 1.0;
-        } else {
-            target_count += 1.0;
-        }
-
-        // Avoid division by zero
-        if target_count == 0.0 {
-            q_values_list.push(1.0);
-            continue;
-        }
-
-        let q = decoy_count / target_count;
-        q_values_list.push(q);
-    }
-
-    // Second pass: Compute the cumulative minimum from the end
-    let mut q_min = 1.0;
-    for (i, row) in scores.iter_mut().enumerate().rev() {
-        let q = q_values_list[i];
-        if q < q_min {
-            q_min = q;
-        }
-        row.q = q_min as f32;
-        q_values.insert(row.ix.clone(), row.q as f64);
-    }
-
-    q_values
 }
