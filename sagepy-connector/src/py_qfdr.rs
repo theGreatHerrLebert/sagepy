@@ -88,7 +88,7 @@ pub fn assign_peptide_q(_py: Python, psm_collection: &PyList, use_hyper_score: b
             _ => feature_borrow.inner.sequence.clone().unwrap().sequence.clone(),
         };
 
-        feature_borrow.inner.sage_feature.peptide_q = q_values.get(&key).unwrap().clone() as f32;
+        feature_borrow.inner.sage_feature.peptide_q = q_values.get(&key).unwrap_or(&1.0).clone() as f32;
     }
 
     Ok(())
