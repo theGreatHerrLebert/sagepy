@@ -1289,20 +1289,28 @@ fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, 
         let mut new_psms: Vec<PyPsm> = Vec::new();
         let mut target_seen: HashSet<String> = HashSet::new();
         let mut decoy_seen: HashSet<String> = HashSet::new();
+
         // sort the psms by hyperscore descending
         for psm in psms.iter().sorted_by(|a, b| b.inner.sage_feature.hyperscore.partial_cmp(&a.inner.sage_feature.hyperscore).unwrap()) {
+
+            // get either the target or decoy sequence
             let sequence = match psm.inner.sage_feature.label == -1 {
                 true => psm.inner.sequence_decoy.clone().unwrap().sequence,
                 false => psm.inner.sequence.clone().unwrap().sequence,
             };
 
+            // if the psm is a decoy
             if psm.inner.sage_feature.label == -1 {
+                // if the decoy is already in the set, skip the psm
                 if decoy_seen.contains(&sequence) {
                     continue;
                 }
                 decoy_seen.insert(sequence.clone());
                 new_psms.push(psm.clone());
+
+            // if the psm is a target
             } else {
+                // if the target is already in the set, skip the psm
                 if target_seen.contains(&sequence) {
                     continue;
                 }
@@ -1310,7 +1318,9 @@ fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, 
                 new_psms.push(psm.clone());
             }
         }
-        new_map.insert(key, new_psms.iter().sorted_by(|a, b| a.inner.sage_feature.hyperscore.partial_cmp(&b.inner.sage_feature.hyperscore).unwrap()).cloned().collect());
+
+        // insert the new psms into the new map, sorted by hyperscore descending
+        new_map.insert(key, new_psms.iter().sorted_by(|a, b| b.inner.sage_feature.hyperscore.partial_cmp(&a.inner.sage_feature.hyperscore).unwrap()).cloned().collect());
     }
     new_map
 }
