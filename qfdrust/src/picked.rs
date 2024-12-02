@@ -1,7 +1,32 @@
 use std::collections::HashMap;
-use crate::dataset::{Match, MatchDataset};
+use itertools::Itertools;
 use crate::psm::Psm;
 use rayon::prelude::*;
+
+#[derive(Default)]
+struct Row {
+    ix: String,
+    decoy: bool,
+    score: f32,
+    q: f32,
+}
+
+#[derive(Clone, Debug)]
+struct Competition {
+    ix: Option<String>,
+    forward: f32,
+    reverse: f32,
+}
+
+impl Default for Competition {
+    fn default() -> Self {
+        Competition {
+            ix: None,
+            forward: f32::MIN,
+            reverse: f32::MIN,
+        }
+    }
+}
 
 pub fn spectrum_q_value(scores: &Vec<Psm>, use_hyper_score: bool) -> Vec<f32> {
 
@@ -51,48 +76,136 @@ pub fn spectrum_q_value(scores: &Vec<Psm>, use_hyper_score: bool) -> Vec<f32> {
     q_values
 }
 
-#[derive(Clone, Debug)]
-struct Competition {
-    forward: f32,
-    forward_match: Option<Match>, // Own the Match
-    reverse: f32,
-    reverse_match: Option<Match>, // Own the Match
+pub fn picked_peptide(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap<String, f64> {
+
+    let mut map: HashMap<String, Competition> = HashMap::default();
+
+    for feat in features.iter() {
+
+        let peptide_sequence_key = match feat.sage_feature.label == -1 {
+            true => feat.sequence_decoy.clone().unwrap().sequence,
+            false => feat.sequence.clone().unwrap().sequence,
+        };
+
+        let entry = map.entry(peptide_sequence_key).or_default();
+
+        match feat.sage_feature.label == -1 {
+            true => {
+                match use_hyper_score {
+                    true => {
+                        entry.reverse = entry.reverse.max(feat.sage_feature.hyperscore as f32);
+                    }
+                    false => {
+                        entry.reverse = entry.reverse.max(feat.re_score.unwrap() as f32);
+                    }
+                }
+            }
+            false => {
+                match use_hyper_score {
+                    true => {
+                        entry.forward = entry.forward.max(feat.sage_feature.hyperscore as f32);
+                    }
+                    false => {
+                        entry.forward = entry.forward.max(feat.re_score.unwrap() as f32);
+                    }
+                }
+            }
+        }
+    }
+
+    let q_value_map = assign_q_value(map);
+
+    q_value_map
 }
 
-impl Competition {
-    fn new() -> Self {
-        Self {
-            forward: f32::MIN,
-            forward_match: None,
-            reverse: f32::MIN,
-            reverse_match: None,
+pub fn picked_protein(features: &mut Vec<Psm>, use_hyper_score: bool) -> HashMap<String, f64> {
+
+    let mut map: HashMap<String, Competition> = HashMap::default();
+
+    for feat in features.iter() {
+
+        let protein_key = protein_id_from_psm(feat, "rev_", true);
+
+        let entry = map.entry(protein_key).or_default();
+
+        match feat.sage_feature.label == -1 {
+            true => {
+                match use_hyper_score {
+                    true => {
+                        entry.reverse = entry.reverse.max(feat.sage_feature.hyperscore as f32);
+                    }
+                    false => {
+                        entry.reverse = entry.reverse.max(feat.re_score.unwrap() as f32);
+                    }
+                }
+            }
+            false => {
+                match use_hyper_score {
+                    true => {
+                        entry.forward = entry.forward.max(feat.sage_feature.hyperscore as f32);
+                    }
+                    false => {
+                        entry.forward = entry.forward.max(feat.re_score.unwrap() as f32);
+                    }
+                }
+            }
         }
+    }
+
+    let q_value_map = assign_q_value(map);
+
+    q_value_map
+}
+
+pub fn protein_id_from_psm(psm: &Psm, decoy_tag: &str, generate_decoys: bool) -> String {
+    if psm.sage_feature.label == -1 {
+        psm.proteins
+            .iter()
+            .map(|s| {
+                if generate_decoys {
+                    format!("{}{}", decoy_tag, s)
+                } else {
+                    s.to_string()
+                }
+            })
+            .join(";")
+    } else {
+        psm.proteins.iter().join(";")
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Row {
-    pub key: (String, String), // (spectrum_idx, match_idx)
-    pub decoy: bool,
-    pub score: f32,
-    pub q_value: f64,
-}
+fn assign_q_value(
+    scores: HashMap<String, Competition>,
+) -> HashMap<String, f64> {
 
-pub fn assign_q_value(
-    rows: Vec<Row>,
-) -> HashMap<(String, String), f64> {
-    let mut q_values: HashMap<(String, String), f64> = HashMap::new();
+    let mut q_values: HashMap<String, f64> = HashMap::new();
 
-    // Sort rows by descending score
-    let mut sorted_rows = rows;
-    sorted_rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+    let mut scores = scores
+        .into_par_iter()
+        .flat_map(|(_, comp)| {
+            [
+                (comp.ix.clone(), false, comp.forward),
+                (comp.ix, true, comp.reverse),
+            ]
+        })
+        .filter_map(|(ix, decoy, score)| {
+            ix.map(|ix| Row {
+                ix,
+                decoy,
+                score,
+                q: 1.0,
+            })
+        })
+        .collect::<Vec<Row>>();
+
+    scores.par_sort_by(|a, b| b.score.total_cmp(&a.score));
 
     let mut decoy_count: f64 = 1.0;
     let mut target_count: f64 = 0.0;
     let mut q_values_list: Vec<f64> = Vec::new();
 
     // First pass: Calculate the raw q-values
-    for row in sorted_rows.iter() {
+    for row in scores.iter() {
         if row.decoy {
             decoy_count += 1.0;
         } else {
@@ -111,160 +224,14 @@ pub fn assign_q_value(
 
     // Second pass: Compute the cumulative minimum from the end
     let mut q_min = 1.0;
-    for (i, row) in sorted_rows.iter_mut().enumerate().rev() {
+    for (i, row) in scores.iter_mut().enumerate().rev() {
         let q = q_values_list[i];
         if q < q_min {
             q_min = q;
         }
-        row.q_value = q_min;
-        q_values.insert(row.key.clone(), row.q_value);
+        row.q = q_min as f32;
+        q_values.insert(row.ix.clone(), row.q as f64);
     }
 
     q_values
-}
-
-pub fn tdc_picked_peptide_match(ds: &MatchDataset) -> Vec<Match> {
-    use std::collections::HashMap;
-
-    let mut peptide_map: HashMap<String, Competition> = HashMap::new();
-
-    for matches in ds.matches.values() {
-        for m in matches {
-            let key = m.match_idx.clone(); // Peptide sequence
-
-            let entry = peptide_map.entry(key).or_insert_with(Competition::new);
-
-            if m.decoy {
-                if m.score > entry.reverse {
-                    entry.reverse = m.score;
-                    entry.reverse_match = Some(m.clone());
-                }
-            } else {
-                if m.score > entry.forward {
-                    entry.forward = m.score;
-                    entry.forward_match = Some(m.clone());
-                }
-            }
-        }
-    }
-
-    // Collect competitions into a Vec<Competition>
-    let competitions: Vec<Competition> = peptide_map.into_values().collect();
-
-    // Prepare rows for q-value assignment
-    let rows: Vec<Row> = competitions
-        .into_iter()
-        .flat_map(|comp| {
-            let mut entries = Vec::new();
-            if let Some(fwd_match) = comp.forward_match {
-                entries.push(Row {
-                    key: (fwd_match.spectrum_idx.clone(), fwd_match.match_idx.clone()),
-                    decoy: false,
-                    score: comp.forward,
-                    q_value: 1.0,
-                });
-            }
-            if let Some(rev_match) = comp.reverse_match {
-                entries.push(Row {
-                    key: (rev_match.spectrum_idx.clone(), rev_match.match_idx.clone()),
-                    decoy: true,
-                    score: comp.reverse,
-                    q_value: 1.0,
-                });
-            }
-            entries
-        })
-        .collect();
-
-    // Assign q-values
-    let q_values = assign_q_value(rows);
-
-    // Update matches with q-values
-    let mut result = Vec::new();
-    for matches in ds.matches.values() {
-        for m in matches {
-            let key = (m.spectrum_idx.clone(), m.match_idx.clone());
-            if let Some(&q_value) = q_values.get(&key) {
-                let mut m_clone = m.clone();
-                m_clone.q_value = Some(q_value);
-                result.push(m_clone);
-            }
-        }
-    }
-
-    result
-}
-
-pub fn tdc_picked_protein_match(ds: &MatchDataset) -> Vec<Match> {
-    use std::collections::HashMap;
-
-    let mut protein_map: HashMap<String, Competition> = HashMap::new();
-
-    for matches in ds.matches.values() {
-        for m in matches {
-            if let Some(protein_ids) = &m.match_identity_candidates {
-                for protein_id in protein_ids {
-                    let entry = protein_map.entry(protein_id.clone()).or_insert_with(Competition::new);
-
-                    if m.decoy {
-                        if m.score > entry.reverse {
-                            entry.reverse = m.score;
-                            entry.reverse_match = Some(m.clone());
-                        }
-                    } else {
-                        if m.score > entry.forward {
-                            entry.forward = m.score;
-                            entry.forward_match = Some(m.clone());
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Collect competitions into a Vec<Competition>
-    let competitions: Vec<Competition> = protein_map.into_values().collect();
-
-    // Prepare rows for q-value assignment
-    let rows: Vec<Row> = competitions
-        .into_iter()
-        .flat_map(|comp| {
-            let mut entries = Vec::new();
-            if let Some(fwd_match) = comp.forward_match {
-                entries.push(Row {
-                    key: (fwd_match.spectrum_idx.clone(), fwd_match.match_idx.clone()),
-                    decoy: false,
-                    score: comp.forward,
-                    q_value: 1.0,
-                });
-            }
-            if let Some(rev_match) = comp.reverse_match {
-                entries.push(Row {
-                    key: (rev_match.spectrum_idx.clone(), rev_match.match_idx.clone()),
-                    decoy: true,
-                    score: comp.reverse,
-                    q_value: 1.0,
-                });
-            }
-            entries
-        })
-        .collect();
-
-    // Assign q-values
-    let q_values = assign_q_value(rows);
-
-    // Update matches with q-values
-    let mut result = Vec::new();
-    for matches in ds.matches.values() {
-        for m in matches {
-            let key = (m.spectrum_idx.clone(), m.match_idx.clone());
-            if let Some(&q_value) = q_values.get(&key) {
-                let mut m_clone = m.clone();
-                m_clone.q_value = Some(q_value);
-                result.push(m_clone);
-            }
-        }
-    }
-
-    result
 }

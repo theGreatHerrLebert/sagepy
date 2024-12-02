@@ -1,6 +1,5 @@
 use std::collections::{BTreeMap};
 use itertools::multizip;
-use crate::picked::{tdc_picked_peptide_match, tdc_picked_protein_match};
 use crate::utility;
 
 #[derive(Clone, Debug)]
@@ -139,8 +138,6 @@ pub enum TDCMethod {
     PeptideLevelPsmOnly,
     PeptideLevelPeptideOnly,
     PeptideLevelPsmPeptide,
-    PickedPeptide,  // New variant
-    PickedProtein,  // New variant
 }
 
 impl TDCMethod {
@@ -150,8 +147,6 @@ impl TDCMethod {
             "peptide_psm_only" => TDCMethod::PeptideLevelPsmOnly,
             "peptide_peptide_only" => TDCMethod::PeptideLevelPeptideOnly,
             "peptide_psm_peptide" => TDCMethod::PeptideLevelPsmPeptide,
-            "picked_peptide" => TDCMethod::PickedPeptide,
-            "picked_protein" => TDCMethod::PickedProtein,
             _ => panic!("Invalid TDC method"),
         }
     }
@@ -162,8 +157,6 @@ impl TDCMethod {
             1 => TDCMethod::PeptideLevelPsmOnly,
             2 => TDCMethod::PeptideLevelPeptideOnly,
             3 => TDCMethod::PeptideLevelPsmPeptide,
-            4 => TDCMethod::PickedPeptide,
-            5 => TDCMethod::PickedProtein,
             _ => panic!("Invalid TDC method"),
         }
     }
@@ -174,8 +167,6 @@ impl TDCMethod {
             TDCMethod::PeptideLevelPsmOnly => "PeptideLevelPsmOnly",
             TDCMethod::PeptideLevelPeptideOnly => "PeptideLevelPeptideOnly",
             TDCMethod::PeptideLevelPsmPeptide => "PeptideLevelPsmAndPeptide",
-            TDCMethod::PickedPeptide => "PickedPeptide",
-            TDCMethod::PickedProtein => "PickedProtein",
         }
     }
 }
@@ -445,8 +436,6 @@ pub fn target_decoy_competition(
         TDCMethod::PeptideLevelPsmOnly => tdc_peptide_psm_only_match(&ds),
         TDCMethod::PeptideLevelPeptideOnly => tdc_peptide_peptide_only_match(&ds),
         TDCMethod::PeptideLevelPsmPeptide => tdc_peptide_psm_peptide_match(&ds),
-        TDCMethod::PickedPeptide => tdc_picked_peptide_match(&ds),    // New method
-        TDCMethod::PickedProtein => tdc_picked_protein_match(&ds),    // New method
     };
 
     let (spectrum_idx, match_idx, match_identity, decoy, score, q_value) =
