@@ -238,12 +238,11 @@ def create_query(
 
     return processed_spec
 
-# TODO: need to add modification passing, needs to be refactored for the sagepy tool entirely
 def create_sage_database(
     fasta_path: str,
     missed_cleavages: int = 2,
     min_len: int = 7,
-    max_len: int = 50,
+    max_len: int = 30,
     cleave_at: str = 'KR',
     restrict: str = 'P',
     c_terminal: bool = True,
