@@ -1255,65 +1255,86 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMa
 }
 
 fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, Vec<PyPsm>> {
+    // Parallelize the processing of the BTreeMap entries
+    let new_map: BTreeMap<String, Vec<PyPsm>> = psm_map
+        .into_par_iter() // Parallel iterator over the map entries
+        .map(|(key, psms)| {
+            let mut new_psms: Vec<PyPsm> = Vec::new();
+            let mut target_seen: HashSet<String> = HashSet::new();
+            let mut decoy_seen: HashSet<String> = HashSet::new();
 
-    let mut new_map: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
+            // Sort the psms by hyperscore descending
+            for psm in psms.iter().sorted_by(|a, b| {
+                b.inner
+                    .sage_feature
+                    .hyperscore
+                    .partial_cmp(&a.inner.sage_feature.hyperscore)
+                    .unwrap()
+            }) {
+                // Get either the target or decoy sequence
+                let sequence = match psm.inner.sage_feature.label == -1 {
+                    true => psm.inner.sequence_decoy.clone().unwrap().sequence,
+                    false => psm.inner.sequence.clone().unwrap().sequence,
+                };
 
-    for (key, psms) in psm_map {
-        let mut new_psms: Vec<PyPsm> = Vec::new();
-        let mut target_seen: HashSet<String> = HashSet::new();
-        let mut decoy_seen: HashSet<String> = HashSet::new();
-
-        // sort the psms by hyperscore descending
-        for psm in psms.iter().sorted_by(|a, b| b.inner.sage_feature.hyperscore.partial_cmp(&a.inner.sage_feature.hyperscore).unwrap()) {
-
-            // get either the target or decoy sequence
-            let sequence = match psm.inner.sage_feature.label == -1 {
-                true => psm.inner.sequence_decoy.clone().unwrap().sequence,
-                false => psm.inner.sequence.clone().unwrap().sequence,
-            };
-
-            // if the psm is a decoy
-            if psm.inner.sage_feature.label == -1 {
-                // if the decoy is already in the set, skip the psm but check if proteins need to be extended
-                if decoy_seen.contains(&sequence) {
-                    let existing_psm = new_psms.iter().find(|p| p.inner.sequence_decoy.clone().unwrap().sequence == sequence).unwrap();
-                    let mut existing_proteins = existing_psm.inner.proteins.clone();
-                    let new_proteins = psm.inner.proteins.clone();
-                    // add new proteins to existing proteins, so check if the proteins to add are not already in the existing proteins
-                    for protein in new_proteins {
-                        if !existing_proteins.contains(&protein) {
-                            existing_proteins.push(protein);
+                if psm.inner.sage_feature.label == -1 {
+                    // Process decoys
+                    if decoy_seen.contains(&sequence) {
+                        let existing_psm = new_psms
+                            .iter()
+                            .find(|p| {
+                                p.inner.sequence_decoy.clone().unwrap().sequence == sequence
+                            })
+                            .unwrap();
+                        let mut existing_proteins = existing_psm.inner.proteins.clone();
+                        for protein in &psm.inner.proteins {
+                            if !existing_proteins.contains(protein) {
+                                existing_proteins.push(protein.clone());
+                            }
                         }
+                    } else {
+                        decoy_seen.insert(sequence.clone());
+                        new_psms.push(psm.clone());
+                    }
+                } else {
+                    // Process targets
+                    if target_seen.contains(&sequence) {
+                        let existing_psm = new_psms
+                            .iter()
+                            .find(|p| p.inner.sequence.clone().unwrap().sequence == sequence)
+                            .unwrap();
+                        let mut existing_proteins = existing_psm.inner.proteins.clone();
+                        for protein in &psm.inner.proteins {
+                            if !existing_proteins.contains(protein) {
+                                existing_proteins.push(protein.clone());
+                            }
+                        }
+                    } else {
+                        target_seen.insert(sequence.clone());
+                        new_psms.push(psm.clone());
                     }
                 }
-                decoy_seen.insert(sequence.clone());
-                new_psms.push(psm.clone());
-
-            // if the psm is a target
-            } else {
-                // if the target is already in the set, skip the psm but check if proteins need to be extended
-                if target_seen.contains(&sequence) {
-                    let existing_psm = new_psms.iter().find(|p| p.inner.sequence.clone().unwrap().sequence == sequence).unwrap();
-                    let mut existing_proteins = existing_psm.inner.proteins.clone();
-                    let new_proteins = psm.inner.proteins.clone();
-                    // add new proteins to existing proteins, so check if the proteins to add are not already in the existing proteins
-                    for protein in new_proteins {
-                        if !existing_proteins.contains(&protein) {
-                            existing_proteins.push(protein);
-                        }
-                    }
-                }
-                target_seen.insert(sequence.clone());
-                new_psms.push(psm.clone());
             }
-        }
 
-        // insert the new psms into the new map, sorted by hyperscore descending
-        new_map.insert(key, new_psms.iter().sorted_by(|a, b| b.inner.sage_feature.hyperscore.partial_cmp(&a.inner.sage_feature.hyperscore).unwrap()).cloned().collect());
-    }
+            // Sort the new_psms by hyperscore descending and return the result
+            let sorted_psms = new_psms
+                .iter()
+                .sorted_by(|a, b| {
+                    b.inner
+                        .sage_feature
+                        .hyperscore
+                        .partial_cmp(&a.inner.sage_feature.hyperscore)
+                        .unwrap()
+                })
+                .cloned()
+                .collect();
+
+            (key, sorted_psms)
+        })
+        .collect();
+
     new_map
 }
-
 #[pyfunction]
 pub fn peptide_spectrum_match_to_feature_vector(
     psm: &PyPsm,
