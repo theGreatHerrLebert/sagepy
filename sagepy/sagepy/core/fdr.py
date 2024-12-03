@@ -61,22 +61,22 @@ def sage_fdr(feature_collection: List[Feature], indexed_db: IndexedDatabase, use
         use_hyper_score
     )
 
-def sage_fdr_psm(feature_collection: Union[List[Psm], Dict[str, List[Psm]]], indexed_db: IndexedDatabase, use_hyper_score: bool = True):
+def sage_fdr_psm(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], indexed_db: IndexedDatabase, use_hyper_score: bool = True):
     """ Perform SAGE FDR on all levels (spectrum, peptide, protein), calculates q-values and PEPs for a given feature collection.
     Args:
-        feature_collection: a list of features
+        psm_collection: a list of features
         indexed_db: an indexed database
         use_hyper_score: whether to use hyper score or discriminant score for q-value calculation
     """
 
     f_collection = []
 
-    if isinstance(feature_collection, dict):
-        for _, values in feature_collection.items():
+    if isinstance(psm_collection, dict):
+        for _, values in psm_collection.items():
             f_collection.extend(values)
 
     else:
-        f_collection = feature_collection
+        f_collection = psm_collection
 
     psc.py_sage_fdr_psm(
         [feature.get_py_ptr() for feature in f_collection],
