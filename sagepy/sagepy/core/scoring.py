@@ -318,6 +318,12 @@ class Psm:
     def get_fragment_intensity_prediction(self) -> FragmentIntensity:
         return FragmentIntensity.from_py_ptr(self.__py_ptr.get_fragment_intensity_prediction())
 
+    def observed_fragments_map(self, normalize: bool = True) -> Dict[Tuple[int, int, int], float]:
+        return self.__py_ptr.observed_fragments_to_fragments_map(normalize)
+
+    def prosit_fragments_map(self, normalize: bool = True) -> Dict[Tuple[int, int, int], float]:
+        return self.__py_ptr.prosit_intensities_to_fragments_map(normalize)
+
 
     def __repr__(self):
         return (f"Psm(spec_idx: {self.spec_idx}, peptide_idx: {self.peptide_idx}, "

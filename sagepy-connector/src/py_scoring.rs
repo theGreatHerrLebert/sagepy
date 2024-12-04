@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use crate::py_intensity::PyFragmentIntensityPrediction;
 use crate::py_ion_series::PyKind;
 use crate::py_peptide::peptide;
-use crate::py_utility::{flat_prosit_array_to_fragments_map};
+use crate::py_utility::{flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
 
 #[pyclass]
 #[derive(Clone, Serialize)]
@@ -345,6 +345,15 @@ impl PyPsm {
             inner: fragments.unwrap(),
         }
     }
+
+    pub fn observed_fragments_to_fragments_map(&self, normalize: bool) -> BTreeMap<(u32, i32, i32), f32> {
+        py_fragments_to_fragments_map(&self.sage_feature().fragments().unwrap(), normalize)
+    }
+
+    pub fn prosit_intensities_to_fragments_map(&self, normalize: bool) -> BTreeMap<(u32, i32, i32), f32> {
+        py_fragments_to_fragments_map(&self.prosit_intensities_to_fragments(), normalize)
+    }
+
 }
 
 #[pyclass]
