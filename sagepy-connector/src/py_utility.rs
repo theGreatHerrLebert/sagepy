@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use qfdrust::psm::Psm;
+use qfdrust::psm::{compress_psms, decompress_psms, Psm};
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 use sage_core::ion_series::Kind;
@@ -258,6 +258,20 @@ pub fn get_psm_proteins_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<Vec<Str
     })
 }
 
+#[pyfunction]
+pub fn py_compress_psms(psms: Vec<PyPsm>) -> Vec<u8> {
+    let inner_psms = psms.iter().map(|psm| psm.inner.clone()).collect::<Vec<_>>();
+    compress_psms(&inner_psms).unwrap()
+}
+
+#[pyfunction]
+pub fn py_decompress_psms(psms_bin: Vec<u8>) -> Vec<PyPsm> {
+    let inner_psms: Vec<Psm> = decompress_psms(&psms_bin.as_slice()).unwrap();
+    inner_psms.iter().map(|psm| PyPsm {
+        inner: psm.clone(),
+    }).collect()
+}
+
 #[pymodule]
 pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(flat_prosit_array_to_fragments_map, m)?)?;
@@ -274,5 +288,7 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_psm_sequences_decoy_modified_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_spec_idx_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_proteins_par, m)?)?;
+    m.add_function(wrap_pyfunction!(py_compress_psms, m)?)?;
+    m.add_function(wrap_pyfunction!(py_decompress_psms, m)?)?;
     Ok(())
 }
