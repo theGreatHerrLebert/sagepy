@@ -614,3 +614,26 @@ def generate_search_configurations(
 
         # Yield the configuration with the indexed database
         yield indexed_db
+
+
+def compress_psms(psms: List[Psm]) -> bytes:
+    """Compress a list of peptide spectrum matches.
+
+    Args:
+        psms (List[Psm]): The peptide spectrum matches
+
+    Returns:
+        List[Psm]: The compressed peptide spectrum matches
+    """
+    return psc.py_compress_psms([psm.get_py_ptr() for psm in psms])
+
+def decompress_psms(data: bytes) -> List[Psm]:
+    """Decompress a list of peptide spectrum matches.
+
+    Args:
+        data (bytes): The compressed peptide spectrum matches
+
+    Returns:
+        List[Psm]: The decompressed peptide spectrum matches
+    """
+    return [Psm.from_py_ptr(p) for p in psc.py_decompress_psms(data)]
