@@ -12,8 +12,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-13]
-        python-version: ['3.11', '3.12']
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+        python-version: ['3.11', '3.12', '3.13']
         include:
           - os: ubuntu-latest
             python-version: '3.11'
@@ -24,6 +24,9 @@ jobs:
           - os: macos-13
             python-version: '3.11'
             publish: true
+          - os: macos-14
+            python-version: '3.11'
+            publish: true
           - os: ubuntu-latest
             python-version: '3.12'
             publish: true
@@ -32,6 +35,21 @@ jobs:
             publish: true
           - os: macos-13
             python-version: '3.12'
+            publish: true
+          - os: macos-14
+            python-version: '3.12'
+            publish: true
+          - os: ubuntu-latest
+            python-version: '3.13'
+            publish: true
+          - os: windows-latest
+            python-version: '3.13'
+            publish: true
+          - os: macos-13
+            python-version: '3.13'
+            publish: true
+          - os: macos-14
+            python-version: '3.13'
             publish: true
 
     steps:
@@ -69,3 +87,4 @@ jobs:
         run: |
           cd sagepy-connector
           maturin publish --no-sdist
+
