@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 use std::f64::consts::LN_2;
+use bincode::{Decode, Encode};
 use ndarray::Array1;
 use ndarray::Zip;
 use sage_core::ion_series::Kind;
@@ -221,7 +222,7 @@ pub fn reshape_prosit_array(flat_array: Vec<f32>) -> Vec<Vec<Vec<f32>>> {
     array_return
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Encode, Decode)]
 pub struct FragmentIntensityPrediction {
     pub fragments: Fragments,
     pub prosit_intensity_predicted: Vec<f32>,

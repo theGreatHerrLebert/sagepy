@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 rand = "0.9.0-beta.0"
 rustms = { git = "https://github.com/theGreatHerrLebert/rustims.git" }
+# rustms = { path = "../../rustims/rustms" }
 # sage-core = {path = "../../sage/crates/sage" }
 sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git" }
 itertools = "0.13.0"
@@ -15,3 +16,5 @@ serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
 ndarray = "0.16.1"
 rayon = "1.10.0"
+bincode = "2.0.0-rc.3"
+zstd = "0.13.2"

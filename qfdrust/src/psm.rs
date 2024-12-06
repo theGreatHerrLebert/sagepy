@@ -2,9 +2,15 @@ use rustms::chemistry::formula::calculate_mz;
 use rustms::proteomics::peptide::{PeptideSequence};
 use sage_core::scoring::{Feature, Fragments};
 use serde::{Deserialize, Serialize};
+use bincode;
+use std::io;
+use bincode::config::standard;
 use crate::intensity::{prosit_intensities_to_fragments, FragmentIntensityPrediction};
+use zstd::stream::encode_all; // For compression
+use bincode::{Encode, Decode};
+use zstd::decode_all;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct Psm {
     pub spec_idx: String,
     pub peptide_idx: u32,
@@ -226,4 +232,28 @@ impl Psm {
             "protein_q",
         ]
     }
+}
+
+pub fn compress_psms(psms: &[Psm]) -> io::Result<Vec<u8>> {
+    // Step 1: Configure bincode
+    let config = standard();
+    // Step 2: Serialize with the configured bincode
+    let serialized = bincode::encode_to_vec(psms, config).expect("Serialization failed");
+    // Step 3: Compress the serialized data using ZSTD
+    let compressed = encode_all(serialized.as_slice(), 0).expect("Compression failed");
+    // Step 4: Return compressed binary data
+    Ok(compressed)
+}
+
+pub fn decompress_psms(compressed_data: &[u8]) -> io::Result<Vec<Psm>> {
+    // Step 1: Decompress the data using ZSTD
+    let decompressed = decode_all(compressed_data).expect("Decompression failed");
+    // Step 2: Configure bincode
+    let config = standard();
+    // Step 3: Deserialize the decompressed data back into Psm structs
+    let psms: Vec<Psm> = bincode::decode_from_slice(&decompressed, config)
+        .expect("Deserialization failed")
+        .0;
+    // Step 4: Return the deserialized data
+    Ok(psms)
 }
