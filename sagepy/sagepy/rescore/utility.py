@@ -187,16 +187,18 @@ def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
     return splits
 
 
-def transform_psm_to_mokapot_pin(psm_df):
+def transform_psm_to_mokapot_pin(psm_df, seq_modified: bool = False):
     """ Transform a PSM DataFrame to a mokapot PIN DataFrame.
     Args:
         psm_df: a DataFrame containing PSMs
+        seq_modified: whether the sequences are modified
 
     Returns:
         A DataFrame containing the PSMs in mokapot PIN format.
     """
 
     columns_map = {
+        # target columns mapping for mokapot
         'spec_idx': 'SpecId',
         'decoy': 'Label',
         'charge': 'Charge',
@@ -204,31 +206,35 @@ def transform_psm_to_mokapot_pin(psm_df):
         'proteins': 'Proteins',
 
         # feature mapping for re-scoring
-        'hyperscore': 'Feature1',
-        'isotope_error': 'Feature2',
-        'delta_mass': 'Feature3',
-        'delta_rt': 'Feature4',
-        'delta_ims': 'Feature5',
-        'matched_peaks': 'Feature6',
-        'matched_intensity_pct': 'Feature7',
-        'intensity_ms1': 'Feature8',
-        'intensity_ms2': 'Feature9',
-        'average_ppm': 'Feature10',
-        'poisson': 'Feature11',
-        'spectral_entropy_similarity': 'Feature12',
-        'pearson_correlation': 'Feature13',
-        'spearman_correlation': 'Feature14',
-        'spectral_angle_similarity': 'Feature15',
-        'collision_energy': 'Feature16',
-        'delta_next': 'Feature17',
-        'delta_best': 'Feature18',
-        'longest_b': 'Feature19',
-        'longest_y': 'Feature20',
-        'longest_y_pct': 'Feature21',
-        'cosine_similarity': 'Feature22',
-        'rank': 'Feature23',
-        'missed_cleavages': 'Feature24',
+        'hyperscore': 'hyperscore',
+        'isotope_error': 'isotope_error',
+        'delta_mass': 'delta_mass',
+        'delta_rt': 'delta_rt',
+        'delta_ims': 'delta_ims',
+        'matched_peaks': 'matched_peaks',
+        'matched_intensity_pct': 'matched_intensity_pct',
+        'intensity_ms1': 'intensity_ms1',
+        'intensity_ms2': 'intensity_ms2',
+        'average_ppm': 'average_ppm',
+        'poisson': 'poisson',
+        'spectral_entropy_similarity': 'spectral_entropy_similarity',
+        'pearson_correlation': 'pearson_correlation',
+        'spearman_correlation': 'spearman_correlation',
+        'spectral_angle_similarity': 'spectral_angle_similarity',
+        'collision_energy': 'collision_energy',
+        'delta_next': 'delta_next',
+        'delta_best': 'delta_best',
+        'longest_b': 'longest_b',
+        'longest_y': 'longest_y',
+        'longest_y_pct': 'longest_y_pct',
+        'cosine_similarity': 'cosine_similarity',
+        'rank': 'rank',
+        'missed_cleavages': 'missed_cleavages',
     }
+
+    if not seq_modified:
+        columns_map['sequence'] = 'Peptide'
+        columns_map.pop('sequence_modified')
 
     psm_df = psm_df[list(columns_map.keys())]
     df_pin = psm_df.rename(columns=columns_map)
