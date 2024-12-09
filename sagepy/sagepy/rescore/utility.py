@@ -235,7 +235,7 @@ def transform_psm_to_mokapot_pin(psm_df):
     df_pin_clean = df_pin.dropna(axis=1, how='all')
     df_pin_clean = df_pin_clean.dropna()
 
-    df_pin_clean['Label'] = df_pin_clean['Label'].apply(lambda x: -1 if x else 1)
+    df_pin_clean['Label'] = df_pin_clean['Label'].apply(lambda x: True if x else False)
     df_pin_clean['ScanNr'] = range(1, len(df_pin_clean) + 1)
 
     return df_pin_clean
