@@ -1,11 +1,11 @@
 use pyo3::prelude::*;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use qfdrust::dataset::PeptideSpectrumMatch;
+use qfdrust::psm::{compress_psms, decompress_psms, Psm};
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 use sage_core::ion_series::Kind;
 use sage_core::scoring::Fragments;
-use crate::py_scoring::{PyFragments, PyPeptideSpectrumMatch};
+use crate::py_scoring::{PyFragments, PyPsm};
 use crate::utilities::sage_sequence_to_unimod_sequence;
 
 /// Converts a cosine similarity to an angle similarity.
@@ -144,7 +144,7 @@ pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
 }
 
 #[pyfunction]
-pub fn psms_to_json(psms: Vec<PyPeptideSpectrumMatch>, num_threads: usize) -> Vec<String> {
+pub fn psms_to_json(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
     let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
 
     thread_pool.install(|| {
@@ -155,24 +155,121 @@ pub fn psms_to_json(psms: Vec<PyPeptideSpectrumMatch>, num_threads: usize) -> Ve
 }
 
 #[pyfunction]
-pub fn psms_to_json_bin(psms: Vec<PyPeptideSpectrumMatch>) -> Vec<u8> {
+pub fn psms_to_json_bin(psms: Vec<PyPsm>) -> Vec<u8> {
     let inner_psms = psms.iter().map(|psm| psm.inner.clone()).collect::<Vec<_>>();
     bincode::serialize(&inner_psms).unwrap()
 }
 
 #[pyfunction]
-pub fn json_bin_to_psms(json_bin: Vec<u8>) -> Vec<PyPeptideSpectrumMatch> {
-    let inner_psms: Vec<PeptideSpectrumMatch> = bincode::deserialize(&json_bin).unwrap();
-    inner_psms.iter().map(|psm| PyPeptideSpectrumMatch {
+pub fn json_bin_to_psms(json_bin: Vec<u8>) -> Vec<PyPsm> {
+    let inner_psms: Vec<Psm> = bincode::deserialize(&json_bin).unwrap();
+    inner_psms.iter().map(|psm| PyPsm {
         inner: psm.clone(),
-        fragments_observed: None,
-        fragments_predicted: None,
     }).collect()
 }
 
 #[pyfunction]
 pub fn sage_sequence_to_unimod(sequence: String, modifications: Vec<f32>, expected_modifications: HashSet<String>) -> String {
     sage_sequence_to_unimod_sequence(sequence, &modifications, &expected_modifications)
+}
+
+#[pyfunction]
+pub fn psms_to_feature_matrix(psms: Vec<PyPsm>, num_threads: usize) -> Vec<Vec<f64>> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            psm.inner.get_feature_vector()
+        }
+        ).collect()
+    })
+}
+
+#[pyfunction]
+pub fn get_psm_sequences_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            psm.inner.sequence.clone().unwrap().sequence
+        }).collect()
+    })
+}
+
+#[pyfunction]
+pub fn get_psm_sequences_modified_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            psm.inner.sequence_modified.clone().unwrap().sequence
+        }).collect()
+    })
+}
+
+#[pyfunction]
+pub fn get_psm_sequences_decoy_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            psm.inner.sequence_decoy.clone().unwrap().sequence
+        }).collect()
+    })
+}
+
+#[pyfunction]
+pub fn get_psm_sequences_decoy_modified_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+
+            let sequence = match &psm.inner.sequence_decoy_modified {
+                Some(seq) => seq.sequence.clone(),
+                None => "".to_string(),
+            };
+
+            sequence
+
+        }).collect()
+    })
+}
+
+#[pyfunction]
+pub fn get_psm_spec_idx_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            psm.inner.spec_idx.clone()
+        }).collect()
+    })
+}
+
+#[pyfunction]
+pub fn get_psm_proteins_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<Vec<String>> {
+    let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+
+    thread_pool.install(|| {
+        psms.par_iter().map(|psm| {
+            psm.inner.proteins.clone()
+        }).collect()
+    })
+}
+
+#[pyfunction]
+pub fn py_compress_psms(psms: Vec<PyPsm>) -> Vec<u8> {
+    let inner_psms = psms.iter().map(|psm| psm.inner.clone()).collect::<Vec<_>>();
+    compress_psms(&inner_psms).unwrap()
+}
+
+#[pyfunction]
+pub fn py_decompress_psms(psms_bin: Vec<u8>) -> Vec<PyPsm> {
+    let inner_psms: Vec<Psm> = decompress_psms(&psms_bin.as_slice()).unwrap();
+    inner_psms.iter().map(|psm| PyPsm {
+        inner: psm.clone(),
+    }).collect()
 }
 
 #[pymodule]
@@ -184,5 +281,14 @@ pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(json_bin_to_psms, m)?)?;
     m.add_function(wrap_pyfunction!(cosim_to_spectral_angle, m)?)?;
     m.add_function(wrap_pyfunction!(sage_sequence_to_unimod, m)?)?;
+    m.add_function(wrap_pyfunction!(psms_to_feature_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_sequences_par, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_sequences_modified_par, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_sequences_decoy_par, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_sequences_decoy_modified_par, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_spec_idx_par, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_proteins_par, m)?)?;
+    m.add_function(wrap_pyfunction!(py_compress_psms, m)?)?;
+    m.add_function(wrap_pyfunction!(py_decompress_psms, m)?)?;
     Ok(())
 }

@@ -1,15 +1,11 @@
 use std::collections::{BTreeMap};
 use itertools::multizip;
-use rustms::chemistry::formula::calculate_mz;
-use rustms::proteomics::peptide::{FragmentType, PeptideProductIonSeriesCollection, PeptideSequence};
-use serde::{Deserialize, Serialize};
-use crate::intensity::FragmentIntensityPrediction;
 use crate::utility;
 
 #[derive(Clone, Debug)]
 pub struct Match {
-    pub match_idx: String,
     pub spectrum_idx: String,
+    pub match_idx: String,
     pub match_identity_candidates: Option<Vec<String>>,
     pub decoy: bool,
     pub score: f32,
@@ -65,9 +61,10 @@ impl MatchDataset {
         MatchDataset::new(map)
     }
 
-    pub fn to_vectors(&self) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
+    pub fn to_vectors(&self) -> (Vec<String>, Vec<String>, Vec<Vec<String>>, Vec<bool>, Vec<f32>, Vec<f64>) {
         let mut spectrum_idx: Vec<String> = Vec::new();
         let mut match_idx: Vec<String> = Vec::new();
+        let mut match_identity_candidates: Vec<Vec<String>> = Vec::new();
         let mut decoy: Vec<bool> = Vec::new();
         let mut score: Vec<f32> = Vec::new();
         let mut q_value: Vec<f64> = Vec::new();
@@ -76,13 +73,14 @@ impl MatchDataset {
             for m in matches {
                 spectrum_idx.push(spec_idx.clone());
                 match_idx.push(m.match_idx.clone());
+                match_identity_candidates.push(m.match_identity_candidates.clone().unwrap_or(Vec::new()));
                 decoy.push(m.decoy);
                 score.push(m.score);
                 q_value.push(m.q_value.unwrap_or(1.0));
             }
         }
 
-        (spectrum_idx, match_idx, decoy, score, q_value)
+        (spectrum_idx, match_idx, match_identity_candidates, decoy, score, q_value)
     }
 
     pub fn get_best_target_match(&self, spec_id: &str) -> Option<&Match> {
@@ -131,204 +129,6 @@ impl MatchDataset {
     }
     pub fn get_best_matches(&self) -> Vec<&Match> {
         self.get_spectra_ids().iter().filter_map(|spec_id| self.get_best_match(spec_id)).collect()
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PeptideSpectrumMatch {
-    pub spec_idx: String,
-    pub peptide_idx: u32,
-    pub proteins: Vec<String>,
-    pub decoy: bool,
-    pub hyper_score: f64,
-    pub rank: u32,
-    pub mono_mz_calculated: Option<f32>,
-    pub mono_mass_observed: Option<f32>,
-    pub mono_mass_calculated: Option<f32>,
-    pub isotope_error: Option<f32>,
-    pub average_ppm: Option<f32>,
-    pub delta_next: Option<f64>,
-    pub delta_best: Option<f64>,
-    pub matched_peaks: Option<u32>,
-    pub longest_b: Option<u32>,
-    pub longest_y: Option<u32>,
-    pub longest_y_pct: Option<f32>,
-    pub missed_cleavages: Option<u8>,
-    pub matched_intensity_pct: Option<f32>,
-    pub scored_candidates: Option<u32>,
-    pub poisson: Option<f64>,
-    pub peptide_sequence: Option<PeptideSequence>,
-    pub charge: Option<u8>,
-    pub retention_time_observed: Option<f32>,
-    pub retention_time_predicted: Option<f32>,
-    pub inverse_mobility_observed: Option<f32>,
-    pub inverse_mobility_predicted: Option<f32>,
-    pub intensity_ms1: Option<f32>,
-    pub intensity_ms2: Option<f32>,
-    pub q_value: Option<f64>,
-    pub collision_energy: Option<f64>,
-    pub collision_energy_calibrated: Option<f64>,
-    pub re_score: Option<f64>,
-    pub cosine_similarity: Option<f32>,
-    pub file_name: Option<String>,
-    pub fragment_charges: Option<Vec<i32>>,
-    pub fragment_ion_types: Option<Vec<String>>,
-    pub fragment_ordinals: Option<Vec<i32>>,
-    pub fragment_intensities: Option<Vec<f32>>,
-    pub fragment_mz_calculated: Option<Vec<f32>>,
-    pub fragment_mz_observed: Option<Vec<f32>>,
-    pub mz_calibration_ppm: Option<f32>,
-    pub projected_rt: Option<f32>,
-    pub beta_score: Option<f64>,
-    pub posterior_error_prob: Option<f64>,
-    pub prosit_intensities: Option<Vec<f32>>,
-    pub spectral_entropy_similarity: Option<f32>,
-    pub spectral_correlation_similarity_pearson: Option<f32>,
-    pub spectral_correlation_similarity_spearman: Option<f32>,
-    pub spectral_normalized_intensity_difference: Option<f32>,
-}
-
-impl PeptideSpectrumMatch {
-    pub fn new(
-        spec_idx: String,
-        peptide_idx: u32,
-        proteins: Vec<String>,
-        decoy: bool,
-        hyper_score: f64,
-        rank: u32,
-        mono_mass_observed: Option<f32>,
-        isotope_error: Option<f32>,
-        average_ppm: Option<f32>,
-        delta_next: Option<f64>,
-        delta_best: Option<f64>,
-        matched_peaks: Option<u32>,
-        longest_b: Option<u32>,
-        longest_y: Option<u32>,
-        longest_y_pct: Option<f32>,
-        missed_cleavages: Option<u8>,
-        matched_intensity_pct: Option<f32>,
-        scored_candidates: Option<u32>,
-        poisson: Option<f64>,
-        sequence: Option<String>,
-        charge: Option<u8>,
-        retention_time_observed: Option<f32>,
-        retention_time_predicted: Option<f32>,
-        inverse_mobility_observed: Option<f32>,
-        inverse_mobility_predicted: Option<f32>,
-        intensity_ms1: Option<f32>,
-        intensity_ms2: Option<f32>,
-        q_value: Option<f64>,
-        collision_energy: Option<f64>,
-        collision_energy_calibrated: Option<f64>,
-        re_score: Option<f64>,
-        cosine_similarity: Option<f32>,
-        file_name: Option<String>,
-        fragment_charges: Option<Vec<i32>>,
-        fragment_ion_types: Option<Vec<String>>,
-        fragment_ordinals: Option<Vec<i32>>,
-        fragment_intensities: Option<Vec<f32>>,
-        fragment_mz_calculated: Option<Vec<f32>>,
-        fragment_mz_observed: Option<Vec<f32>>,
-        mz_calibration_ppm: Option<f32>,
-        projected_rt: Option<f32>,
-        beta_score: Option<f64>,
-        posterior_error_prob: Option<f64>,
-        prosit_intensities: Option<Vec<f32>>,
-        spectral_entropy_similarity: Option<f32>,
-        spectral_correlation_similarity_pearson: Option<f32>,
-        spectral_correlation_similarity_spearman: Option<f32>,
-        spectral_normalized_intensity_difference: Option<f32>,
-    ) -> PeptideSpectrumMatch {
-
-        let peptide_sequence = match &sequence {
-            Some(seq) => Some(PeptideSequence::new(seq.clone(), Some(peptide_idx as i32))),
-            None => None,
-        };
-
-        let mono_mass_calculated = match peptide_sequence.clone() {
-            Some(seq) => Some(seq.mono_isotopic_mass() as f32),
-            _ => None,
-        };
-
-        let mono_mz_calculated = match (peptide_sequence.clone(), charge) {
-            (Some(seq), Some(ch)) => Some(calculate_mz(seq.mono_isotopic_mass(), ch as i32) as f32),
-            (_, _) => None,
-        };
-
-        PeptideSpectrumMatch {
-            spec_idx,
-            peptide_idx,
-            proteins,
-            decoy,
-            hyper_score,
-            rank,
-            mono_mz_calculated,
-            mono_mass_observed,
-            mono_mass_calculated,
-            isotope_error,
-            average_ppm,
-            delta_next,
-            delta_best,
-            matched_peaks,
-            longest_b,
-            longest_y,
-            longest_y_pct,
-            missed_cleavages,
-            matched_intensity_pct,
-            scored_candidates,
-            poisson,
-            peptide_sequence,
-            charge,
-            retention_time_observed,
-            retention_time_predicted,
-            inverse_mobility_observed,
-            inverse_mobility_predicted,
-            intensity_ms1,
-            intensity_ms2,
-            q_value,
-            collision_energy,
-            collision_energy_calibrated,
-            re_score,
-            cosine_similarity,
-            file_name,
-            fragment_charges,
-            fragment_ion_types,
-            fragment_ordinals,
-            fragment_intensities,
-            fragment_mz_calculated,
-            fragment_mz_observed,
-            mz_calibration_ppm,
-            projected_rt,
-            beta_score,
-            posterior_error_prob,
-            prosit_intensities,
-            spectral_entropy_similarity,
-            spectral_correlation_similarity_pearson,
-            spectral_correlation_similarity_spearman,
-            spectral_normalized_intensity_difference,
-        }
-    }
-    pub fn associate_with_prosit_predicted_intensities(&self, flat_intensities: Vec<f64>) -> Option<PeptideProductIonSeriesCollection> {
-        match &self.peptide_sequence {
-            Some(seq) => Some(seq.associate_with_predicted_intensities(self.charge.unwrap() as i32, FragmentType::B, flat_intensities, false, false)),
-            None => None,
-        }
-    }
-
-    pub fn from_json(json: &str) -> PeptideSpectrumMatch {
-        serde_json::from_str(json).unwrap()
-    }
-
-    pub fn get_fragment_intensity_prediction(&self) -> FragmentIntensityPrediction {
-        FragmentIntensityPrediction::new(
-            self.fragment_intensities.clone().unwrap(),
-            self.fragment_mz_observed.clone().unwrap(),
-            self.fragment_mz_calculated.clone().unwrap(),
-            self.fragment_charges.clone().unwrap(),
-            self.fragment_ordinals.clone().unwrap(),
-            self.fragment_ion_types.clone().unwrap().iter().map(|kind| kind == "y").collect(),
-            self.prosit_intensities.clone().unwrap(),
-        )
     }
 }
 
@@ -602,8 +402,34 @@ fn tdc_peptide_psm_peptide_match(ds: &MatchDataset) -> Vec<Match> {
     }).collect()
 }
 
-pub fn target_decoy_competition(method: TDCMethod, spectra_idx: Vec<String>, match_idx: Vec<String>, is_decoy: Vec<bool>, scores: Vec<f32>) -> (Vec<String>, Vec<String>, Vec<bool>, Vec<f32>, Vec<f64>) {
-    let ds = MatchDataset::from_vectors(spectra_idx, match_idx, is_decoy, scores);
+pub fn target_decoy_competition(
+    method: TDCMethod,
+    spectra_idx: Vec<String>,
+    match_idx: Vec<String>,
+    is_decoy: Vec<bool>,
+    scores: Vec<f32>,
+    match_identity_candidates: Vec<Option<Vec<String>>>, // Added parameter
+) -> (Vec<String>, Vec<String>, Vec<Vec<String>>, Vec<bool>, Vec<f32>, Vec<f64>) {
+    // Build the initial collection of Matches
+    let mut collection = Vec::new();
+    for (spec_idx, match_idx, decoy, score, mic) in multizip((
+        spectra_idx,
+        match_idx,
+        is_decoy,
+        scores,
+        match_identity_candidates,
+    )) {
+        collection.push(Match {
+            spectrum_idx: spec_idx,
+            match_idx,
+            match_identity_candidates: mic,
+            decoy,
+            score,
+            q_value: None,
+        });
+    }
+
+    let ds = MatchDataset::from_collection(collection);
 
     let result = match method {
         TDCMethod::PsmLevel => tdc_psm_match(&ds),
@@ -612,6 +438,8 @@ pub fn target_decoy_competition(method: TDCMethod, spectra_idx: Vec<String>, mat
         TDCMethod::PeptideLevelPsmPeptide => tdc_peptide_psm_peptide_match(&ds),
     };
 
-    let (spectrum_idx, match_idx, decoy, score, q_value) = MatchDataset::from_collection(result).to_vectors();
-    (spectrum_idx, match_idx, decoy, score, q_value)
+    let (spectrum_idx, match_idx, match_identity, decoy, score, q_value) =
+        MatchDataset::from_collection(result).to_vectors();
+
+    (spectrum_idx, match_idx, match_identity, decoy, score, q_value)
 }

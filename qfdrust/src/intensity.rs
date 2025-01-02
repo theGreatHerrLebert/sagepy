@@ -1,7 +1,11 @@
 use std::collections::{BTreeMap, HashMap};
 use std::f64::consts::LN_2;
+use bincode::{Decode, Encode};
 use ndarray::Array1;
 use ndarray::Zip;
+use sage_core::ion_series::Kind;
+use sage_core::scoring::Fragments;
+use serde::{Deserialize, Serialize};
 
 fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>, epsilon: f32) -> Option<f32> {
     if vec1.len() != vec2.len() || vec1.is_empty() {
@@ -25,7 +29,7 @@ fn cosine_similarity(vec1: &Vec<f32>, vec2: &Vec<f32>, epsilon: f32) -> Option<f
 }
 
 fn cosim_to_spectral_angle(cosim: f32) -> f32 {
-    let angle = (1.0 - cosim).acos();
+    let angle = cosim.acos(); // Use cosim directly
     1.0 - angle / std::f32::consts::PI
 }
 
@@ -218,34 +222,19 @@ pub fn reshape_prosit_array(flat_array: Vec<f32>) -> Vec<Vec<Vec<f32>>> {
     array_return
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, Encode, Decode)]
 pub struct FragmentIntensityPrediction {
-    pub intensities_observed: Vec<f32>,
-    pub mz_observed: Vec<f32>,
-    pub mz_calculated: Vec<f32>,
-    pub charges: Vec<i32>,
-    pub ordinals: Vec<i32>,
-    // 0: b, 1: y
-    pub ion_types: Vec<bool>,
+    pub fragments: Fragments,
     pub prosit_intensity_predicted: Vec<f32>,
 }
 
 impl FragmentIntensityPrediction {
     pub fn new(
-        intensities_observed: Vec<f32>,
-        mz_observed: Vec<f32>,
-        mz_calculated: Vec<f32>,
-        charges: Vec<i32>,
-        ordinals: Vec<i32>,
-        ion_types: Vec<bool>,
+        fragments: Fragments,
         prosit_intensity_predicted:Vec<f32>,
     ) -> Self {
         FragmentIntensityPrediction {
-            intensities_observed,
-            mz_observed,
-            mz_calculated,
-            charges,
-            ordinals,
-            ion_types,
+            fragments,
             prosit_intensity_predicted,
         }
     }
@@ -255,12 +244,16 @@ impl FragmentIntensityPrediction {
 
     pub fn observed_intensity_to_fragments_map(&self) -> BTreeMap<(u32, i32, i32), f32> {
         let mut fragments: BTreeMap<(u32, i32, i32), f32> = BTreeMap::new();
-        let max_intensity = self.intensities_observed.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+        let max_intensity = self.fragments.intensities.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
 
-        for i in 0..self.mz_calculated.len() {
-            let kind = self.ion_types[i] as u32;
-            let intensity = self.intensities_observed[i] / max_intensity;
-            fragments.insert((kind, self.charges[i], self.ordinals[i]), intensity);
+        for i in 0..self.fragments.mz_calculated.len() {
+            let kind = match self.fragments.kinds[i] {
+                Kind::B => 0,
+                Kind::Y => 1,
+                _ => panic!("Invalid kind"),
+            };
+            let intensity = self.fragments.intensities[i] / max_intensity;
+            fragments.insert((kind, self.fragments.charges[i], self.fragments.fragment_ordinals[i]), intensity);
         }
 
         fragments
@@ -347,6 +340,10 @@ impl FragmentIntensityPrediction {
         cosim_to_spectral_angle(cosim)
     }
 
+    pub fn prosit_intensity_to_fragments(&self) -> Fragments {
+        prosit_intensities_to_fragments(self.prosit_intensity_predicted.clone())
+    }
+
     pub fn get_feature_vector(&self, epsilon: f32, reduce_matched: bool) -> Vec<f32> {
         vec![
             self.cosine_similarity(epsilon, reduce_matched).unwrap_or(0.0),
@@ -356,4 +353,64 @@ impl FragmentIntensityPrediction {
             self.spectral_entropy_similarity(epsilon, reduce_matched),
         ]
     }
+}
+
+pub fn prosit_intensities_to_fragments(
+    flat_intensities: Vec<f32>,
+) -> Fragments {
+    let fragments = flat_prosit_array_to_fragments_map(flat_intensities);
+
+    let mut predicted_kinds_b: Vec<Kind> = Vec::new();
+    let mut predicted_kinds_y: Vec<Kind> = Vec::new();
+
+    let mut predicted_fragment_ordinals_b = Vec::new();
+    let mut predicted_fragment_ordinals_y = Vec::new();
+
+    let mut predicted_charges_b = Vec::new();
+    let mut predicted_charges_y = Vec::new();
+
+    let mut predicted_intensities_b = Vec::new();
+    let mut predicted_intensities_y = Vec::new();
+
+    for (key, _) in fragments.iter() {
+
+        let (kind, charge, fragment_ordinal) = key;
+
+        let predicted_intensity = fragments.get(key).unwrap_or(&0.0);
+
+        let kind = match kind {
+            0 => Kind::B,
+            1 => Kind::Y,
+            _ => panic!("Invalid kind"),
+        };
+
+        if kind == Kind::B {
+            predicted_kinds_b.push(kind);
+            predicted_charges_b.push(*charge);
+            predicted_fragment_ordinals_b.push(*fragment_ordinal);
+            predicted_intensities_b.push(*predicted_intensity);
+        } else {
+            predicted_kinds_y.push(kind);
+            predicted_charges_y.push(*charge);
+            predicted_fragment_ordinals_y.push(*fragment_ordinal);
+            predicted_intensities_y.push(*predicted_intensity);
+        }
+    }
+
+    // invert the order of y fragments
+    predicted_kinds_y.reverse();
+    predicted_charges_y.reverse();
+    predicted_fragment_ordinals_y.reverse();
+    predicted_intensities_y.reverse();
+
+    let fragments = Fragments {
+        charges: predicted_charges_b.iter().chain(predicted_charges_y.iter()).cloned().collect(),
+        kinds: predicted_kinds_b.iter().chain(predicted_kinds_y.iter()).cloned().collect(),
+        fragment_ordinals: predicted_fragment_ordinals_b.iter().chain(predicted_fragment_ordinals_y.iter()).cloned().collect(),
+        intensities: predicted_intensities_b.iter().chain(predicted_intensities_y.iter()).cloned().collect(),
+        mz_calculated: Vec::new(),
+        mz_experimental: Vec::new(),
+    };
+
+    fragments
 }

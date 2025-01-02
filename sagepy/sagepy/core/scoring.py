@@ -1,8 +1,11 @@
 import warnings
-from typing import Optional, List, Union, Tuple, Dict
+from typing import Optional, List, Union, Dict, Tuple
 
+import numpy as np
 import pandas as pd
 import sagepy_connector
+from numpy._typing import NDArray
+
 from .spectrum import ProcessedSpectrum
 from .unimod import variable_unimod_mods_to_set, static_unimod_mods_to_set
 from .modification import process_variable_start_end_mods
@@ -13,232 +16,203 @@ from .ion_series import IonType
 from .mass import Tolerance
 from .database import PeptideIx, IndexedDatabase
 
+psc_intensity = sagepy_connector.py_intensity
 
-class ScoreType:
-    def __init__(self, name: str):
-        name = name.lower()
-        names = {"openms", "sage", "happy"}
-        assert name in names, f"Invalid score type: {name}, allowed values are: {names}"
-        self.__py_ptr = psc.PyScoreType(name)
+class FragmentIntensity:
+    def __init__(self,
+                 fragments_observed: 'Fragments',
+                 prosit_intensity_predicted: List[float]):
+        self.__py_ptr = psc_intensity.PyFragmentIntensityPrediction(
+            fragments_observed, prosit_intensity_predicted
+        )
+
+    def get_py_ptr(self):
+        return self.__py_ptr
 
     @classmethod
-    def from_py_ptr(cls, py_ptr: psc.PyScoreType):
+    def from_py_ptr(cls, py_ptr):
         instance = cls.__new__(cls)
         instance.__py_ptr = py_ptr
         return instance
 
-    def get_py_ptr(self) -> psc.PyScoreType:
-        return self.__py_ptr
+    @property
+    def prosit_intensity_predicted(self) -> List[float]:
+        return self.__py_ptr.prosit_intensity_predicted
+
+    def cosine_similarity(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.cosine_similarity(epsilon, reduce_matched)
+
+    def spectral_angle_similarity(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.spectral_angle_similarity(epsilon, reduce_matched)
+
+    def pearson_correlation(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.pearson_correlation(epsilon, reduce_matched)
+
+    def spearman_correlation(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.spearman_correlation(epsilon, reduce_matched)
+
+    def spectral_entropy_similarity(self, epsilon: float = 1e-7, reduce_matched: bool = False) -> float:
+        return self.__py_ptr.spectral_entropy_similarity(epsilon, reduce_matched)
+
+    def observed_intensity_map(self) -> Dict[Tuple[int, int, int], float]:
+        return self.__py_ptr.observed_intensity_map()
+
+    def predicted_intensity_map(self) -> Dict[Tuple[int, int, int], float]:
+        return self.__py_ptr.predicted_intensity_map()
+
+    def prosit_intensity_to_fragments(self) -> 'Fragments':
+        return Fragments.from_py_fragments(self.__py_ptr.prosit_intensity_to_fragments())
 
     def __repr__(self):
-        return f"ScoreType({self.__py_ptr.to_str()})"
+        return f"FragmentIntensity(prosit_intensity_predicted={self.prosit_intensity_predicted})"
 
 
-class PeptideSpectrumMatch:
-    def __init__(self,
-                 spec_idx: str,
-                 peptide_idx: int,
-                 proteins: List[str],
-                 decoy: bool,
-                 hyper_score: float,
-                 rank: int,
-                 mono_mass_observed: Union[None, float],
-                 isotope_error: Union[None, int],
-                 average_ppm: Union[None, float],
-                 delta_next: Union[None, float],
-                 delta_best: Union[None, float],
-                 matched_peaks: Union[None, int],
-                 longest_b: Union[None, int],
-                 longest_y: Union[None, int],
-                 longest_y_pct: Union[None, float],
-                 missed_cleavages: Union[None, int],
-                 matched_intensity_pct: Union[None, float],
-                 scored_candidates: Union[None, int],
-                 poisson: Union[None, float],
-                 sequence: Union[None, str],
-                 charge: Union[None, int],
-                 retention_time_observed: Union[None, float],
-                 retention_time_predicted: Union[None, float],
-                 inverse_mobility_observed: Union[None, float],
-                 inverse_mobility_predicted: Union[None, float],
-                 intensity_ms1: Union[None, float],
-                 intensity_ms2: Union[None, float],
-                 q_value: Union[None, float],
-                 collision_energy: Union[None, float],
-                 collision_energy_calibrated: Union[None, float],
-                 fragments: Union[None, 'Fragments'] = None,
-                 re_score: Union[None, float] = None,
-                 cosine_similarity: Union[None, float] = None,
-                 file_name: Union[None, str] = None,
-                 fragment_charges: Union[None, int] = None,
-                 fragment_ion_types: Union[None, List[str]] = None,
-                 fragment_ordinals: Union[None, List[int]] = None,
-                 fragment_intensities: Union[None, List[float]] = None,
-                 fragment_mz_calculated: Union[None, List[float]] = None,
-                 fragment_mz_experimental: Union[None, List[float]] = None,
-                 mz_calibration_ppm: Union[None, float] = None,
-                 projected_rt: Union[None, float] = None,
-                 beta_score: Union[None, float] = None,
-                 posterior_error_prob: Union[None, float] = None,
-                 prosit_intensities: Union[None, List[float]] = None,
-                 spectral_entropy_similarity: Union[None, float] = None,
-                 spectral_correlation_similarity_pearson: Union[None, float] = None,
-                 spectral_correlation_similarity_spearman: Union[None, float] = None,
-                 spectral_normalized_intensity_difference: Union[None, float] = None,
-                 ):
-        self.__py_ptr = psc.PyPeptideSpectrumMatch(
-            spec_idx, peptide_idx, proteins, decoy, hyper_score, rank, mono_mass_observed,
-            isotope_error, average_ppm, delta_next, delta_best, matched_peaks, longest_b, longest_y,
-            longest_y_pct, missed_cleavages, matched_intensity_pct, scored_candidates, poisson,
-            sequence, charge,
-            retention_time_observed, retention_time_predicted, inverse_mobility_observed, inverse_mobility_predicted,
-            intensity_ms1, intensity_ms2, q_value, collision_energy, collision_energy_calibrated, fragments.get_py_ptr(),
-            re_score, cosine_similarity, file_name,
-            fragment_charges, fragment_ion_types, fragment_ordinals, fragment_intensities, fragment_mz_calculated,
-            fragment_mz_experimental, mz_calibration_ppm, projected_rt, beta_score, posterior_error_prob, prosit_intensities,
-            spectral_entropy_similarity, spectral_correlation_similarity_pearson, spectral_correlation_similarity_spearman,
-            spectral_normalized_intensity_difference
+class Psm:
+    def __init__(
+            self,
+            spec_idx: str,
+            peptide_idx: int,
+            proteins: List[str],
+            sage_feature: 'Feature',
+            sequence: Optional[str] = None,
+            sequence_modified: Optional[str] = None,
+            sequence_decoy: Optional[str] = None,
+            sequence_decoy_modified: Optional[str] = None,
+            intensity_ms1: Optional[float] = None,
+            intensity_ms2: Optional[float] = None,
+            collision_energy: Optional[float] = None,
+            collision_energy_calibrated: Optional[float] = None,
+            retention_time_projected: Optional[float] = None,
+            prosit_predicted_intensities: Optional[List[float]] = None,
+            re_score: Optional[float] = None,
+    ):
+        self.__py_ptr = psc.PyPsm(
+            spec_idx, peptide_idx, proteins, sage_feature.get_py_ptr(), sequence, sequence_modified,
+            sequence_decoy, sequence_decoy_modified, intensity_ms1, intensity_ms2,
+            collision_energy, collision_energy_calibrated,
+            retention_time_projected, prosit_predicted_intensities, re_score
         )
+
+    @classmethod
+    def from_py_ptr(cls, py_ptr: psc.PyPsm) -> 'Psm':
+        instance = cls.__new__(cls)
+        instance.__py_ptr = py_ptr
+        return instance
+
+    def get_py_ptr(self):
+        return self.__py_ptr
 
     @property
     def spec_idx(self):
         return self.__py_ptr.spec_idx
 
+    @spec_idx.setter
+    def spec_idx(self, value):
+        self.__py_ptr.spec_idx = value
+
     @property
     def peptide_idx(self):
         return self.__py_ptr.peptide_idx
+
+    @peptide_idx.setter
+    def peptide_idx(self, value):
+        self.__py_ptr.peptide_idx = value
 
     @property
     def proteins(self):
         return self.__py_ptr.proteins
 
+    @proteins.setter
+    def proteins(self, value):
+        self.__py_ptr.proteins = value
+
+    @property
+    def hyperscore(self):
+        return self.__py_ptr.hyperscore
+
+    @hyperscore.setter
+    def hyperscore(self, value):
+        self.__py_ptr.hyperscore = value
+
     @property
     def decoy(self):
         return self.__py_ptr.decoy
 
-    @property
-    def hyper_score(self):
-        return self.__py_ptr.hyper_score
-
-    @hyper_score.setter
-    def hyper_score(self, value):
-        self.__py_ptr.hyper_score = value
+    @decoy.setter
+    def decoy(self, value):
+        self.__py_ptr.decoy = value
 
     @property
-    def re_score(self):
-        return self.__py_ptr.re_score
+    def sage_feature(self):
+        return Feature.from_py_feature(self.__py_ptr.sage_feature)
 
-    @re_score.setter
-    def re_score(self, value):
-        self.__py_ptr.re_score = value
+    @sage_feature.setter
+    def sage_feature(self, value):
+        self.__py_ptr.sage_feature = value.get_py_ptr()
 
     @property
-    def rank(self):
-        return self.__py_ptr.rank
+    def sequence(self):
+        return self.__py_ptr.sequence
+
+    @property
+    def sequence_modified(self):
+        return self.__py_ptr.sequence_modified
+
+    @property
+    def sequence_decoy(self):
+        return self.__py_ptr.sequence_decoy
+
+    @property
+    def sequence_decoy_modified(self):
+        return self.__py_ptr.sequence_decoy_modified
 
     @property
     def charge(self):
         return self.__py_ptr.charge
 
-    @property
-    def mono_mass_observed(self):
-        return self.__py_ptr.mono_mass_observed
-
-    @property
-    def isotope_error(self):
-        return self.__py_ptr.isotope_error
-
-    @property
-    def average_ppm(self):
-        return self.__py_ptr.average_ppm
-
-    @property
-    def delta_next(self):
-        return self.__py_ptr.delta_next
-
-    @property
-    def delta_best(self):
-        return self.__py_ptr.delta_best
-
-    @property
-    def matched_peaks(self):
-        return self.__py_ptr.matched_peaks
-
-    @property
-    def longest_b(self):
-        return self.__py_ptr.longest_b
-
-    @property
-    def longest_y(self):
-        return self.__py_ptr.longest_y
-
-    @property
-    def longest_y_pct(self):
-        return self.__py_ptr.longest_y_pct
-
-    @property
-    def missed_cleavages(self):
-        return self.__py_ptr.missed_cleavages
-
-    @property
-    def matched_intensity_pct(self):
-        return self.__py_ptr.matched_intensity_pct
-
-    @property
-    def scored_candidates(self):
-        return self.__py_ptr.scored_candidates
-
-    @property
-    def poisson(self):
-        return self.__py_ptr.poisson
-
-    @property
-    def sequence(self):
-        return self.__py_ptr.peptide_sequence
+    @charge.setter
+    def charge(self, value):
+        self.__py_ptr.charge = value
 
     @property
     def mono_mz_calculated(self):
         return self.__py_ptr.mono_mz_calculated
 
+    @mono_mz_calculated.setter
+    def mono_mz_calculated(self, value):
+        self.__py_ptr.mono_mz_calculated = value
+
+    @property
+    def mono_mass_observed(self):
+        return self.__py_ptr.mono_mass_observed
+
+    @mono_mass_observed.setter
+    def mono_mass_observed(self, value):
+        self.__py_ptr.mono_mass_observed = value
+
     @property
     def mono_mass_calculated(self):
         return self.__py_ptr.mono_mass_calculated
 
-    @property
-    def retention_time_observed(self):
-        return self.__py_ptr.retention_time_observed
-
-    @property
-    def retention_time_predicted(self):
-        return self.__py_ptr.retention_time_predicted
-
-    @retention_time_predicted.setter
-    def retention_time_predicted(self, value):
-        self.__py_ptr.retention_time_predicted = value
-
-    @property
-    def inverse_mobility_observed(self):
-        return self.__py_ptr.inverse_mobility_observed
-
-    @property
-    def inverse_mobility_predicted(self):
-        return self.__py_ptr.inverse_mobility_predicted
-
-    @inverse_mobility_predicted.setter
-    def inverse_mobility_predicted(self, value):
-        self.__py_ptr.inverse_mobility_predicted = value
+    @mono_mass_calculated.setter
+    def mono_mass_calculated(self, value):
+        self.__py_ptr.mono_mass_calculated = value
 
     @property
     def intensity_ms1(self):
         return self.__py_ptr.intensity_ms1
 
+    @intensity_ms1.setter
+    def intensity_ms1(self, value):
+        self.__py_ptr.intensity_ms1 = value
+
     @property
     def intensity_ms2(self):
         return self.__py_ptr.intensity_ms2
 
-    @property
-    def q_value(self):
-        return self.__py_ptr.q_value
+    @intensity_ms2.setter
+    def intensity_ms2(self, value):
+        self.__py_ptr.intensity_ms2 = value
 
     @property
     def collision_energy(self):
@@ -257,170 +231,131 @@ class PeptideSpectrumMatch:
         self.__py_ptr.collision_energy_calibrated = value
 
     @property
-    def cosine_similarity(self):
-        return self.__py_ptr.cosine_similarity
+    def retention_time(self):
+        return self.__py_ptr.retention_time
 
-    @cosine_similarity.setter
-    def cosine_similarity(self, value: float):
-        self.__py_ptr.cosine_similarity = value
-
-    @property
-    def file_name(self):
-        return self.__py_ptr.file_name
-
-    @file_name.setter
-    def file_name(self, value):
-        self.__py_ptr.file_name = value
+    @retention_time.setter
+    def retention_time(self, value):
+        self.__py_ptr.retention_time = value
 
     @property
-    def fragments_observed(self) -> Union[None, 'Fragments']:
-        return Fragments.from_py_fragments(self.__py_ptr.fragments_observed)
+    def retention_time_predicted(self):
+        return self.sage_feature.predicted_rt
 
-    @fragments_observed.setter
-    def fragments_observed(self, value: 'Fragments'):
-        self.__py_ptr.fragments_observed = value.get_py_ptr()
-
-    @property
-    def fragments_predicted(self) -> Union[None, 'Fragments']:
-        if self.__py_ptr.fragments_predicted is None:
-            return None
-        return Fragments.from_py_fragments(self.__py_ptr.fragments_predicted)
-
-    @fragments_predicted.setter
-    def fragments_predicted(self, value: 'Fragments'):
-        self.__py_ptr.fragments_predicted = value.get_py_ptr()
+    @retention_time_predicted.setter
+    def retention_time_predicted(self, value):
+        self.__py_ptr.retention_time_predicted = value
 
     @property
-    def mz_calibration_ppm(self):
-        return self.__py_ptr.mz_calibration_ppm
+    def retention_time_calibrated(self):
+        return self.__py_ptr.retention_time_calibrated
 
-    @mz_calibration_ppm.setter
-    def mz_calibration_ppm(self, value):
-        self.__py_ptr.mz_calibration_ppm = value
-
-    @property
-    def projected_rt(self):
-        return self.__py_ptr.projected_rt
-
-    @projected_rt.setter
-    def projected_rt(self, value):
-        self.__py_ptr.projected_rt = value
+    @retention_time_calibrated.setter
+    def retention_time_calibrated(self, value):
+        self.__py_ptr.retention_time_calibrated = value
 
     @property
-    def beta_score(self):
-        return self.__py_ptr.beta_score
+    def retention_time_projected(self):
+        return self.__py_ptr.retention_time_projected
 
-    @beta_score.setter
-    def beta_score(self, value):
-        self.__py_ptr.beta_score = value
-
-    @property
-    def posterior_error_prob(self):
-        return self.__py_ptr.posterior_error_prob
-
-    @posterior_error_prob.setter
-    def posterior_error_prob(self, value):
-        self.__py_ptr.posterior_error_prob = value
+    @retention_time_projected.setter
+    def retention_time_projected(self, value):
+        self.__py_ptr.retention_time_projected = value
 
     @property
-    def prosit_intensities(self):
-        return self.__py_ptr.prosit_intensities
+    def inverse_ion_mobility(self):
+        return self.__py_ptr.inverse_ion_mobility
 
-    @prosit_intensities.setter
-    def prosit_intensities(self, value):
-        self.__py_ptr.prosit_intensities = value
-
-    @property
-    def spectral_entropy_similarity(self):
-        return self.__py_ptr.spectral_entropy_similarity
-
-    @spectral_entropy_similarity.setter
-    def spectral_entropy_similarity(self, value):
-        self.__py_ptr.spectral_entropy_similarity = value
+    @inverse_ion_mobility.setter
+    def inverse_ion_mobility(self, value):
+        self.__py_ptr.inverse_ion_mobility = value
 
     @property
-    def spectral_correlation_similarity_pearson(self):
-        return self.__py_ptr.spectral_correlation_similarity_pearson
+    def inverse_ion_mobility_predicted(self):
+        return self.__py_ptr.inverse_ion_mobility_predicted
 
-    @spectral_correlation_similarity_pearson.setter
-    def spectral_correlation_similarity_pearson(self, value):
-        self.__py_ptr.spectral_correlation_similarity_pearson = value
-
-    @property
-    def spectral_correlation_similarity_spearman(self):
-        return self.__py_ptr.spectral_correlation_similarity_spearman
-
-    @spectral_correlation_similarity_spearman.setter
-    def spectral_correlation_similarity_spearman(self, value):
-        self.__py_ptr.spectral_correlation_similarity_spearman = value
+    @inverse_ion_mobility_predicted.setter
+    def inverse_ion_mobility_predicted(self, value):
+        self.__py_ptr.inverse_ion_mobility_predicted = value
 
     @property
-    def spectral_normalized_intensity_difference(self):
-        return self.__py_ptr.spectral_normalized_intensity_difference
+    def prosit_predicted_intensities(self):
+        return np.array(self.__py_ptr.prosit_predicted_intensities)
 
-    @spectral_normalized_intensity_difference.setter
-    def spectral_normalized_intensity_difference(self, value):
-        self.__py_ptr.spectral_normalized_intensity_difference = value
+    @prosit_predicted_intensities.setter
+    def prosit_predicted_intensities(self, value):
+        self.__py_ptr.prosit_predicted_intensities = value
 
-    def prosit_fragment_map(self) -> Optional[Dict[Tuple[int, int, int], float]]:
-        return self.__py_ptr.prosit_fragment_map()
+    @property
+    def re_score(self):
+        return self.__py_ptr.re_score
 
-    def observed_fragment_map(self) -> Optional[Dict[Tuple[int, int, int], float]]:
-        return self.__py_ptr.observed_fragment_map()
+    @re_score.setter
+    def re_score(self, value):
+        self.__py_ptr.re_score = value
 
-    @classmethod
-    def from_py_ptr(cls, py_ptr: psc.PyPeptideSpectrumMatch):
-        instance = cls.__new__(cls)
-        instance.__py_ptr = py_ptr
-        return instance
+    @property
+    def rank(self):
+        return self.__py_ptr.rank
 
-    @staticmethod
-    def from_json(json_str: str) -> 'PeptideSpectrumMatch':
-        psm = psc.psm_from_json(json_str)
-        return PeptideSpectrumMatch.from_py_ptr(psm)
+    @rank.setter
+    def rank(self, value):
+        self.__py_ptr.rank = value
 
-    def get_py_ptr(self) -> psc.PyPeptideSpectrumMatch:
-        return self.__py_ptr
+    @property
+    def spectral_angle_similarity(self):
+        return self.__py_ptr.spectral_angle_similarity
 
-    def associate_fragment_ions_with_prosit_predicted_intensities(self, flat_intensities: List[float]):
-        self.__py_ptr.associate_fragment_ions_with_prosit_predicted_intensities(flat_intensities)
-
-    def match_observed_predicted_intensities(self) -> Tuple[Optional['Fragments'], Optional[List[float]]]:
-        maybe_fragment, flat_intensities = self.__py_ptr.match_observed_predicted_intensities()
-        if maybe_fragment is not None:
-            return Fragments.from_py_fragments(maybe_fragment), flat_intensities
-        return None, None
+    def get_feature_names(self):
+        return self.__py_ptr.get_feature_names()
 
     def to_json(self) -> str:
         return self.__py_ptr.to_json()
 
+    def prosit_intensities_to_fragments(self) -> 'Fragments':
+        return Fragments.from_py_fragments(self.__py_ptr.prosit_intensities_to_fragments())
+
+    def get_fragment_intensity_prediction(self) -> FragmentIntensity:
+        return FragmentIntensity.from_py_ptr(self.__py_ptr.get_fragment_intensity_prediction())
+
+    def observed_fragments_map(self, normalize: bool = True) -> Dict[Tuple[int, int, int], float]:
+        return self.__py_ptr.observed_fragments_to_fragments_map(normalize)
+
+    def prosit_fragments_map(self, normalize: bool = True) -> Dict[Tuple[int, int, int], float]:
+        return self.__py_ptr.prosit_intensities_to_fragments_map(normalize)
+
+
     def __repr__(self):
-       return (f"PeptideSpectrumMatch(spec_idx: {self.spec_idx}, match_idx: {self.peptide_idx}, "
-               f"proteins: {self.proteins}, decoy: {self.decoy}, hyper_score: {self.hyper_score}, "
-               f"rank: {self.rank}, mono_mass_observed: {self.mono_mass_observed}, "
-               f"isotope_error: {self.isotope_error}, average_ppm: {self.average_ppm}, "
-               f"delta_next: {self.delta_next}, delta_best: {self.delta_best}, "
-               f"matched_peaks: {self.matched_peaks}, longest_b: {self.longest_b}, "
-               f"longest_y: {self.longest_y}, longest_y_pct: {self.longest_y_pct}, "
-               f"missed_cleavages: {self.missed_cleavages}, matched_intensity_pct: {self.matched_intensity_pct}, "
-               f"scored_candidates: {self.scored_candidates}, poisson: {self.poisson}, "
-               f"sequence: {self.sequence}, charge: {self.charge}, "
-               f"retention_time_observed: {self.retention_time_observed}, "
-               f"retention_time_predicted: {self.retention_time_predicted}, "
-               f"inverse_mobility_observed: {self.inverse_mobility_observed}, "
-               f"inverse_mobility_predicted: {self.inverse_mobility_predicted}, "
-               f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
-               f"q_value: {self.q_value}, collision_energy: {self.collision_energy}, "
-               f"collision_energy_calibrated: {self.collision_energy_calibrated}, "
-               f"fragments_observed: {self.fragments_observed if self.fragments_predicted is not None else None}, "
-               f"fragments_predicted: {self.fragments_predicted if self.fragments_observed is not None else None}, "
-               f"re_score: {self.re_score if self.re_score is not None else None}, "
-               f"cosine_similarity: {self.cosine_similarity if self.cosine_similarity is not None else None}, "
-               f"file_name: {self.file_name if self.file_name is not None else None}, "
-               f"mz_calibration_ppm: {self.mz_calibration_ppm if self.mz_calibration_ppm is not None else None}, "
-               f"projected_rt: {self.projected_rt if self.projected_rt is not None else None}, "
-               f"beta_score: {self.beta_score if self.beta_score is not None else None}, "
-               f"posterior_error_prob: {self.posterior_error_prob if self.posterior_error_prob is not None else None})")
+        return (f"Psm(spec_idx: {self.spec_idx}, peptide_idx: {self.peptide_idx}, "
+                f"proteins: {self.proteins}, decoy: {self.decoy}, sage_feature: {self.sage_feature}, "
+                f"sequence: {self.sequence}, charge: {self.charge}, mono_mz_calculated: {self.mono_mz_calculated}, "
+                f"mono_mass_observed: {self.mono_mass_observed}, mono_mass_calculated: {self.mono_mass_calculated}, "
+                f"intensity_ms1: {self.intensity_ms1}, intensity_ms2: {self.intensity_ms2}, "
+                f"collision_energy: {self.collision_energy}, collision_energy_calibrated: {self.collision_energy_calibrated}, "
+                f"retention_time: {self.retention_time}, retention_time_calibrated: {self.retention_time_calibrated}, "
+                f"retention_time_projected: {self.retention_time_projected}, "
+                f"inverse_ion_mobility: {self.inverse_ion_mobility}, "
+                f"prosit_predicted_intensities: {self.prosit_predicted_intensities}, re_score: {self.re_score})")
+
+
+class ScoreType:
+    def __init__(self, name: str):
+        name = name.lower()
+        names = { "openmshyperscore", "hyperscore" }
+        assert name in names, f"Invalid score type: {name}, allowed values are: {names}"
+        self.__py_ptr = psc.PyScoreType(name)
+
+    @classmethod
+    def from_py_ptr(cls, py_ptr: psc.PyScoreType):
+        instance = cls.__new__(cls)
+        instance.__py_ptr = py_ptr
+        return instance
+
+    def get_py_ptr(self) -> psc.PyScoreType:
+        return self.__py_ptr
+
+    def __repr__(self):
+        return f"ScoreType({self.__py_ptr.to_str()})"
 
 
 class Fragments:
@@ -488,15 +423,15 @@ class Scorer:
             min_matched_peaks: int = 6,
             min_isotope_err: int = -1,
             max_isotope_err: int = 3,
-            min_precursor_charge: int = 2,
+            min_precursor_charge: int = 1,
             max_precursor_charge: int = 4,
             chimera: bool = False,
             report_psms: int = 1,
             wide_window: bool = False,
             annotate_matches: bool = True,
             override_precursor_charge: bool = False,
-            score_type: ScoreType = ScoreType("openms"),
-            max_fragment_charge: Optional[int] = 1,
+            score_type: ScoreType = ScoreType("openmshyperscore"),
+            max_fragment_charge: Optional[int] = 3,
             variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
             static_mods: Union[Dict[str, str], Dict[str, int]] = None,
     ):
@@ -637,25 +572,15 @@ class Scorer:
         return result
 
     def score_collection_psm(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
-                             num_threads: int = 4) -> Dict[str, List[PeptideSpectrumMatch]]:
+                             num_threads: int = 4) -> Dict[str, List[Psm]]:
 
-        py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(),
-                                                                       [spec.get_py_ptr() for spec in
-                                                                        spectrum_collection],
-                                                                       num_threads)
-        ret_dict = {}
-        for key, values in py_psms.items():
-            ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
-
-        return ret_dict
-
-    def score_psm(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> Dict[str, List[PeptideSpectrumMatch]]:
-        py_psms = self.__scorer_ptr.score_collection_to_psm_collection(db.get_py_ptr(), [spectrum.get_py_ptr()], 1)
+        py_psms = self.__scorer_ptr.score_candidates(db.get_py_ptr(),
+                                                     [spec.get_py_ptr() for spec in spectrum_collection],
+                                                     num_threads)
 
         ret_dict = {}
-
         for key, values in py_psms.items():
-            ret_dict[key] = [PeptideSpectrumMatch.from_py_ptr(psm) for psm in values]
+            ret_dict[key] = [Psm.from_py_ptr(psm) for psm in values]
 
         return ret_dict
 
@@ -684,7 +609,7 @@ class Feature:
                  delta_rt_model: Optional[float] = None,
                  ims: Optional[float] = None,
                  predicted_ims: Optional[float] = None,
-                 delta_ims_model: Optional[float] = None, ):
+                 delta_ims_model: Optional[float] = None):
         """Feature class
 
         Args:
@@ -790,6 +715,10 @@ class Feature:
     def rt(self) -> float:
         return self.__feature_ptr.rt
 
+    @rt.setter
+    def rt(self, value):
+        self.__feature_ptr.rt = value
+
     @property
     def aligned_rt(self) -> float:
         return self.__feature_ptr.aligned_rt
@@ -797,6 +726,10 @@ class Feature:
     @property
     def predicted_rt(self) -> float:
         return self.__feature_ptr.predicted_rt
+
+    @predicted_rt.setter
+    def predicted_rt(self, value):
+        self.__feature_ptr.predicted_rt = value
 
     @property
     def delta_rt_model(self) -> float:
@@ -893,9 +826,17 @@ class Feature:
     def ims(self) -> Optional[float]:
         return self.__feature_ptr.ims
 
+    @ims.setter
+    def ims(self, value):
+        self.__feature_ptr.ims = value
+
     @property
     def predicted_ims(self) -> Optional[float]:
         return self.__feature_ptr.predicted_ims
+
+    @predicted_ims.setter
+    def predicted_ims(self, value):
+        self.__feature_ptr.predicted_ims = value
 
     @property
     def delta_ims_model(self) -> Optional[float]:
@@ -944,33 +885,33 @@ class Feature:
 
 
 def associate_fragment_ions_with_prosit_predicted_intensities(
-        psms: List[PeptideSpectrumMatch],
-        flat_intensities: List[List[float]], num_threads: int = 16) -> List['PeptideSpectrumMatch']:
+        psms: List[Psm],
+        flat_intensities: List[List[float]], num_threads: int = 16) -> List['Psm']:
     """Associate fragment ions with prosit predicted intensities in parallel
 
     Args:
-        psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        psms (List[Psm]): The peptide spectrum matches
         flat_intensities (List[List[float]]): The flat intensities
         num_threads (int, optional): The number of threads. Defaults to 16.
 
     Returns:
-        List[PeptideSpectrumMatch]: The peptide spectrum matches
+        List[Psm]: The peptide spectrum matches
     """
     result = psc.associate_fragment_ions_with_prosit_predicted_intensities_par(
         [psm.get_py_ptr() for psm in psms], flat_intensities, num_threads
     )
-    return [PeptideSpectrumMatch.from_py_ptr(f) for f in result]
+    return [Psm.from_py_ptr(f) for f in result]
 
 
 def associate_fragment_ions_with_prosit_predicted_intensities_pandas(
-        psms: List[PeptideSpectrumMatch],
+        psms: List[Psm],
         flat_intensities: List[List[float]],
         num_threads: int = 16,
 ) -> pd.DataFrame:
     """Associate fragment ions with prosit predicted intensities in parallel
 
     Args:
-        psms (List[PeptideSpectrumMatch]): The peptide spectrum matches
+        psms (List[Psm]): The peptide spectrum matches
         flat_intensities (List[List[float]]): The flat intensities
         num_threads (int, optional): The number of threads. Defaults to 16.
 
@@ -1007,16 +948,16 @@ def associate_fragment_ions_with_prosit_predicted_intensities_pandas(
     return pd.DataFrame(row_list)
 
 
-def json_bin_to_psms(json_bin: bytes) -> List[PeptideSpectrumMatch]:
-    """ Convert a binary JSON string to a list of PeptideSpectrumMatch objects.
+def json_bin_to_psms(json_bin: bytes) -> List[Psm]:
+    """ Convert a binary JSON string to a list of Psm objects.
 
     Args:
         json_bin: a binary JSON string
 
     Returns:
-        a list of PeptideSpectrumMatch objects
+        a list of Psm objects
     """
-    return [PeptideSpectrumMatch.from_py_ptr(json_str) for json_str in psc_utils.json_bin_to_psms(json_bin)]
+    return [Psm.from_py_ptr(json_str) for json_str in psc_utils.json_bin_to_psms(json_bin)]
 
 
 def psms_to_json(psms, num_threads: int = 4) -> List[str]:
@@ -1044,9 +985,9 @@ def psms_to_json_bin(psms) -> bytes:
     return psc_utils.psms_to_json_bin([psm.get_py_ptr() for psm in psms])
 
 
-def merge_psm_dicts(left_psms: Dict[str, List[PeptideSpectrumMatch]],
-                    right_psms: Dict[str, List[PeptideSpectrumMatch]],
-                    max_hits: int = 5) -> Dict[str, List[PeptideSpectrumMatch]]:
+def merge_psm_dicts(left_psms: Dict[str, List[Psm]],
+                    right_psms: Dict[str, List[Psm]],
+                    max_hits: int = 25) -> Dict[str, List[Psm]]:
     """ Merge two dictionaries of peptide spectrum matches.
 
     Args:
@@ -1060,7 +1001,7 @@ def merge_psm_dicts(left_psms: Dict[str, List[PeptideSpectrumMatch]],
     left_map = {key: [psm.get_py_ptr() for psm in value] for key, value in left_psms.items()}
     right_map = {key: [psm.get_py_ptr() for psm in value] for key, value in right_psms.items()}
     result = psc.merge_psm_maps(left_map, right_map, max_hits)
-    return {key: [PeptideSpectrumMatch.from_py_ptr(psm) for psm in value] for key, value in result.items()}
+    return {key: [Psm.from_py_ptr(psm) for psm in value] for key, value in result.items()}
 
 
 def prosit_intensities_to_fragments(
@@ -1092,3 +1033,15 @@ def prosit_intensities_to_fragments_par(
     """
 
     return [Fragments.from_py_fragments(f) for f in psc.prosit_intensities_to_py_fragments_par(flat_intensities, num_threads)]
+
+def peptide_spectrum_match_list_to_intensity_feature_matrix(
+        psm_list: List[Psm],
+        epsilon: float = 1e-7,
+        reduce_matched: bool = False,
+        num_threads: int = 16,
+) -> NDArray:
+    features = psc.peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
+        [p.get_py_ptr() for p in psm_list], epsilon, reduce_matched, num_threads
+    )
+    return np.array(features)
+

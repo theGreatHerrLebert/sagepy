@@ -1,11 +1,13 @@
 from typing import Dict, Tuple, List, Optional, Union
 
+import re
+
 from numba import jit
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from sagepy.core import PeptideSpectrumMatch
+from sagepy.core.scoring import Psm
 from sagepy.core.spectrum import ProcessedSpectrum, RawSpectrum, Precursor, SpectrumProcessor, Representation
 from sagepy.core.mass import Tolerance
 from sagepy.core.database import IndexedDatabase, EnzymeBuilder, SageSearchConfiguration
@@ -15,6 +17,7 @@ from pyteomics import mzml
 
 import sagepy_connector
 psc = sagepy_connector.py_utility
+from typing import Iterator
 
 
 @jit(nopython=True)
@@ -68,139 +71,9 @@ def py_fragments_to_fragments_map(fragments, normalize: bool = True) -> Dict[Tup
     return psc.py_fragments_to_fragments_map(fragments.get_py_ptr(), normalize)
 
 
-def peptide_spectrum_match_collection_to_pandas(
-        psm_collection: Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]],
-        re_score: bool = False,
-        use_sequence_as_match_idx: bool = True,
-        project_rt: bool = True,
-) -> pd.DataFrame:
-    """Convert a list of peptide spectrum matches to a pandas dataframe
-
-    Args:
-        psm_collection (Union[List[PeptideSpectrumMatch], Dict[str, List[PeptideSpectrumMatch]]): The peptide spectrum matches
-        re_score (bool, optional): Should re-score be used. Defaults to False.
-        use_sequence_as_match_idx (bool, optional): Should the sequence be used as the match index. Defaults to True.
-        project_rt (bool, optional): Should the retention time be projected. Defaults to False.
-
-    Returns:
-        pd.DataFrame: The pandas dataframe
-    """
-
-    psm_list = []
-
-    if isinstance(psm_collection, dict):
-        for spec_id, psm_candidates in psm_collection.items():
-            psm_list.extend(psm_candidates)
-
-    else:
-        psm_list = psm_collection
-
-    row_list = []
-    for match in psm_list:
-        if project_rt:
-            if match.retention_time_predicted is not None and match.projected_rt is not None:
-                delta_rt = match.retention_time_predicted - match.projected_rt
-            else:
-                delta_rt = None
-        else:
-            if match.retention_time_predicted is not None and match.retention_time_observed is not None:
-                delta_rt = match.retention_time_predicted - match.retention_time_observed
-            else:
-                delta_rt = None
-
-        if re_score:
-            score = match.re_score
-        else:
-            score = match.hyper_score
-
-        if use_sequence_as_match_idx:
-            match_idx = match.sequence
-        else:
-            match_idx = str(match.peptide_idx)
-
-        if match.inverse_mobility_predicted is not None:
-            delta_ims = match.inverse_mobility_predicted - match.inverse_mobility_observed
-        else:
-            delta_ims = None
-
-        if match.beta_score is not None:
-            beta_score = match.beta_score
-        else:
-            beta_score = None
-
-        if match.posterior_error_prob is not None:
-            pep = match.posterior_error_prob
-        else:
-            pep = None
-
-        if match.fragments_observed is not None:
-            match_median_ppm = median_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated)
-        else:
-            match_median_ppm = None
-
-        if match.fragments_observed is not None:
-            match_mean_ppm = mean_ppm(match.fragments_observed.mz_experimental, match.fragments_observed.mz_calculated)
-        else:
-            match_mean_ppm = None
-
-
-        row_list.append({
-            "spec_idx": match.spec_idx,
-            "match_idx": match_idx,
-            "proteins": match.proteins,
-            "decoy": match.decoy,
-            "score": score,
-            "re_score": match.re_score,
-            "hyper_score": match.hyper_score,
-            "rank": match.rank,
-            "mono_mz_calculated": match.mono_mz_calculated,
-            "mono_mass_observed": match.mono_mass_observed,
-            "mono_mass_calculated": match.mono_mass_calculated,
-            "delta_mass": match.mono_mass_calculated - match.mono_mass_observed,
-            "isotope_error": match.isotope_error,
-            "average_ppm": match.average_ppm,
-            "delta_next": match.delta_next,
-            "delta_best": match.delta_best,
-            "matched_peaks": match.matched_peaks,
-            "longest_b": match.longest_b,
-            "longest_y": match.longest_y,
-            "longest_y_pct": match.longest_y_pct,
-            "missed_cleavages": match.missed_cleavages,
-            "matched_intensity_pct": match.matched_intensity_pct,
-            "scored_candidates": match.scored_candidates,
-            "poisson": match.poisson,
-            "sequence": match.sequence,
-            "charge": match.charge,
-            "retention_time_observed": match.retention_time_observed,
-            "retention_time_predicted": match.retention_time_predicted,
-            "delta_rt": delta_rt,
-            "inverse_mobility_observed": match.inverse_mobility_observed,
-            "inverse_mobility_predicted": match.inverse_mobility_predicted,
-            "delta_ims": delta_ims,
-            "intensity_ms1": match.intensity_ms1,
-            "intensity_ms2": match.intensity_ms2,
-            "q_value": match.q_value,
-            "collision_energy": match.collision_energy,
-            "cosine_similarity": match.cosine_similarity,
-            "mean_ppm": match_mean_ppm,
-            "median_ppm": match_median_ppm,
-            "fragments_observed": match.fragments_observed,
-            "fragments_predicted": match.fragments_predicted,
-            "projected_rt": match.projected_rt,
-            "beta_score": beta_score,
-            "posterior_error_prob": pep,
-            "spectral_entropy_similarity": match.spectral_entropy_similarity,
-            "spectral_correlation_similarity_pearson": match.spectral_correlation_similarity_pearson,
-            "spectral_correlation_similarity_spearman": match.spectral_correlation_similarity_spearman,
-            "spectral_normalized_intensity_difference": match.spectral_normalized_intensity_difference,
-        })
-
-    return pd.DataFrame(row_list)
-
-
 def get_features(ds: pd.DataFrame, score: Optional[str] = None) -> (NDArray, NDArray):
 
-    score = score if score is not None else "score"
+    score = score if score is not None else "hyperscore"
 
     features = [
         f"{score}",
@@ -224,10 +97,11 @@ def get_features(ds: pd.DataFrame, score: Optional[str] = None) -> (NDArray, NDA
         "intensity_ms1",
         "intensity_ms2",
         "collision_energy",
+        "cosine_similarity",
+        "spectral_angle_similarity",
+        "pearson_correlation",
+        "spearman_correlation",
         "spectral_entropy_similarity",
-        "spectral_correlation_similarity_pearson",
-        "spectral_correlation_similarity_spearman",
-        "spectral_normalized_intensity_difference"
     ]
     ds = ds.copy()
 
@@ -263,8 +137,8 @@ def apply_mz_calibration(psm, fragments: pd.DataFrame, use_median: bool = True,
     for _, item in psm.items():
         psms.extend(item)
 
-    P = peptide_spectrum_match_collection_to_pandas(psms)
-    TDC = target_decoy_competition_pandas(P)
+    P = psm_collection_to_pandas(psms)
+    TDC = target_decoy_competition_pandas(P, method="psm", score="hyperscore")
     TDC = TDC[TDC.q_value <= target_q]
 
     B = pd.merge(P, TDC, on=["spec_idx", "match_idx"])
@@ -272,9 +146,9 @@ def apply_mz_calibration(psm, fragments: pd.DataFrame, use_median: bool = True,
     ppm_error = 0.0
 
     if use_median:
-        ppm_error = np.median(B.median_ppm)
+        ppm_error = np.median(B.delta_mass)
     else:
-        ppm_error = np.mean(B.mean_ppm)
+        ppm_error = np.mean(B.delta_mass)
 
     fragments.apply(lambda row: row.processed_spec.calibrate_mz_ppm(ppm_error), axis=1)
 
@@ -364,12 +238,11 @@ def create_query(
 
     return processed_spec
 
-# TODO: need to add modification passing, needs to be refactored for the sagepy tool entirely
 def create_sage_database(
     fasta_path: str,
     missed_cleavages: int = 2,
     min_len: int = 7,
-    max_len: int = 50,
+    max_len: int = 30,
     cleave_at: str = 'KR',
     restrict: str = 'P',
     c_terminal: bool = True,
@@ -377,8 +250,6 @@ def create_sage_database(
     bucket_size: int = 16384,
     static_mods: Union[Dict[str, str], Dict[int, str]] = {"C": "[UNIMOD:4]"},
     variable_mods: Union[Dict[str, List[int]], Dict[int, List[str]]] = {"M": ["[UNIMOD:35]"], "[": ["[UNIMOD:1]"]},
-    fragment_min_mz: float = 100.0,
-    fragment_max_mz: float = 2000.0,
 ) -> IndexedDatabase:
     """Create a SAGE database
 
@@ -421,8 +292,6 @@ def create_sage_database(
         enzyme_builder=enzyme_builder,
         generate_decoys=generate_decoys,
         bucket_size=bucket_size,
-        fragment_min_mz=fragment_min_mz,
-        fragment_max_mz=fragment_max_mz
     )
 
     # Generate and return the indexed database
@@ -504,3 +373,267 @@ def extract_mzml_data(file_path: str) -> pd.DataFrame:
     # Convert the list of dictionaries to a pandas DataFrame
     exp_data = pd.DataFrame(d)
     return exp_data
+
+def psm_collection_to_feature_matrix(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> NDArray:
+    """Convert a list of peptide spectrum matches to a dictionary
+
+    Args:
+        psm_collection (Union[List[Psm], Dict[str, List[Psm]]): The peptide spectrum matches
+        num_threads (int, optional): The number of threads to use. Defaults to 4.
+
+    Returns:
+        Dict[str, List[Psm]]: The dictionary of peptide spectrum matches
+    """
+
+    psms = []
+
+    if isinstance(psm_collection, dict):
+        for _, psm_candidates in psm_collection.items():
+            psms.extend(psm_candidates)
+
+    else:
+        psms = psm_collection
+
+    return np.array(psc.psms_to_feature_matrix([psm.get_py_ptr() for psm in psms], num_threads))
+
+# get_psm_sequences_par
+
+def get_psm_sequences(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> List[str]:
+    """Get the peptide sequences from a list of peptide spectrum matches
+
+    Args:
+        psm_collection (Union[List[Psm], Dict[str, List[Psm]]): The peptide spectrum matches
+        num_threads (int, optional): The number of threads to use. Defaults to 4.
+
+    Returns:
+        List[str]: The list of peptide sequences
+    """
+
+    psms = []
+
+    if isinstance(psm_collection, dict):
+        for _, psm_candidates in psm_collection.items():
+            psms.extend(psm_candidates)
+
+    else:
+        psms = psm_collection
+
+    return psc.get_psm_sequences_par([psm.get_py_ptr() for psm in psms], num_threads)
+
+def get_spec_idx(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> List[str]:
+    """Get the spectrum indices from a list of peptide spectrum matches
+
+    Args:
+        psm_collection (Union[List[Psm], Dict[str, List[Psm]]): The peptide spectrum matches
+        num_threads (int, optional): The number of threads to use. Defaults to 4.
+
+    Returns:
+        List[str]: The list of spectrum indices
+    """
+
+    psms = []
+
+    if isinstance(psm_collection, dict):
+        for _, psm_candidates in psm_collection.items():
+            psms.extend(psm_candidates)
+
+    else:
+        psms = psm_collection
+
+    return psc.get_psm_spec_idx_par([psm.get_py_ptr() for psm in psms], num_threads)
+
+
+def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm]]],
+                             num_threads: int = 4) -> pd.DataFrame:
+    """Convert a list of peptide spectrum matches to a pandas dataframe
+
+    Args:
+        psm_collection (Union[List[Psm], Dict[str, List[Psm]]): The peptide spectrum matches
+        num_threads (int, optional): The number of threads to use. Defaults to 4.
+
+    Returns:
+        pd.DataFrame: The pandas dataframe
+    """
+
+    psms = []
+
+    if isinstance(psm_collection, dict):
+        for _, item in psm_collection.items():
+            psms.extend(item)
+
+    else:
+        psms = psm_collection
+
+    # extract the numeric features
+    D = psc.psms_to_feature_matrix([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+
+    # extract the peptide sequences and spectrum indices
+    sequence = psc.get_psm_sequences_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+    sequence_modified = psc.get_psm_sequences_modified_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+    sequence_decoy = psc.get_psm_sequences_decoy_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+    sequence_decoy_modified = psc.get_psm_sequences_decoy_modified_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+    spec_idx = psc.get_psm_spec_idx_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+    proteins = psc.get_psm_proteins_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+
+    # get the feature names
+    names = psms[0].get_feature_names()
+
+    # create the pandas dataframe
+    PSM_pandas = pd.DataFrame(D, columns=names)
+
+    # convert the decoy column to boolean
+    PSM_pandas["decoy"] = [True if d == -1 else False for d in PSM_pandas.decoy]
+
+    # add the sequence and spectrum index columns
+    PSM_pandas.insert(0, "spec_idx", spec_idx)
+    PSM_pandas.insert(1, "match_idx", sequence)
+    PSM_pandas.insert(2,"match_identity_candidates", proteins)
+    PSM_pandas.insert(3, "sequence", sequence)
+    PSM_pandas.insert(4, "sequence_modified", sequence_modified)
+    PSM_pandas.insert(5, "sequence_decoy", sequence_decoy)
+    PSM_pandas.insert(6, "sequence_decoy_modified", sequence_decoy_modified)
+    PSM_pandas.insert(7, "proteins", proteins)
+
+    return PSM_pandas
+
+def split_fasta(fasta: str, num_splits: int = 16, randomize: bool = True, verbose: bool = False) -> List[str]:
+    """ Split a fasta file into multiple fasta files.
+    Args:
+        fasta: Fasta file as string.
+        num_splits: Number of splits fasta file should be split into.
+        randomize: Whether to randomize the order of sequences before splitting.
+
+    Returns:
+        List of fasta files as strings, will contain num_splits fasta files with equal number of sequences.
+    """
+
+    if num_splits == 1:
+        return [fasta]
+
+    split_strings = re.split(r'\n>', fasta)
+
+    if verbose:
+        print(f"Total number of sequences: {len(split_strings)} ...")
+
+    if randomize:
+        np.random.shuffle(split_strings)
+
+    if not split_strings[0].startswith('>'):
+        split_strings[0] = '>' + split_strings[0]
+
+    total_items = len(split_strings)
+    items_per_batch = total_items // num_splits
+    remainder = total_items % num_splits
+
+    fastas = []
+    start_index = 0
+
+    for i in range(num_splits):
+        extra = 1 if i < remainder else 0
+        stop_index = start_index + items_per_batch + extra
+
+        if start_index >= total_items:
+            break
+
+        batch = '\n>'.join(split_strings[start_index:stop_index])
+
+        if not batch.startswith('>'):
+            batch = '>' + batch
+
+        fastas.append(batch)
+        start_index = stop_index
+
+    return fastas
+
+def generate_search_configurations(
+    fasta_path: str,
+    num_splits: int = 25,
+    missed_cleavages: int = 1,
+    min_len: int = 8,
+    max_len: int = 30,
+    cleave_at: str = "KR",
+    restrict: str = "P",
+    c_terminal: bool = True,
+    static_mods: dict = {"C": "[UNIMOD:4]"},  # Static cysteine modification
+    variable_mods: dict = {"M": ["[UNIMOD:35]"]},  # Oxidation on methionine
+    bucket_size: int = 2**14,
+    generate_decoys: bool = True,
+    randomize_split: bool = True,
+) -> Iterator[SageSearchConfiguration]:
+    """
+    Generates an iterator of indexed databases for each split of a FASTA file.
+
+    Args:
+        fasta_path (str): Path to the unsplit FASTA file.
+        num_splits (int): Number of splits for the FASTA file. Default is 25.
+        missed_cleavages (int): Allowed missed cleavages for the enzyme. Default is 2.
+        min_len (int): Minimum peptide length. Default is 5.
+        max_len (int): Maximum peptide length. Default is 50.
+        cleave_at (str): Amino acids where cleavage occurs. Default is "KR".
+        restrict (str): Restriction amino acids. Default is "P".
+        c_terminal (bool): Whether cleavage is C-terminal. Default is True.
+        static_mods (dict): Static modifications in UNIMOD notation. Default is {"C": "[UNIMOD:4]"}.
+        variable_mods (dict): Variable modifications in UNIMOD notation. Default is {"M": ["[UNIMOD:35]"]}.
+        bucket_size (int): Size of the bucket for indexing. Default is 2^14.
+        generate_decoys (bool): Whether to generate decoys in the database. Default is True.
+        randomize_split (bool): Whether to randomize the order of sequences before splitting. Default is True.
+
+    Yields:
+        SageSearchConfiguration: Indexed database configuration for each split.
+    """
+    # Read the full FASTA file
+    with open(fasta_path, "r") as infile:
+        fasta = infile.read()
+
+    # Split the FASTA file
+    fastas = split_fasta(fasta, num_splits=num_splits, randomize=randomize_split)
+
+    # Configure the enzyme builder
+    enzyme_builder = EnzymeBuilder(
+        missed_cleavages=missed_cleavages,
+        min_len=min_len,
+        max_len=max_len,
+        cleave_at=cleave_at,
+        restrict=restrict,
+        c_terminal=c_terminal,
+    )
+
+    # Generate configurations for each split
+    for fasta in fastas:
+        sage_config = SageSearchConfiguration(
+            fasta=fasta,
+            static_mods=static_mods,
+            variable_mods=variable_mods,
+            enzyme_builder=enzyme_builder,
+            generate_decoys=generate_decoys,
+            bucket_size=bucket_size,
+        )
+
+        # Generate the indexed database
+        indexed_db = sage_config.generate_indexed_database()
+
+        # Yield the configuration with the indexed database
+        yield indexed_db
+
+
+def compress_psms(psms: List[Psm]) -> bytes:
+    """Compress a list of peptide spectrum matches.
+
+    Args:
+        psms (List[Psm]): The peptide spectrum matches
+
+    Returns:
+        List[Psm]: The compressed peptide spectrum matches
+    """
+    return psc.py_compress_psms([psm.get_py_ptr() for psm in psms])
+
+def decompress_psms(data: bytes) -> List[Psm]:
+    """Decompress a list of peptide spectrum matches.
+
+    Args:
+        data (bytes): The compressed peptide spectrum matches
+
+    Returns:
+        List[Psm]: The decompressed peptide spectrum matches
+    """
+    return [Psm.from_py_ptr(p) for p in psc.py_decompress_psms(data)]

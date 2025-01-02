@@ -8,9 +8,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import Ridge, Lasso
 
-from sagepy.core import PeptideSpectrumMatch
+from sagepy.core import Psm
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
-from sagepy.utility import peptide_spectrum_match_collection_to_pandas
+from sagepy.utility import psm_collection_to_pandas
 
 
 def tokenize_peptide(sequence: str) -> List[str]:
@@ -141,7 +141,7 @@ def transform_sequences(sequences, token_alphabet):
     X_new = np.array([sequence_to_vector(seq, token_alphabet) for seq in sequences])
     return X_new
 
-def predict_retention_times_psm(psm_collection: List[PeptideSpectrumMatch], fdr_threshold: float = 0.01, alpha: float = 0.2):
+def predict_retention_times_psm(psm_collection: List[Psm], fdr_threshold: float = 0.01, alpha: float = 0.2):
     """
     Predict retention times for peptide spectrum matches using a ridge regression model
     Args:
@@ -154,7 +154,7 @@ def predict_retention_times_psm(psm_collection: List[PeptideSpectrumMatch], fdr_
     """
 
     # Convert the peptide spectrum matches to a pandas DataFrame
-    PSM_pandas = peptide_spectrum_match_collection_to_pandas(psm_collection)
+    PSM_pandas = psm_collection_to_pandas(psm_collection)
 
     # Create a token alphabet from the peptide sequences
     token_alphabet = create_token_alphabet(PSM_pandas["sequence"])

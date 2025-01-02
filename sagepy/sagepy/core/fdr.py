@@ -1,5 +1,5 @@
-from typing import Optional, List
-
+from typing import Optional, List, Union, Dict
+from sagepy.core.scoring import Psm
 from sagepy.core import IndexedDatabase, Feature
 from sagepy.core.database import PeptideIx
 import sagepy_connector
@@ -48,24 +48,38 @@ class CompetitionPeptideIx:
         return (f"CompetitionPeptideIx(forward={self.forward}, reverse={self.reverse}, "
                 f"forward_ix={self.forward_ix}, reverse_ix={self.reverse_ix})")
 
-def picked_peptide(feature_collection: List[Feature], indexed_db: IndexedDatabase):
-    """ Perform SAGE picked peptide implementation, calculates q-values and PEPs for a given feature collection.
+def sage_fdr(feature_collection: List[Feature], indexed_db: IndexedDatabase, use_hyper_score: bool = True):
+    """ Perform SAGE FDR on all levels (spectrum, peptide, protein), calculates q-values and PEPs for a given feature collection.
     Args:
         feature_collection: a list of features
         indexed_db: an indexed database
+        use_hyper_score: whether to use hyper score or discriminant score for q-value calculation
     """
-    psc.py_picked_peptide(
+    psc.py_sage_fdr(
         [feature.get_py_ptr() for feature in feature_collection],
-        indexed_db.get_py_ptr()
+        indexed_db.get_py_ptr(),
+        use_hyper_score
     )
 
-def picked_protein(feature_collection: List[Feature], indexed_db: IndexedDatabase):
-    """ Perform SAGE picked protein implementation, calculates q-values and PEPs for a given feature collection.
+def sage_fdr_psm(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], indexed_db: IndexedDatabase, use_hyper_score: bool = True):
+    """ Perform SAGE FDR on all levels (spectrum, peptide, protein), calculates q-values and PEPs for a given feature collection.
     Args:
-        feature_collection: a list of features
+        psm_collection: a list of features
         indexed_db: an indexed database
+        use_hyper_score: whether to use hyper score or discriminant score for q-value calculation
     """
-    psc.py_picked_protein(
-        [feature.get_py_ptr() for feature in feature_collection],
-        indexed_db.get_py_ptr()
+
+    f_collection = []
+
+    if isinstance(psm_collection, dict):
+        for _, values in psm_collection.items():
+            f_collection.extend(values)
+
+    else:
+        f_collection = psm_collection
+
+    psc.py_sage_fdr_psm(
+        [feature.get_py_ptr() for feature in f_collection],
+        indexed_db.get_py_ptr(),
+        use_hyper_score
     )

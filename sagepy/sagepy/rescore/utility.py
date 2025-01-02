@@ -6,9 +6,9 @@ import scipy.stats
 from numpy.typing import NDArray
 from typing import Optional, Tuple, List
 
-from sagepy.core import PeptideSpectrumMatch
+from sagepy.core.scoring import Psm
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
-from sagepy.utility import peptide_spectrum_match_collection_to_pandas
+from sagepy.utility import psm_collection_to_pandas
 
 
 def dict_to_dense_array(peak_dict, array_length=174):
@@ -34,110 +34,6 @@ def dict_to_dense_array(peak_dict, array_length=174):
 
     return intensities
 
-
-def spectral_entropy_similarity(observed_intensities, predicted_intensities,
-                                epsilon: float = 1e-7) -> float:
-    """
-    Calculate the spectral entropy similarity between observed and predicted intensities
-    Args:
-        observed_intensities: the observed intensities
-        predicted_intensities: the predicted intensities
-        epsilon: small value to avoid division by zero
-
-    Returns:
-        The spectral entropy similarity between observed and predicted intensities.
-    """
-
-    valid_ion_mask = predicted_intensities > epsilon
-
-    observed_filtered = observed_intensities[valid_ion_mask]
-    predicted_filtered = predicted_intensities[valid_ion_mask]
-
-    entropy_merged = scipy.stats.entropy(observed_filtered + predicted_filtered)
-    entropy_obs = scipy.stats.entropy(observed_filtered)
-    entropy_pred = scipy.stats.entropy(predicted_filtered)
-
-    # calculate the spectral entropy similarity
-    entropy = 1 - (2 * entropy_merged - entropy_obs - entropy_pred) / np.log(4)
-
-    # handle cases where the entropy is NaN (set them to 0)
-    if np.isnan(entropy):
-        entropy = 0
-
-    return entropy
-
-
-def spectral_correlation(
-        observed_intensities,
-        predicted_intensities,
-        method: str = "pearson", epsilon: float = 1e-7,
-) -> float:
-    """
-    Calculate the spectral correlation between observed and predicted intensities.
-    Args:
-        observed_intensities: intensities observed in the spectrum
-        predicted_intensities: intensities predicted by the model
-        method: correlation method (pearson or spearman)
-        epsilon: small value to avoid division by zero
-
-    Returns:
-        The spectral correlation between observed and predicted intensities.
-    """
-
-    if method not in ["pearson", "spearman"]:
-        raise ValueError(f"Invalid correlation method: {method}. Choose 'pearson' or 'spearman'.")
-
-    valid_ion_mask = predicted_intensities > epsilon
-
-    observed_filtered = observed_intensities[valid_ion_mask]
-    predicted_filtered = predicted_intensities[valid_ion_mask]
-
-    observed_filtered = observed_filtered[~np.isnan(observed_filtered)]
-    predicted_filtered = predicted_filtered[~np.isnan(predicted_filtered)]
-
-    if len(observed_filtered) <= 2 or len(predicted_filtered) <= 2:
-        return 0
-
-    if method == "pearson":
-        corr, _ = scipy.stats.pearsonr(observed_filtered, predicted_filtered)
-    else:
-        corr, _ = scipy.stats.spearmanr(observed_filtered, predicted_filtered)
-
-    if np.isnan(corr):
-        corr = 0
-
-    return corr
-
-
-def spectral_coverage(observed_intensities, predicted_intensities):
-    """
-    Calculate the spectral coverage between observed and predicted intensities
-    Args:
-        observed_intensities: the observed intensities
-        predicted_intensities: the predicted intensities
-
-    Returns:
-        The spectral coverage between observed and predicted intensities.
-    """
-    predicted = predicted_intensities
-    observed = observed_intensities
-
-    intensity_covered = 0.0
-    total_intensity = 0.0
-
-    for key, value in predicted.items():
-        total_intensity += value
-
-        if key in observed:
-            intensity_covered += value
-
-    return intensity_covered / total_intensity
-
-
-def cosim_to_spectral_angle_sim(cosim: float) -> float:
-    return 1 - ((np.arccos(cosim) * (180 / np.pi)) / 180)
-
-
 def get_features(
         ds: pd.DataFrame,
         score: Optional[str] = None,
@@ -154,7 +50,7 @@ def get_features(
         A tuple containing the features and labels.
     """
 
-    score = score if score is not None else "score"
+    score = score if score is not None else "hyperscore"
 
     # The currently used features for the model fit
     # TODO: extend this list with additional features
@@ -163,10 +59,6 @@ def get_features(
         "delta_rt",
         "delta_ims",
         "cosine_similarity",
-        'spectral_entropy_similarity',
-        'spectral_correlation_similarity_pearson',
-        'spectral_correlation_similarity_spearman',
-        'spectral_normalized_intensity_difference',
         "delta_mass",
         "rank",
         "isotope_error",
@@ -183,7 +75,12 @@ def get_features(
         "charge",
         "intensity_ms1",
         "intensity_ms2",
-        "collision_energy"
+        "collision_energy",
+        "cosine_similarity",
+        "spectral_angle_similarity",
+        "pearson_correlation",
+        "spearman_correlation",
+        "spectral_entropy_similarity",
     ]
     ds = ds.copy()
 
@@ -193,9 +90,6 @@ def get_features(
 
     # avoid none values for cosine similarity
     ds["cosine_similarity"] = ds["cosine_similarity"].apply(lambda x: 0.0 if x is None else x)
-
-    # transform cosine similarity to spectral angle similarity
-    ds["cosine_similarity"] = ds["cosine_similarity"].apply(cosim_to_spectral_angle_sim)
 
     X = ds[features].to_numpy().astype(np.float32)
 
@@ -209,11 +103,12 @@ def get_features(
 
 
 def generate_training_data(
-        psm_list: List[PeptideSpectrumMatch],
+        psm_list: List[Psm],
         method: str = "psm",
         q_max: float = 0.01,
         balance: bool = True,
         replace_nan: bool = True,
+        num_threads: int = 16,
 ) -> Tuple[NDArray, NDArray]:
     """ Generate training data.
     Args:
@@ -222,16 +117,17 @@ def generate_training_data(
         q_max: Maximum q-value allowed for positive examples
         balance: Whether to balance the dataset
         replace_nan: Whether to replace NaN values with 0
+        num_threads: Number of threads to use for feature extraction
 
     Returns:
         Tuple[NDArray, NDArray]: X_train and Y_train
     """
     # create pandas table from psms
-    PSM_pandas = peptide_spectrum_match_collection_to_pandas(psm_list)
+    PSM_pandas = psm_collection_to_pandas(psm_list, num_threads=num_threads)
 
     # calculate q-values to get inital "good" hits
     PSM_q = target_decoy_competition_pandas(PSM_pandas, method=method)
-    PSM_pandas = PSM_pandas.drop(columns=["q_value", "score"])
+    PSM_pandas = PSM_pandas.drop(columns=["hyperscore"])
 
     # merge data with q-values
     TDC = pd.merge(
@@ -262,7 +158,7 @@ def generate_training_data(
     return X_train, Y_train
 
 
-def split_psm_list(psm_list: List[PeptideSpectrumMatch], num_splits: int = 5) -> List[List[PeptideSpectrumMatch]]:
+def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
     """ Split PSMs into multiple splits.
 
     Args:
@@ -291,24 +187,26 @@ def split_psm_list(psm_list: List[PeptideSpectrumMatch], num_splits: int = 5) ->
     return splits
 
 
-def transform_psm_to_mokapot_pin(psm_df):
+def transform_psm_to_mokapot_pin(psm_df, seq_modified: bool = False):
     """ Transform a PSM DataFrame to a mokapot PIN DataFrame.
     Args:
         psm_df: a DataFrame containing PSMs
+        seq_modified: whether the sequences are modified
 
     Returns:
         A DataFrame containing the PSMs in mokapot PIN format.
     """
 
     columns_map = {
+        # target columns mapping for mokapot
         'spec_idx': 'SpecId',
         'decoy': 'Label',
         'charge': 'Charge',
-        'sequence': 'Peptide',
+        'sequence_modified': 'Peptide',
         'proteins': 'Proteins',
 
         # feature mapping for re-scoring
-        'hyper_score': 'Feature1',
+        'hyperscore': 'Feature1',
         'isotope_error': 'Feature2',
         'delta_mass': 'Feature3',
         'delta_rt': 'Feature4',
@@ -317,12 +215,12 @@ def transform_psm_to_mokapot_pin(psm_df):
         'matched_intensity_pct': 'Feature7',
         'intensity_ms1': 'Feature8',
         'intensity_ms2': 'Feature9',
-        'average_ppm': 'Feature1ß',
+        'average_ppm': 'Feature10',
         'poisson': 'Feature11',
         'spectral_entropy_similarity': 'Feature12',
-        'spectral_correlation_similarity_pearson': 'Feature13',
-        'spectral_correlation_similarity_spearman': 'Feature14',
-        'spectral_normalized_intensity_difference': 'Feature15',
+        'pearson_correlation': 'Feature13',
+        'spearman_correlation': 'Feature14',
+        'spectral_angle_similarity': 'Feature15',
         'collision_energy': 'Feature16',
         'delta_next': 'Feature17',
         'delta_best': 'Feature18',
@@ -333,6 +231,10 @@ def transform_psm_to_mokapot_pin(psm_df):
         'rank': 'Feature23',
         'missed_cleavages': 'Feature24',
     }
+
+    if not seq_modified:
+        columns_map['sequence'] = 'Peptide'
+        columns_map.pop('sequence_modified')
 
     psm_df = psm_df[list(columns_map.keys())]
     df_pin = psm_df.rename(columns=columns_map)
