@@ -17,6 +17,9 @@ mod py_utility;
 mod py_unimod;
 mod utilities;
 mod py_intensity;
+mod py_retention_model;
+mod py_retention_alignment;
+mod py_mobility_model;
 
 use py_enzyme::enzyme;
 use py_fasta::fasta;

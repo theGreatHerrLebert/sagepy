@@ -1,7 +1,9 @@
 use pyo3::prelude::*;
-use sage_core::lfq::{FeatureMap, IntegrationStrategy, LfqSettings, PeakScoringStrategy, PrecursorId, PrecursorRange};
+use sage_core::lfq::{FeatureMap, IntegrationStrategy, LfqSettings, PeakScoringStrategy, PrecursorId, PrecursorRange, build_feature_map};
 use sage_core::lfq::PrecursorId::{Charged, Combined};
+use sage_core::scoring::Feature;
 use crate::py_database::PyPeptideIx;
+use crate::py_scoring::PyFeature;
 
 #[pyclass]
 pub struct PyPeakScoringStrategy {
@@ -323,6 +325,19 @@ impl PyQuery {
     }
 }
 
+#[pyfunction]
+pub fn py_build_feature_map(
+    settings: PyLfqSettings,
+    precursor_charge: (u8, u8),
+    features: Vec<PyFeature>,
+) -> PyFeatureMap {
+    let features: Vec<Feature> = features.iter().map(|f| f.inner.clone()).collect();
+    let feature_map = build_feature_map(settings.inner, precursor_charge, features.as_slice());
+    PyFeatureMap {
+        inner: feature_map,
+    }
+}
+
 #[pymodule]
 pub fn lfq(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPeakScoringStrategy>()?;
@@ -332,5 +347,6 @@ pub fn lfq(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPrecursorRange>()?;
     m.add_class::<PyFeatureMap>()?;
     m.add_class::<PyQuery>()?;
+    m.add_function(wrap_pyfunction!(py_build_feature_map, m)?)?;
     Ok(())
 }
