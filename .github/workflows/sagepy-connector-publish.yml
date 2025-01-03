@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-13, macos-14]
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12']
         include:
           - os: ubuntu-latest
             python-version: '3.11'
@@ -39,19 +39,7 @@ jobs:
           - os: macos-14
             python-version: '3.12'
             publish: true
-          - os: ubuntu-latest
-            python-version: '3.13'
-            publish: true
-          - os: windows-latest
-            python-version: '3.13'
-            publish: true
-          - os: macos-13
-            python-version: '3.13'
-            publish: true
-          - os: macos-14
-            python-version: '3.13'
-            publish: true
-
+            
     steps:
       - uses: actions/checkout@v3
 
