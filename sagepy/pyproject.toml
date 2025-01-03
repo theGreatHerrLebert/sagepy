@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sagepy"
-version = "0.3.1"
+version = "0.3.2"
 description = ""
 authors = ["theGreatHerrLebert <davidteschner@googlemail.com>"]
 readme = "README.md"
