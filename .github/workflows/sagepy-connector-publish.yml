@@ -39,7 +39,7 @@ jobs:
           - os: macos-14
             python-version: '3.12'
             publish: true
-            
+
     steps:
       - uses: actions/checkout@v3
 
@@ -63,6 +63,11 @@ jobs:
       - name: Change to sagepy-connector directory
         run: cd sagepy-connector
 
+      - name: Clean Cargo Artifacts
+        run: |
+          cd sagepy-connector
+          cargo clean
+
       - name: Build with Maturin
         run: |
           cd sagepy-connector
@@ -75,4 +80,3 @@ jobs:
         run: |
           cd sagepy-connector
           maturin publish --no-sdist
-
