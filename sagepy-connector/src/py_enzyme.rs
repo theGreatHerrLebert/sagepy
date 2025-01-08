@@ -270,7 +270,7 @@ impl PyEnzymeParameters {
 }
 
 #[pymodule]
-pub fn enzyme(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_enzyme(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyDigest>()?;
     m.add_class::<PyPosition>()?;
     m.add_class::<PyEnzyme>()?;

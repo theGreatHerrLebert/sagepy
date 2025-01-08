@@ -118,7 +118,7 @@ impl PyPeptide {
 }
 
 #[pymodule]
-pub fn peptide(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_peptide(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPeptide>()?;
     Ok(())
 }

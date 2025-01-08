@@ -188,7 +188,7 @@ impl PyTmtQuant {
 
 
 #[pymodule]
-pub fn tmt(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_tmt(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyIsobaric>()?;
     m.add_class::<PyPurity>()?;
     m.add_class::<PyQuant>()?;

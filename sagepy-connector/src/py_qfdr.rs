@@ -120,7 +120,7 @@ pub fn assign_protein_q(_py: Python, psm_collection: &PyList, use_hyper_score: b
 }
 
 #[pymodule]
-pub fn qfdr(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_qfdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyTDCMethod>()?;
     m.add_function(wrap_pyfunction!(target_decoy_competition, m)?)?;
     m.add_function(wrap_pyfunction!(assign_spectrum_q, m)?)?;

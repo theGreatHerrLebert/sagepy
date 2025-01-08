@@ -460,7 +460,7 @@ impl PyPrecursor {
 }
 
 #[pymodule]
-pub fn spectrum(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_spectrum(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPeak>()?;
     m.add_class::<PyDeisotoped>()?;
     m.add_class::<PyPrecursor>()?;

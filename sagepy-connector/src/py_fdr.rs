@@ -157,7 +157,7 @@ pub fn py_sage_fdr_psm(_py: Python, psm_collection: &PyList, indexed_database: &
 }
 
 #[pymodule]
-pub fn fdr(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_fdr(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyCompetitionPeptideIx>()?;
     m.add_function(wrap_pyfunction!(py_sage_fdr, m)?)?;
     m.add_function(wrap_pyfunction!(py_sage_fdr_psm, m)?)?;

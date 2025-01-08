@@ -70,7 +70,7 @@ impl PyFragmentIntensityPrediction {
 }
 
 #[pymodule]
-pub fn intensity(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_intensity(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyFragmentIntensityPrediction>()?;
     Ok(())
 }

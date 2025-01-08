@@ -568,7 +568,7 @@ impl PyParameters {
 }
 
 #[pymodule]
-pub fn database(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_database(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPeptideIx>()?;
     m.add_class::<PyTheoretical>()?;
     m.add_class::<PyParameters>()?;

@@ -157,7 +157,7 @@ impl PyTolerance {
 }
 
 #[pymodule]
-pub fn mass(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_mass(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(h2o, m)?)?;
     m.add_function(wrap_pyfunction!(proton, m)?)?;
     m.add_function(wrap_pyfunction!(neutron, m)?)?;

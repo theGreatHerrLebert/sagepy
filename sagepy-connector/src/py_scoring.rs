@@ -15,7 +15,6 @@ use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore};
 use serde::{Deserialize, Serialize};
 use crate::py_intensity::PyFragmentIntensityPrediction;
 use crate::py_ion_series::PyKind;
-use crate::py_peptide::peptide;
 use crate::py_utility::{flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
 
 #[pyclass]
@@ -1370,7 +1369,7 @@ pub fn peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
 }
 
 #[pymodule]
-pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_scoring(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyFragments>()?;
     m.add_class::<PyFeature>()?;
     m.add_class::<PyScorer>()?;

@@ -27,7 +27,7 @@ impl PyFasta {
 }
 
 #[pymodule]
-pub fn fasta(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_fasta(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyFasta>()?;
     Ok(())
 }

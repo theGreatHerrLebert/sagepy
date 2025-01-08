@@ -87,7 +87,7 @@ pub fn py_validate_var_mods(
 }
 
 #[pymodule]
-pub fn modification(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_modification(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyModificationSpecificity>()?;
     m.add_wrapped(wrap_pyfunction!(py_validate_mods))?;
     m.add_wrapped(wrap_pyfunction!(py_validate_var_mods))?;
