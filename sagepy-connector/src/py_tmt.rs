@@ -91,6 +91,7 @@ pub struct PyQuant {
 #[pymethods]
 impl PyQuant {
     #[new]
+    #[pyo3(signature = (hit, hit_purity, spectrum, intensities, chimera=None, chimera_purity=None))]
     pub fn new(
         hit: PyFeature,
         hit_purity: PyPurity,
@@ -188,7 +189,7 @@ impl PyTmtQuant {
 
 
 #[pymodule]
-pub fn tmt(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_tmt(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyIsobaric>()?;
     m.add_class::<PyPurity>()?;
     m.add_class::<PyQuant>()?;

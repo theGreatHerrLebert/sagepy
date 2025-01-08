@@ -1,4 +1,4 @@
-use numpy::{IntoPyArray, PyArray1};
+use numpy::{IntoPyArray, PyArray1, PyArrayMethods};
 use pyo3::prelude::*;
 
 use crate::py_mass::PyTolerance;
@@ -168,8 +168,8 @@ impl PyRawSpectrum {
         scan_start_time: f32,
         ion_injection_time: f32,
         total_ion_current: f32,
-        mz: &PyArray1<f32>,
-        intensity: &PyArray1<f32>,
+        mz: &Bound<'_, PyArray1<f32>>,
+        intensity: &Bound<'_, PyArray1<f32>>,
     ) -> Self {
         let mz_vec = unsafe { mz.as_array().to_vec() };
         let intensity_vec = unsafe { intensity.as_array().to_vec() };
@@ -243,12 +243,12 @@ impl PyRawSpectrum {
 
     #[getter]
     pub fn mz(&self, py: Python) -> Py<PyArray1<f32>> {
-        self.inner.mz.clone().into_pyarray(py).to_owned()
+        self.inner.mz.clone().into_pyarray(py).unbind()
     }
 
     #[getter]
     pub fn intensity(&self, py: Python) -> Py<PyArray1<f32>> {
-        self.inner.intensity.clone().into_pyarray(py).to_owned()
+        self.inner.intensity.clone().into_pyarray(py).unbind()
     }
 
     pub fn filter_top_n(&self, n: usize) -> PyRawSpectrum {
@@ -350,6 +350,7 @@ pub struct PyDeisotoped {
 #[pymethods]
 impl PyDeisotoped {
     #[new]
+    #[pyo3(signature = (mz, intensity, charge=None, envelope=None))]
     pub fn new(mz: f32, intensity: f32, charge: Option<u8>, envelope: Option<usize>) -> Self {
         PyDeisotoped {
             inner: Deisotoped {
@@ -392,6 +393,7 @@ pub struct PyPrecursor {
 #[pymethods]
 impl PyPrecursor {
     #[new]
+    #[pyo3(signature = (mz, intensity=None, charge=None, spectrum_ref=None, isolation_window=None, inverse_ion_mobility=None, collision_energy=None))]
     pub fn new(
         mz: f32,
         intensity: Option<f32>,
@@ -460,7 +462,7 @@ impl PyPrecursor {
 }
 
 #[pymodule]
-pub fn spectrum(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_spectrum(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPeak>()?;
     m.add_class::<PyDeisotoped>()?;
     m.add_class::<PyPrecursor>()?;

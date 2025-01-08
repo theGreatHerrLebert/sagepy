@@ -273,7 +273,7 @@ pub fn py_decompress_psms(psms_bin: Vec<u8>) -> Vec<PyPsm> {
 }
 
 #[pymodule]
-pub fn utility(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_utility(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(flat_prosit_array_to_fragments_map, m)?)?;
     m.add_function(wrap_pyfunction!(py_fragments_to_fragments_map, m)?)?;
     m.add_function(wrap_pyfunction!(psms_to_json, m)?)?;

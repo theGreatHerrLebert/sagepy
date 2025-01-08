@@ -15,7 +15,6 @@ use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore};
 use serde::{Deserialize, Serialize};
 use crate::py_intensity::PyFragmentIntensityPrediction;
 use crate::py_ion_series::PyKind;
-use crate::py_peptide::peptide;
 use crate::py_utility::{flat_prosit_array_to_fragments_map, py_fragments_to_fragments_map};
 
 #[pyclass]
@@ -27,6 +26,7 @@ pub struct PyPsm {
 #[pymethods]
 impl PyPsm {
     #[new]
+    #[pyo3(signature = (spec_idx, peptide_idx, proteins, sage_feature, sequence=None, sequence_modified=None, sequence_decoy=None, sequence_decoy_modified=None, intensity_ms1=None, intensity_ms2=None, collision_energy=None, collision_energy_calibrated=None, retention_time_projected=None, prosit_predicted_intensities=None, re_score=None))]
     pub fn new(
         spec_idx: String,
         peptide_idx: u32,
@@ -454,6 +454,7 @@ pub struct PyFeature {
 #[pymethods]
 impl PyFeature {
     #[new]
+    #[pyo3(signature = (peptide_idx, psm_id, peptide_len, spec_id, file_id, rank, label, expmass, calcmass, charge, delta_mass, isotope_error, average_ppm, hyperscore, delta_next, delta_best, matched_peaks, longest_b, longest_y, longest_y_pct, missed_cleavages, matched_intensity_pct, scored_candidates, poisson, discriminant_score, posterior_error, spectrum_q, peptide_q, protein_q, ms2_intensity, rt=None, aligned_rt=None, predicted_rt=None, delta_rt_model=None, ims=None, predicted_ims=None, delta_ims_model=None, fragments=None))]
     pub fn new(
         peptide_idx: PyPeptideIx,
         psm_id: usize,
@@ -788,6 +789,7 @@ pub struct PyScorer {
 #[pymethods]
 impl PyScorer {
     #[new]
+    #[pyo3(signature = (precursor_tolerance, fragment_tolerance, min_matched_peaks, min_isotope_err, max_isotope_err, min_precursor_charge, max_precursor_charge, chimera, report_psms, wide_window, annotate_matches, override_precursor_charge, expected_mods, max_fragment_charge=None, score_type=None))]
     pub fn new(
         precursor_tolerance: PyTolerance,
         fragment_tolerance: PyTolerance,
@@ -1370,7 +1372,7 @@ pub fn peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
 }
 
 #[pymodule]
-pub fn scoring(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_scoring(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFragments>()?;
     m.add_class::<PyFeature>()?;
     m.add_class::<PyScorer>()?;

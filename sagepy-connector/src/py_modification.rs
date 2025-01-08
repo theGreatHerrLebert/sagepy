@@ -40,7 +40,8 @@ impl PyModificationSpecificity {
 impl Eq for PyModificationSpecificity {}
 
 #[pyfunction]
-pub fn py_validate_mods(input: Option<&PyDict>) -> HashMap<PyModificationSpecificity, f32> {
+#[pyo3(signature = (input=None))]
+pub fn py_validate_mods(input: Option<&Bound<'_, PyDict>>) -> HashMap<PyModificationSpecificity, f32> {
     // unwrap the input
     let input = input.map(|d| d.extract::<HashMap<String, f32>>().unwrap());
     // validate the mods
@@ -55,8 +56,9 @@ pub fn py_validate_mods(input: Option<&PyDict>) -> HashMap<PyModificationSpecifi
 }
 
 #[pyfunction]
+#[pyo3(signature = (input=None))]
 pub fn py_validate_var_mods(
-    input: Option<&PyDict>,
+    input: Option<&Bound<'_, PyDict>>,
 ) -> HashMap<PyModificationSpecificity, Vec<f32>> {
     // unwrap the input
     let input = input.map(|d| d.extract::<HashMap<String, Vec<f32>>>().unwrap());
@@ -87,7 +89,7 @@ pub fn py_validate_var_mods(
 }
 
 #[pymodule]
-pub fn modification(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_modification(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyModificationSpecificity>()?;
     m.add_wrapped(wrap_pyfunction!(py_validate_mods))?;
     m.add_wrapped(wrap_pyfunction!(py_validate_var_mods))?;

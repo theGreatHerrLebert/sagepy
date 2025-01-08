@@ -1,3 +1,4 @@
+use pyo3::IntoPyObjectExt;
 use sage_core::fasta::Fasta;
 
 use crate::py_enzyme::{PyDigest, PyEnzymeParameters};
@@ -22,12 +23,12 @@ impl PyFasta {
         let digests = self.inner.digest(&enzyme_params.inner);
         let py_digests: Vec<PyDigest> =
             digests.into_iter().map(|d| PyDigest { inner: d }).collect();
-        Ok(py_digests.into_py(py))
+        Ok(py_digests.into_pyobject_or_pyerr(py)?.unbind())
     }
 }
 
 #[pymodule]
-pub fn fasta(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_fasta(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFasta>()?;
     Ok(())
 }

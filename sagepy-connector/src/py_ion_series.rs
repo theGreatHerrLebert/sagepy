@@ -139,7 +139,7 @@ impl PyIonSeries {
 }
 
 #[pymodule]
-pub fn ion_series(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_ion_series(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyKind>()?;
     m.add_class::<PyIon>()?;
     m.add_class::<PyIonSeries>()?;
