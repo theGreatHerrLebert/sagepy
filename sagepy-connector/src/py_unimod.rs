@@ -33,7 +33,7 @@ fn modification_atomic_compositions() -> HashMap<String, HashMap<&'static str, i
 }
 
 #[pymodule]
-pub fn py_unimod(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_unimod(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(unimod_modification_to_mass_numerical, m)?)?;
     m.add_function(wrap_pyfunction!(unimod_modification_to_mass, m)?)?;
     m.add_function(wrap_pyfunction!(quantized_mass_to_unimod_candidates, m)?)?;

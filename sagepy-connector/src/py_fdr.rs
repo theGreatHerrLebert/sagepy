@@ -50,14 +50,14 @@ impl PyCompetitionPeptideIx {
 }
 
 #[pyfunction]
-pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, indexed_database: &PyIndexedDatabase, use_hyper_score: bool) -> PyResult<()> {
+pub fn py_sage_fdr(_py: Python, feature_collection: &Bound<'_, PyList>, indexed_database: &PyIndexedDatabase, use_hyper_score: bool) -> PyResult<()> {
 
     // Extract the inner collection of Feature objects along with their original indices
     let mut indexed_inner_collection: Vec<(usize, Feature)> = feature_collection.iter()
         .enumerate()
         .map(|(index, item)| {
-            // Extract each item as a PyCell<PyFeature>
-            let feature: &PyCell<PyFeature> = item.extract().expect("Failed to extract PyFeature");
+            // Extract each item as a Bound<PyFeature>
+            let feature: Bound<'_, PyFeature> = item.extract().expect("Failed to extract PyFeature");
             // Clone the inner Feature and keep the original index
             (index, feature.borrow().inner.clone())
         })
@@ -65,7 +65,6 @@ pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, indexed_database: &
 
     // Set discriminant score to hyper score
     indexed_inner_collection.par_iter_mut().for_each(|(_, feat)| {
-
         match use_hyper_score {
             false => {
                 feat.discriminant_score = (-feat.poisson as f32).ln_1p() + feat.longest_y_pct / 3.0
@@ -90,7 +89,7 @@ pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, indexed_database: &
 
     // Update the original feature_collection according to the sorted order
     for (sorted_index, sorted_feature) in sorted_indices.iter().zip(inner_collection.iter()) {
-        let feature: &PyCell<PyFeature> = feature_collection.get_item(*sorted_index).expect("Failed to get PyFeature").extract()?;
+        let feature: Bound<'_, PyFeature> = feature_collection.get_item(*sorted_index).expect("Failed to get PyFeature").extract()?;
         let mut feature_borrow = feature.borrow_mut();
         // Update the feature's fields
         feature_borrow.inner.discriminant_score = sorted_feature.discriminant_score;
@@ -103,14 +102,14 @@ pub fn py_sage_fdr(_py: Python, feature_collection: &PyList, indexed_database: &
 }
 
 #[pyfunction]
-pub fn py_sage_fdr_psm(_py: Python, psm_collection: &PyList, indexed_database: &PyIndexedDatabase, use_hyper_score: bool) -> PyResult<()> {
+pub fn py_sage_fdr_psm(_py: Python, psm_collection: &Bound<'_, PyList>, indexed_database: &PyIndexedDatabase, use_hyper_score: bool) -> PyResult<()> {
 
     // Extract the inner collection of Feature objects along with their original indices
     let mut indexed_inner_collection: Vec<(usize, Psm)> = psm_collection.iter()
         .enumerate()
         .map(|(index, item)| {
-            // Extract each item as a PyCell<PyFeature>
-            let feature: &PyCell<PyPsm> = item.extract().expect("Failed to extract PyFeature");
+            // Extract each item as a Bound<PyPsm>
+            let feature: Bound<'_, PyPsm> = item.extract().expect("Failed to extract PyFeature");
             // Clone the inner Feature and keep the original index
             (index, feature.borrow().inner.clone())
         })
@@ -118,11 +117,9 @@ pub fn py_sage_fdr_psm(_py: Python, psm_collection: &PyList, indexed_database: &
 
     // Set discriminant score to hyper score
     indexed_inner_collection.par_iter_mut().for_each(|(_, feat)| {
-
         match use_hyper_score {
             false => {
                 feat.sage_feature.discriminant_score = feat.re_score.unwrap_or(0.0) as f32;
-                //feat.sage_feature.discriminant_score = (-feat.sage_feature.poisson as f32).ln_1p() + feat.sage_feature.longest_y_pct / 3.0
             }
             true => {
                 feat.sage_feature.discriminant_score = feat.sage_feature.hyperscore as f32;
@@ -142,11 +139,10 @@ pub fn py_sage_fdr_psm(_py: Python, psm_collection: &PyList, indexed_database: &
     let _ = picked_peptide(&indexed_database.inner, &mut inner_collection);
     let _ = picked_protein(&indexed_database.inner, &mut inner_collection);
 
-    // Update the original feature_collection according to the sorted order
+    // Update the original psm_collection according to the sorted order
     for (sorted_index, sorted_feature) in sorted_indices.iter().zip(inner_collection.iter()) {
-        let feature: &PyCell<PyPsm> = psm_collection.get_item(*sorted_index).expect("Failed to get PyFeature").extract()?;
+        let feature: Bound<'_, PyPsm> = psm_collection.get_item(*sorted_index).expect("Failed to get PyFeature").extract()?;
         let mut feature_borrow = feature.borrow_mut();
-        // Update the feature's fields
         feature_borrow.inner.sage_feature.discriminant_score = sorted_feature.discriminant_score;
         feature_borrow.inner.sage_feature.spectrum_q = sorted_feature.spectrum_q;
         feature_borrow.inner.sage_feature.peptide_q = sorted_feature.peptide_q;
@@ -157,7 +153,7 @@ pub fn py_sage_fdr_psm(_py: Python, psm_collection: &PyList, indexed_database: &
 }
 
 #[pymodule]
-pub fn py_fdr(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_fdr(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyCompetitionPeptideIx>()?;
     m.add_function(wrap_pyfunction!(py_sage_fdr, m)?)?;
     m.add_function(wrap_pyfunction!(py_sage_fdr_psm, m)?)?;

@@ -1369,7 +1369,7 @@ pub fn peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
 }
 
 #[pymodule]
-pub fn py_scoring(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_scoring(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFragments>()?;
     m.add_class::<PyFeature>()?;
     m.add_class::<PyScorer>()?;

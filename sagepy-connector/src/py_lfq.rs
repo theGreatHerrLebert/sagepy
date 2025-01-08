@@ -339,7 +339,7 @@ pub fn py_build_feature_map(
 }
 
 #[pymodule]
-pub fn py_lfq(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_lfq(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPeakScoringStrategy>()?;
     m.add_class::<PyIntegrationStrategy>()?;
     m.add_class::<PyPrecursorId>()?;

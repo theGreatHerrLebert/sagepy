@@ -169,7 +169,7 @@ impl PyIndexedDatabase {
             .iter()
             .map(|p| p.monoisotopic)
             .collect::<Vec<f32>>();
-        masses.into_pyarray(py).to_owned()
+        masses.into_pyarray_bound(py).unbind()
     }
 
     pub fn modifications(&self) -> Vec<(usize, Vec<f32>)> {
@@ -205,7 +205,7 @@ impl PyIndexedDatabase {
             .iter()
             .map(|f| f.peptide_index.0)
             .collect();
-        data.into_pyarray(py).to_owned()
+        data.into_pyarray_bound(py).unbind()
     }
 
     #[getter]
@@ -215,7 +215,7 @@ impl PyIndexedDatabase {
             .iter()
             .map(|f| f.fragment_mz)
             .collect();
-        data.into_pyarray(py).to_owned()
+        data.into_pyarray_bound(py).unbind()
     }
 
     pub fn fragment_dict(&self) -> HashMap<u32, Vec<f32>> {
@@ -424,8 +424,8 @@ impl PyParameters {
         peptide_min_mass: f32,
         peptide_max_mass: f32,
         min_ion_index: usize,
-        static_mods: &PyDict,
-        variable_mods: &PyDict,
+        static_mods: &Bound<'_, PyDict>,
+        variable_mods: &Bound<'_, PyDict>,
         max_variable_mods: usize,
         decoy_tag: String,
         generate_decoys: bool,
@@ -568,7 +568,7 @@ impl PyParameters {
 }
 
 #[pymodule]
-pub fn py_database(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_database(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPeptideIx>()?;
     m.add_class::<PyTheoretical>()?;
     m.add_class::<PyParameters>()?;

@@ -23,7 +23,7 @@ pub mod py_retention_alignment;
 pub mod py_mobility_model;
 
 #[pymodule]
-fn sagepy_connector(_py: Python, m: &PyModule) -> PyResult<()> {
+fn sagepy_connector(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_wrapped(wrap_pymodule!(py_mass::py_mass))?;
     m.add_wrapped(wrap_pymodule!(py_enzyme::py_enzyme))?;

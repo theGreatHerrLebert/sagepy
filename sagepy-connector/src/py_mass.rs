@@ -66,7 +66,7 @@ impl PyComposition {
 
     // Static method to sum compositions
     #[staticmethod]
-    pub fn sum(compositions: &PyList) -> PyResult<PyComposition> {
+    pub fn sum(compositions: &Bound<'_, PyList>) -> PyResult<PyComposition> {
         let mut total_composition = Composition::new(0, 0, 0);
 
         for comp in compositions.iter() {
@@ -157,7 +157,7 @@ impl PyTolerance {
 }
 
 #[pymodule]
-pub fn py_mass(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_mass(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(h2o, m)?)?;
     m.add_function(wrap_pyfunction!(proton, m)?)?;
     m.add_function(wrap_pyfunction!(neutron, m)?)?;

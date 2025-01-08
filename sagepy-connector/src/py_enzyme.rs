@@ -1,4 +1,4 @@
-use numpy::{IntoPyArray, PyArray2};
+use numpy::{IntoPyArray, PyArray2, PyArrayMethods};
 use pyo3::prelude::*;
 use std::sync::Arc;
 
@@ -186,8 +186,10 @@ impl PyEnzyme {
             .collect();
 
         let rows = sites_flat.len() / 2;
-        let np_array: Py<PyArray2<usize>> =
-            sites_flat.into_pyarray(py).reshape([rows, 2])?.to_owned();
+        let np_array: Py<PyArray2<usize>> = sites_flat
+            .into_pyarray_bound(py)
+            .reshape([rows, 2])?
+            .unbind();
 
         Ok(np_array)
     }
@@ -248,7 +250,7 @@ impl PyEnzymeParameters {
 
         let rows = sites_flat.len() / 2;
         let np_array: Py<PyArray2<usize>> =
-            sites_flat.into_pyarray(py).reshape([rows, 2])?.to_owned();
+            sites_flat.into_pyarray_bound(py).reshape([rows, 2])?.unbind();
 
         Ok(np_array)
     }
@@ -257,12 +259,12 @@ impl PyEnzymeParameters {
         let digests = self.inner.digest(sequence, Arc::new(protein.to_string()));
 
         // Create an empty Python list
-        let list: Py<PyList> = PyList::empty(py).into();
+        let list: Py<PyList> = PyList::empty_bound(py).into();
 
         // Iterate over the digests and append them to the list
         for digest in digests {
             let py_digest = Py::new(py, PyDigest { inner: digest })?;
-            list.as_ref(py).append(py_digest)?;
+            list.bind(py).append(py_digest)?;
         }
 
         Ok(list.into())
@@ -270,7 +272,7 @@ impl PyEnzymeParameters {
 }
 
 #[pymodule]
-pub fn py_enzyme(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn py_enzyme(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyDigest>()?;
     m.add_class::<PyPosition>()?;
     m.add_class::<PyEnzyme>()?;
