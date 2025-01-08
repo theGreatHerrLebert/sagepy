@@ -148,6 +148,7 @@ pub struct PyEnzyme {
 #[pymethods]
 impl PyEnzyme {
     #[new]
+    #[pyo3(signature = (cleave, c_terminal, semi_enzymatic, skip_suffix=None))]
     fn new(
         cleave: &str,
         c_terminal: bool,
@@ -187,7 +188,7 @@ impl PyEnzyme {
 
         let rows = sites_flat.len() / 2;
         let np_array: Py<PyArray2<usize>> = sites_flat
-            .into_pyarray_bound(py)
+            .into_pyarray(py)
             .reshape([rows, 2])?
             .unbind();
 
@@ -203,6 +204,7 @@ pub struct PyEnzymeParameters {
 #[pymethods]
 impl PyEnzymeParameters {
     #[new]
+    #[pyo3(signature = (missed_cleavages, min_len, max_len, enzyme=None))]
     fn new(missed_cleavages: u8, min_len: usize, max_len: usize, enzyme: Option<PyEnzyme>) -> Self {
         PyEnzymeParameters {
             inner: EnzymeParameters {
@@ -250,7 +252,7 @@ impl PyEnzymeParameters {
 
         let rows = sites_flat.len() / 2;
         let np_array: Py<PyArray2<usize>> =
-            sites_flat.into_pyarray_bound(py).reshape([rows, 2])?.unbind();
+            sites_flat.into_pyarray(py).reshape([rows, 2])?.unbind();
 
         Ok(np_array)
     }
@@ -259,7 +261,7 @@ impl PyEnzymeParameters {
         let digests = self.inner.digest(sequence, Arc::new(protein.to_string()));
 
         // Create an empty Python list
-        let list: Py<PyList> = PyList::empty_bound(py).into();
+        let list: Py<PyList> = PyList::empty(py).into();
 
         // Iterate over the digests and append them to the list
         for digest in digests {

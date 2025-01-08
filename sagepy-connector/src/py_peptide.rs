@@ -14,6 +14,7 @@ pub struct PyPeptide {
 #[pymethods]
 impl PyPeptide {
     #[new]
+    #[pyo3(signature = (decoy, sequence, modifications, mono_isotopic, missed_cleavages, position, proteins, semi_enzymatic, n_term=None, c_term=None))]
     pub fn new(
         decoy: bool,
         sequence: String,
@@ -108,10 +109,12 @@ impl PyPeptide {
         self.inner.semi_enzymatic
     }
 
+    #[pyo3(signature = (keep_ends=None))]
     pub fn reverse(&self, keep_ends: Option<bool>) -> PyPeptide {
         PyPeptide { inner: self.inner.reverse(keep_ends.unwrap_or(true)), }
     }
 
+    #[pyo3(signature = (keep_ends=None))]
     pub fn shuffle(&self, keep_ends: Option<bool>) -> PyPeptide {
         PyPeptide { inner: self.inner.shuffle(keep_ends.unwrap_or(true)), }
     }

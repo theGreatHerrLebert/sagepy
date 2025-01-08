@@ -169,7 +169,7 @@ impl PyIndexedDatabase {
             .iter()
             .map(|p| p.monoisotopic)
             .collect::<Vec<f32>>();
-        masses.into_pyarray_bound(py).unbind()
+        masses.into_pyarray(py).unbind()
     }
 
     pub fn modifications(&self) -> Vec<(usize, Vec<f32>)> {
@@ -205,7 +205,7 @@ impl PyIndexedDatabase {
             .iter()
             .map(|f| f.peptide_index.0)
             .collect();
-        data.into_pyarray_bound(py).unbind()
+        data.into_pyarray(py).unbind()
     }
 
     #[getter]
@@ -215,7 +215,7 @@ impl PyIndexedDatabase {
             .iter()
             .map(|f| f.fragment_mz)
             .collect();
-        data.into_pyarray_bound(py).unbind()
+        data.into_pyarray(py).unbind()
     }
 
     pub fn fragment_dict(&self) -> HashMap<u32, Vec<f32>> {
@@ -286,6 +286,7 @@ pub struct PyEnzymeBuilder {
 #[pymethods]
 impl PyEnzymeBuilder {
     #[new]
+    #[pyo3(signature = (missed_cleavages=None, min_len=None, max_len=None, cleave_at=None, restrict=None, c_terminal=None, semi_enzymatic=None))]
     pub fn new(
         missed_cleavages: Option<u8>,
         min_len: Option<usize>,
@@ -418,6 +419,7 @@ pub struct PyParameters {
 #[pymethods]
 impl PyParameters {
     #[new]
+    #[pyo3(signature = (bucket_size, py_enzyme_builder, peptide_min_mass, peptide_max_mass, min_ion_index, static_mods, variable_mods, max_variable_mods, decoy_tag, generate_decoys, fasta, ion_kinds=None, _shuffle_decoys=None, _keep_ends=None))]
     pub fn new(
         bucket_size: usize,
         py_enzyme_builder: PyEnzymeBuilder,

@@ -9,11 +9,11 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # sage-core = {path = "../../sage/crates/sage" }
-sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git" }
+age-core = { git = "https://github.com/theGreatHerrLebert/sage.git" }
 qfdrust = { path  = "../qfdrust" }
 unimod = { path = "../unimod" }
-pyo3 = { version = "0.21.2", features = ["extension-module"] }
-numpy = "0.21.0"
+pyo3 = { version = "0.23.3", features = ["extension-module"] }
+numpy = "0.23.0"
 rayon = "1.10.0"
 
 serde = { version = "1.0.202", features = ["derive"] }

@@ -91,6 +91,7 @@ pub struct PyQuant {
 #[pymethods]
 impl PyQuant {
     #[new]
+    #[pyo3(signature = (hit, hit_purity, spectrum, intensities, chimera=None, chimera_purity=None))]
     pub fn new(
         hit: PyFeature,
         hit_purity: PyPurity,

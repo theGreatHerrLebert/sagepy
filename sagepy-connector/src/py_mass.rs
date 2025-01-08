@@ -107,6 +107,7 @@ pub struct PyTolerance {
 #[pymethods]
 impl PyTolerance {
     #[new]
+    #[pyo3(signature = (da=None, ppm=None))]
     fn new(da: Option<(f32, f32)>, ppm: Option<(f32, f32)>) -> PyResult<Self> {
         let tolerance = match (da, ppm) {
             (Some((lo, hi)), None) => Tolerance::Da(lo, hi),

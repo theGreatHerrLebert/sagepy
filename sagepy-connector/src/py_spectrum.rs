@@ -243,12 +243,12 @@ impl PyRawSpectrum {
 
     #[getter]
     pub fn mz(&self, py: Python) -> Py<PyArray1<f32>> {
-        self.inner.mz.clone().into_pyarray_bound(py).unbind()
+        self.inner.mz.clone().into_pyarray(py).unbind()
     }
 
     #[getter]
     pub fn intensity(&self, py: Python) -> Py<PyArray1<f32>> {
-        self.inner.intensity.clone().into_pyarray_bound(py).unbind()
+        self.inner.intensity.clone().into_pyarray(py).unbind()
     }
 
     pub fn filter_top_n(&self, n: usize) -> PyRawSpectrum {
@@ -350,6 +350,7 @@ pub struct PyDeisotoped {
 #[pymethods]
 impl PyDeisotoped {
     #[new]
+    #[pyo3(signature = (mz, intensity, charge=None, envelope=None))]
     pub fn new(mz: f32, intensity: f32, charge: Option<u8>, envelope: Option<usize>) -> Self {
         PyDeisotoped {
             inner: Deisotoped {
@@ -392,6 +393,7 @@ pub struct PyPrecursor {
 #[pymethods]
 impl PyPrecursor {
     #[new]
+    #[pyo3(signature = (mz, intensity=None, charge=None, spectrum_ref=None, isolation_window=None, inverse_ion_mobility=None, collision_energy=None))]
     pub fn new(
         mz: f32,
         intensity: Option<f32>,

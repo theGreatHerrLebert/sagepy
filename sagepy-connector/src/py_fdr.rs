@@ -18,6 +18,7 @@ struct PyCompetitionPeptideIx {
 #[pymethods]
 impl PyCompetitionPeptideIx {
     #[new]
+    #[pyo3(signature = (forward, reverse, forward_ix=None, reverse_ix=None))]
     fn new(forward: f32, reverse: f32, forward_ix: Option<PyPeptideIx>, reverse_ix: Option<PyPeptideIx>) -> Self {
         PyCompetitionPeptideIx {
             inner: Competition {

@@ -40,6 +40,7 @@ impl PyModificationSpecificity {
 impl Eq for PyModificationSpecificity {}
 
 #[pyfunction]
+#[pyo3(signature = (input=None))]
 pub fn py_validate_mods(input: Option<&Bound<'_, PyDict>>) -> HashMap<PyModificationSpecificity, f32> {
     // unwrap the input
     let input = input.map(|d| d.extract::<HashMap<String, f32>>().unwrap());
@@ -55,6 +56,7 @@ pub fn py_validate_mods(input: Option<&Bound<'_, PyDict>>) -> HashMap<PyModifica
 }
 
 #[pyfunction]
+#[pyo3(signature = (input=None))]
 pub fn py_validate_var_mods(
     input: Option<&Bound<'_, PyDict>>,
 ) -> HashMap<PyModificationSpecificity, Vec<f32>> {
