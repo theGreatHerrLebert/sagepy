@@ -765,6 +765,11 @@ impl PyFeature {
     pub fn set_delta_rt_model(&mut self, value: f32) {
         self.inner.delta_rt_model = value;
     }
+
+    #[setter]
+    pub fn set_file_id(&mut self, value: usize) {
+        self.inner.file_id = value;
+    }
 }
 
 #[pyclass]

@@ -842,6 +842,10 @@ class Feature:
     def delta_ims_model(self) -> Optional[float]:
         return self.__feature_ptr.delta_ims_model
 
+    @file_id.setter
+    def file_id(self, value):
+        self.__feature_ptr.file_id = value
+
     def __repr__(self):
         return (f"Feature("
                 f"idx: {self.peptide_idx}, "
