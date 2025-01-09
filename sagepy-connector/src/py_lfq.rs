@@ -338,6 +338,19 @@ pub fn py_build_feature_map(
     }
 }
 
+#[pyfunction]
+pub fn py_build_feature_map_psm(
+    settings: PyLfqSettings,
+    precursor_charge: (u8, u8),
+    features: Vec<PyFeature>,
+) -> PyFeatureMap {
+    let features: Vec<Feature> = features.iter().map(|f| f.inner.clone()).collect();
+    let feature_map = build_feature_map(settings.inner, precursor_charge, features.as_slice());
+    PyFeatureMap {
+        inner: feature_map,
+    }
+}
+
 #[pymodule]
 pub fn py_lfq(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPeakScoringStrategy>()?;
@@ -348,5 +361,6 @@ pub fn py_lfq(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFeatureMap>()?;
     m.add_class::<PyQuery>()?;
     m.add_function(wrap_pyfunction!(py_build_feature_map, m)?)?;
+    m.add_function(wrap_pyfunction!(py_build_feature_map_psm, m)?)?;
     Ok(())
 }

@@ -117,6 +117,11 @@ impl PyPsm {
         self.inner.sage_feature = value.inner.clone();
     }
 
+    #[setter]
+    pub fn set_sage_feature_file_id(&mut self, value: usize) {
+        self.inner.sage_feature.file_id = value;
+    }
+
     #[getter]
     pub fn sequence(&self) -> Option<String> {
         Some(self.inner.clone().sequence?.sequence)
@@ -764,6 +769,11 @@ impl PyFeature {
     #[setter]
     pub fn set_delta_rt_model(&mut self, value: f32) {
         self.inner.delta_rt_model = value;
+    }
+
+    #[setter]
+    pub fn set_file_id(&mut self, value: usize) {
+        self.inner.file_id = value;
     }
 }
 

@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Tuple
 from numpy.typing import NDArray
 import numpy as np
 from numba import njit, prange

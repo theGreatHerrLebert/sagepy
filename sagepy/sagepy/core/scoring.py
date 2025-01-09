@@ -119,6 +119,14 @@ class Psm:
         self.__py_ptr.peptide_idx = value
 
     @property
+    def sage_feature_file_id(self):
+        return self.__py_ptr.sage_feature.file_id
+
+    @sage_feature_file_id.setter
+    def sage_feature_file_id(self, value):
+        self.__py_ptr.sage_feature_file_id = value
+
+    @property
     def proteins(self):
         return self.__py_ptr.proteins
 
@@ -841,6 +849,10 @@ class Feature:
     @property
     def delta_ims_model(self) -> Optional[float]:
         return self.__feature_ptr.delta_ims_model
+
+    @file_id.setter
+    def file_id(self, value):
+        self.__feature_ptr.file_id = value
 
     def __repr__(self):
         return (f"Feature("
