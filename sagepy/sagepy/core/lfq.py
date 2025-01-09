@@ -1,4 +1,6 @@
-from typing import List
+from typing import List, Tuple
+
+from sagepy.core import Feature, Psm
 from sagepy.core.database import PeptideIx
 import sagepy_connector
 psc = sagepy_connector.py_lfq
@@ -10,7 +12,7 @@ class PeakScoringStrategy:
     Args:
         strategy (str): The peak scoring strategy, allowed values are: retention_time, spectral_angle, intensity, hybrid
     """
-    def __init__(self, strategy: str):
+    def __init__(self, strategy: str = "hybrid"):
         strategies = ["retention_time", "spectral_angle", "intensity", "hybrid"]
         if strategy in strategies:
             self.__peak_scoring_strategy_ptr = psc.PyPeakScoringStrategy(strategy)
@@ -35,7 +37,7 @@ class PeakScoringStrategy:
 
 
 class IntegrationStrategy:
-    def __init__(self, strategy: str):
+    def __init__(self, strategy: str = "sum"):
         strategies = ['apex', 'sum']
         if strategy in strategies:
             self.__integration_strategy_ptr = psc.PyIntegrationStrategy(strategy)
@@ -78,9 +80,13 @@ class PrecursorId:
 
 
 class LfqSettings:
-    # TODO: check if tolerance should be of type Tolerance instead of float
-    def __init__(self, peak_scoring_strategy: PeakScoringStrategy, integration_strategy: IntegrationStrategy,
-                 spectral_angle: float, ppm_tolerance: float, combine_charge_states: bool):
+    def __init__(self,
+                 peak_scoring_strategy: PeakScoringStrategy = PeakScoringStrategy(),
+                 integration_strategy: IntegrationStrategy = IntegrationStrategy(),
+                 spectral_angle: float = 0.7,
+                 ppm_tolerance: float = 5.0,
+                 combine_charge_states: bool = True
+                 ):
         self.__lfq_settings_ptr = psc.PyLfqSettings(peak_scoring_strategy.get_py_ptr(),
                                                     integration_strategy.get_py_ptr(),
                                                     spectral_angle, ppm_tolerance, combine_charge_states)
@@ -258,3 +264,40 @@ class Query:
     def __repr__(self):
         return f"Query(num_ranges: {self.get_num_ranges()}, page_lo: {self.page_lo}, page_hi: {self.page_hi}, " \
                 f"bin_size: {self.bin_size}, min_rt: {self.min_rt}, max_rt: {self.max_rt})"
+
+
+def build_feature_map(
+        features: List[Feature],
+        precursor_charge: Tuple[int, int] = (2, 5),
+        lfq_settings: LfqSettings = LfqSettings(),
+) -> FeatureMap:
+    """Build a feature map.
+
+    Args:
+        lfq_settings: LFQ settings
+        precursor_charge: Precursor charge
+        features: List of features
+
+    Returns:
+        FeatureMap: Feature map
+    """
+    py_feature_map = psc.py_build_feature_map(lfq_settings.get_py_ptr(), precursor_charge, [f.get_py_ptr() for f in features])
+    return FeatureMap.from_py_feature_map(py_feature_map)
+
+def build_feature_map_psm(
+        psms: List[Psm],
+        precursor_charge: Tuple[int, int] = (2, 5),
+        lfq_settings: LfqSettings = LfqSettings(),
+) -> FeatureMap:
+    """Build a feature map from PSMs.
+
+    Args:
+        lfq_settings: LFQ settings
+        precursor_charge: Precursor charge
+        psms: List of PSMs
+
+    Returns:
+        FeatureMap: Feature map
+    """
+    py_feature_map = psc.py_build_feature_map_psm(lfq_settings.get_py_ptr(), precursor_charge, [p.sage_feature.get_py_ptr() for p in psms])
+    return FeatureMap.from_py_feature_map(py_feature_map)
