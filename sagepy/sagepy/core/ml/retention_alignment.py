@@ -48,7 +48,7 @@ def global_alignment(features: List[Feature], n_files: int) -> List[Alignment]:
     Returns:
         List[Alignment]: List of Alignment objects
     """
-    py_alignments = psc.global_alignment([f.get_py_ptr for f in features], n_files)
+    py_alignments = psc.py_global_alignment([f.get_py_ptr for f in features], n_files)
     return [Alignment.from_py_ptr(py_alignment) for py_alignment in py_alignments]
 
 def global_alignment_psm(psms: List[Psm], n_files: int) -> List[Alignment]:
@@ -59,5 +59,5 @@ def global_alignment_psm(psms: List[Psm], n_files: int) -> List[Alignment]:
     Returns:
         List[Alignment]: List of Alignment objects
     """
-    py_alignments = psc.global_alignment_psm([p.get_py_ptr for p in psms], n_files)
+    py_alignments = psc.py_global_alignment_psm([p.get_py_ptr for p in psms], n_files)
     return [Alignment.from_py_ptr(py_alignment) for py_alignment in py_alignments]
