@@ -139,6 +139,54 @@ impl PyPrecursorId {
             inner: Charged((id.inner, charge)),
         }
     }
+
+    #[getter]
+    pub fn is_combined(&self) -> bool {
+        match self.inner {
+            Combined(_) => true,
+            _ => false,
+        }
+    }
+
+    #[getter]
+    pub fn is_charged(&self) -> bool {
+        match self.inner {
+            Charged(_) => true,
+            _ => false,
+        }
+    }
+
+    #[getter]
+    pub fn combined(&self) -> Option<PyPeptideIx> {
+        match self.inner {
+            Combined(id) => Some(PyPeptideIx { inner: id }),
+            _ => None,
+        }
+    }
+
+    #[getter]
+    pub fn charged(&self) -> Option<(PyPeptideIx, u8)> {
+        match self.inner {
+            Charged((id, charge)) => Some((PyPeptideIx { inner: id }, charge)),
+            _ => None,
+        }
+    }
+
+    #[getter]
+    pub fn peptide_id(&self) -> PyPeptideIx {
+        match self.inner {
+            Combined(id) => PyPeptideIx { inner: id },
+            Charged((id, _)) => PyPeptideIx { inner: id },
+        }
+    }
+
+    #[getter]
+    pub fn charge(&self) -> Option<u8> {
+        match self.inner {
+            Charged((_, charge)) => Some(charge),
+            _ => None,
+        }
+    }
 }
 
 #[pyclass]
