@@ -114,6 +114,17 @@ class PrecursorId:
     def get_ptr(self):
         return self.__precursor_id_ptr
 
+    @property
+    def peptide_id(self):
+        return PeptideIx.from_py_peptide_ix(self.__precursor_id_ptr.peptide_id)
+
+    @property
+    def charge(self):
+        return self.__precursor_id_ptr.charge
+
+    def __repr__(self):
+        return f"PrecursorId(peptide_id: {self.peptide_id}, charge: {self.charge})"
+
 
 class LfqSettings:
     def __init__(self,
