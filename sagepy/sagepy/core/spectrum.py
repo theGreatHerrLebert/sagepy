@@ -220,13 +220,25 @@ class ProcessedSpectrum:
     def level(self):
         return self.__processed_spectrum_ptr.level
 
+    @level.setter
+    def level(self, level: int):
+        self.__processed_spectrum_ptr.level = level
+
     @property
     def id(self):
         return self.__processed_spectrum_ptr.id
 
+    @id.setter
+    def id(self, id: str):
+        self.__processed_spectrum_ptr.id = id
+
     @property
     def file_id(self):
         return self.__processed_spectrum_ptr.file_id
+
+    @file_id.setter
+    def file_id(self, file_id: int):
+        self.__processed_spectrum_ptr.file_id = file_id
 
     @property
     def scan_start_time(self):
