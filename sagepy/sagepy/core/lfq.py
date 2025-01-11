@@ -1,8 +1,11 @@
 from typing import List, Tuple, Dict
 
-from sagepy.core import Feature, Psm
+from sagepy.core import Feature, Psm, IndexedDatabase, ProcessedSpectrum
 from sagepy.core.database import PeptideIx
 import sagepy_connector
+
+from sagepy.core.ml.retention_alignment import Alignment
+
 psc = sagepy_connector.py_lfq
 
 
@@ -248,6 +251,7 @@ class FeatureMap:
         return self.__feature_map_ptr.get_num_ranges()
 
     def quantify(
+            self,
             indexed_db: 'IndexedDatabase',
             ms1: List['ProcessedSpectrum'],
             alignments: List['Alignment'],
