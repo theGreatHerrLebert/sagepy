@@ -135,7 +135,7 @@ class LfqSettings:
 
     @property
     def peak_scoring_strategy(self) -> PeakScoringStrategy:
-        return PeakScoringStrategy.from_py_peak_scoring_strategy(self.__lfq_settings_ptr.peak_scoring_strategy)
+        return PeakScoringStrategy.from_py_ptr(self.__lfq_settings_ptr.peak_scoring_strategy)
 
     @property
     def integration_strategy(self) -> IntegrationStrategy:
