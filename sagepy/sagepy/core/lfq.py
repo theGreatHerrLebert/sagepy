@@ -276,6 +276,9 @@ class FeatureMap:
 
         return ret_dict
 
+    def __repr__(self):
+        return f"FeatureMap(num_ranges: {self.get_num_ranges()}, bin_size: {self.bin_size}, settings: {self.settings})"
+
 
 class Query:
     def __init__(self, ranges: List[PrecursorRange], page_lo: int,
