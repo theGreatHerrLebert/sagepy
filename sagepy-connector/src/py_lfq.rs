@@ -1,9 +1,62 @@
 use pyo3::prelude::*;
-use sage_core::lfq::{FeatureMap, IntegrationStrategy, LfqSettings, PeakScoringStrategy, PrecursorId, PrecursorRange, build_feature_map};
+
+use std::collections::HashMap;
+use sage_core::fdr::picked_precursor;
+use sage_core::lfq::{FeatureMap, IntegrationStrategy, LfqSettings, PeakScoringStrategy, PrecursorId, PrecursorRange, build_feature_map, Peak};
 use sage_core::lfq::PrecursorId::{Charged, Combined};
+use sage_core::ml::retention_alignment::Alignment;
 use sage_core::scoring::Feature;
-use crate::py_database::PyPeptideIx;
+use sage_core::spectrum::ProcessedSpectrum;
+
+use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
+use crate::py_retention_alignment::PyAlignment;
 use crate::py_scoring::PyFeature;
+use crate::py_spectrum::{PyProcessedSpectrum};
+
+#[pyclass]
+pub struct PyPeak {
+    pub inner: Peak,
+}
+
+#[pymethods]
+impl PyPeak {
+    #[new]
+    pub fn new(
+        rt: usize,
+        spectral_angle: f64,
+        score: f64,
+        q_value: f32,
+    ) -> Self {
+        PyPeak {
+            inner: Peak {
+                rt,
+                spectral_angle,
+                score,
+                q_value,
+            },
+        }
+    }
+
+    #[getter]
+    pub fn rt(&self) -> usize {
+        self.inner.rt
+    }
+
+    #[getter]
+    pub fn spectral_angle(&self) -> f64 {
+        self.inner.spectral_angle
+    }
+
+    #[getter]
+    pub fn score(&self) -> f64 {
+        self.inner.score
+    }
+
+    #[getter]
+    pub fn q_value(&self) -> f32 {
+        self.inner.q_value
+    }
+}
 
 #[pyclass]
 pub struct PyPeakScoringStrategy {
@@ -65,6 +118,7 @@ impl PyIntegrationStrategy {
 }
 
 #[pyclass]
+#[derive(Clone, Eq, PartialEq, Hash)]
 pub struct PyPrecursorId {
     pub inner: PrecursorId,
 }
@@ -264,6 +318,38 @@ impl PyFeatureMap {
     pub fn get_num_ranges(&self) -> usize {
         self.inner.ranges.len()
     }
+
+    pub fn quantify(
+        &self,
+        database: &PyIndexedDatabase,
+        ms1: Vec<PyProcessedSpectrum>,
+        alignments: Vec<PyAlignment>,
+    ) -> PyResult<HashMap<(PyPrecursorId, bool), (PyPeak, Vec<f64>)>> {
+        // Extract the inner collections from the vectors
+        let ms1_inner: Vec<ProcessedSpectrum> = ms1.into_iter().map(|s| s.inner.clone()).collect();
+        let alignments_inner: Vec<Alignment> = alignments.into_iter().map(|a| a.inner.clone()).collect();
+
+        // Call the inner `quantify` method
+        let mut areas: HashMap<(PrecursorId, bool), (Peak, Vec<f64>), fnv::FnvBuildHasher> =
+            self.inner.quantify(&database.inner, &ms1_inner, alignments_inner.as_slice());
+
+        // Perform picked precursor processing
+        let _ = picked_precursor(&mut areas);
+
+        // Create the result HashMap
+        let mut result = HashMap::new();
+
+        for ((precursor, is_charged), (peak, intensities)) in areas {
+            result.insert(
+                match precursor {
+                    Combined(id) => (PyPrecursorId { inner: Combined(id) }, is_charged),
+                    Charged((id, charge)) => (PyPrecursorId { inner: Charged((id, charge)) }, is_charged),
+                },
+                (PyPeak { inner: peak }, intensities),
+            );
+        }
+        Ok(result)
+    }
 }
 
 #[pyclass]
@@ -360,6 +446,7 @@ pub fn py_lfq(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPrecursorRange>()?;
     m.add_class::<PyFeatureMap>()?;
     m.add_class::<PyQuery>()?;
+    m.add_class::<PyPeak>()?;
     m.add_function(wrap_pyfunction!(py_build_feature_map, m)?)?;
     m.add_function(wrap_pyfunction!(py_build_feature_map_psm, m)?)?;
     Ok(())

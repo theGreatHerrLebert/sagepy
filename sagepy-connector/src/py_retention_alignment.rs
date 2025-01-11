@@ -6,6 +6,7 @@ use sage_core::scoring::Feature;
 use crate::py_scoring::{PyFeature, PyPsm};
 
 #[pyclass]
+#[derive(Clone)]
 pub struct PyAlignment {
     pub inner: Alignment,
 }

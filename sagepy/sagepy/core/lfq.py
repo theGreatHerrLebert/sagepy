@@ -6,6 +6,39 @@ import sagepy_connector
 psc = sagepy_connector.py_lfq
 
 
+class Peak:
+    def __init__(self, rt: int, spectral_angle: float, score: float, q_value: float):
+        self.__peak_ptr = psc.PyPeak(rt, spectral_angle, score, q_value)
+
+    @classmethod
+    def from_py_ptr(cls, peak: psc.PyPeak):
+        instance = cls.__new__(cls)
+        instance.__peak_ptr = peak
+        return instance
+
+    @property
+    def rt(self) -> int:
+        return self.__peak_ptr.rt
+
+    @property
+    def spectral_angle(self) -> float:
+        return self.__peak_ptr.spectral_angle
+
+    @property
+    def score(self) -> float:
+        return self.__peak_ptr.score
+
+    @property
+    def q_value(self) -> float:
+        return self.__peak_ptr.q_value
+
+    def __repr__(self):
+        return f"Peak(rt: {self.rt}, spectral_angle: {self.spectral_angle}, score: {self.score}, q_value: {self.q_value})"
+
+    def get_py_ptr(self):
+        return self.__peak_ptr
+
+
 class PeakScoringStrategy:
     """PeakScoringStrategy class
 
@@ -20,10 +53,13 @@ class PeakScoringStrategy:
             raise ValueError(f"Invalid peak scoring strategy, allowed values are: {strategies}")
 
     @classmethod
-    def from_py_peak_scoring_strategy(cls, peak_scoring_strategy: psc.PyPeakScoringStrategy):
+    def from_py_ptr(cls, peak_scoring_strategy: psc.PyPeakScoringStrategy):
         instance = cls.__new__(cls)
         instance.__peak_scoring_strategy_ptr = peak_scoring_strategy
         return instance
+
+    def get_py_ptr(self):
+        return self.__peak_scoring_strategy_ptr
 
     @property
     def strategy(self):
@@ -31,9 +67,6 @@ class PeakScoringStrategy:
 
     def __repr__(self):
         return f"PeakScoringStrategy({self.__peak_scoring_strategy_ptr.strategy})"
-
-    def get_py_ptr(self):
-        return self.__peak_scoring_strategy_ptr
 
 
 class IntegrationStrategy:
@@ -214,8 +247,34 @@ class FeatureMap:
     def get_num_ranges(self) -> int:
         return self.__feature_map_ptr.get_num_ranges()
 
-    def __repr__(self):
-        return f"FeatureMap(num_ranges: {self.get_num_ranges()}, bin_size: {self.bin_size}, settings: {self.settings})"
+    def quantify(
+            indexed_db: 'IndexedDatabase',
+            ms1: List['ProcessedSpectrum'],
+            alignments: List['Alignment'],
+    ) -> Dict:
+        """Quantify the feature map.
+
+        Args:
+            indexed_db: Indexed database
+            ms1: List of processed MS-1 (Precursor) spectra
+            alignments: List of alignments
+
+        Returns:
+            Dict: Dictionary of quantified features
+        """
+        ret_tmp = self.__feature_map_ptr.quantify(
+            indexed_db.get_py_ptr(), [m.get_py_ptr() for m in ms1],
+            [a.get_py_ptr() for a in alignments]
+        )
+
+        ret_dict = {}
+
+        for key, value in ret_tmp.items():
+            key = (PrecursorId.from_py_precursor_id(key[0]), key[1])
+            value = (Peak.from_py_ptr(value[0]), value[1])
+            ret_dict[key] = value
+
+        return ret_dict
 
 
 class Query:
