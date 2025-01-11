@@ -83,14 +83,29 @@ impl PyProcessedSpectrum {
         self.inner.level
     }
 
+    #[setter]
+    pub fn set_level(&mut self, level: u8) {
+        self.inner.level = level;
+    }
+
     #[getter]
     pub fn id(&self) -> String {
         self.inner.id.clone()
     }
 
+    #[setter]
+    pub fn set_id(&mut self, id: String) {
+        self.inner.id = id;
+    }
+
     #[getter]
     pub fn file_id(&self) -> usize {
         self.inner.file_id
+    }
+
+    #[setter]
+    pub fn set_file_id(&mut self, file_id: usize) {
+        self.inner.file_id = file_id;
     }
 
     #[getter]
