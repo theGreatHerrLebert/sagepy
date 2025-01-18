@@ -239,7 +239,7 @@ def create_query(
     return processed_spec
 
 def create_sage_database(
-    fasta_path: str,
+    fasta: str,
     missed_cleavages: int = 2,
     min_len: int = 7,
     max_len: int = 30,
@@ -254,7 +254,7 @@ def create_sage_database(
     """Create a SAGE database
 
     Args:
-        fasta_path: The path to the FASTA file
+        fasta: The FASTA file as a string
         missed_cleavages: The number of missed cleavages
         min_len: The minimum peptide length
         max_len: The maximum peptide length
@@ -279,10 +279,6 @@ def create_sage_database(
         restrict=restrict,
         c_terminal=c_terminal,
     )
-
-    # Read FASTA file
-    with open(fasta_path, 'r') as infile:
-        fasta = infile.read()
 
     # Set up SAGE configuration
     sage_config = SageSearchConfiguration(
