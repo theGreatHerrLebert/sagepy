@@ -419,7 +419,7 @@ pub struct PyParameters {
 #[pymethods]
 impl PyParameters {
     #[new]
-    #[pyo3(signature = (bucket_size, py_enzyme_builder, peptide_min_mass, peptide_max_mass, min_ion_index, static_mods, variable_mods, max_variable_mods, decoy_tag, generate_decoys, fasta, ion_kinds=None, _shuffle_decoys=None, _keep_ends=None))]
+    #[pyo3(signature = (bucket_size, py_enzyme_builder, peptide_min_mass, peptide_max_mass, min_ion_index, static_mods, variable_mods, max_variable_mods, decoy_tag, generate_decoys, fasta, prefilter=None, prefilter_chunk_size=None, prefilter_low_memory=None, ion_kinds=None, _shuffle_decoys=None, _keep_ends=None))]
     pub fn new(
         bucket_size: usize,
         py_enzyme_builder: PyEnzymeBuilder,
@@ -432,6 +432,9 @@ impl PyParameters {
         decoy_tag: String,
         generate_decoys: bool,
         fasta: String,
+        prefilter: Option<bool>,
+        prefilter_chunk_size: Option<usize>,
+        prefilter_low_memory: Option<bool>,
         ion_kinds: Option<Vec<PyKind>>,
         _shuffle_decoys: Option<bool>,
         _keep_ends: Option<bool>,
@@ -464,6 +467,9 @@ impl PyParameters {
                 fasta,
                 // shuffle_decoys: shuffle_decoys.unwrap_or(false),
                 // keep_ends: keep_ends.unwrap_or(true),
+                prefilter_chunk_size: prefilter_chunk_size.unwrap_or(0),
+                prefilter: prefilter.unwrap_or(false),
+                prefilter_low_memory: prefilter_low_memory.unwrap_or(false),
             },
         })
     }
