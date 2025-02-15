@@ -158,6 +158,9 @@ class SageSearchConfiguration:
                  generate_decoys: bool = True,
                  shuffle_decoys: Union[bool, None] = None,
                  keep_ends: Union[bool, None] = None,
+                 prefilter: Union[bool, None] = None,
+                 prefilter_chunk_size: Union[int, None] = None,
+                 prefilter_low_memory: Union[bool, None] = None,
                  ):
         """SageSearchConfiguration class
 
@@ -176,6 +179,9 @@ class SageSearchConfiguration:
             generate_decoys (bool, optional): Whether to generate decoys. Defaults to True.
             shuffle_decoys (Union[bool, None], optional): Whether to shuffle decoys. Defaults to None.
             keep_ends (Union[bool, None], optional): Whether to include start and end amino acid for permutation strategy. Defaults to None.
+            prefilter (Union[bool, None], optional): Whether to prefilter. Defaults to None.
+            prefilter_chunk_size (Union[int, None], optional): The prefilter chunk size. Defaults to None.
+            prefilter_low_memory (Union[bool, None], optional): Whether to use low memory for prefilter. Defaults to None.
         """
 
         if variable_mods is not None:
@@ -198,6 +204,9 @@ class SageSearchConfiguration:
             decoy_tag,
             generate_decoys,
             fasta,
+            prefilter,
+            prefilter_chunk_size,
+            prefilter_low_memory,
             ion_kinds,
             shuffle_decoys,
             keep_ends
