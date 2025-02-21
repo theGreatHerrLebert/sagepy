@@ -1,6 +1,6 @@
 [package]
 name = "sagepy-connector"
-version = "0.3.6"
+version = "0.3.7"
 edition = "2021"
 
 [lib]
@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git" }
 qfdrust = { path  = "../qfdrust" }
 unimod = { path = "../unimod" }
-pyo3 = { version = "0.23.3", features = ["extension-module"] }
+pyo3 = { version = "0.23.4", features = ["extension-module"] }
 numpy = "0.23.0"
 rayon = "1.10.0"
 
@@ -20,5 +20,5 @@ serde = { version = "1.0.217", features = ["derive"] }
 bincode = "1.3.3"
 log = "0.4.22"
 itertools = "0.14.0"
-serde_json = "1.0.135"
+serde_json = "1.0.138"
 fnv = "1.0.7"
