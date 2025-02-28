@@ -379,14 +379,14 @@ class SpectrumProcessor:
     def __init__(
             self, take_top_n: int = 150,
             min_deisotope_mz: float = 0.0,
-            deisotope: bool = False,
+            deisotope: bool = True,
     ):
         """SpectrumProcessor class
 
         Args:
             take_top_n (int, optional): The number of peaks to take. Defaults to 150.
             min_deisotope_mz (float, optional): The minimum deisotope mz. Defaults to 0.0.
-            deisotope (bool, optional): Whether to deisotope the spectrum. Defaults to False.
+            deisotope (bool, optional): Whether to deisotope the spectrum. Defaults to True.
         """
         self.__spectrum_processor_ptr = psc.PySpectrumProcessor(
             take_top_n, min_deisotope_mz, deisotope)
