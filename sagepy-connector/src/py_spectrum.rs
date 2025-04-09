@@ -174,6 +174,7 @@ pub struct PyRawSpectrum {
 #[pymethods]
 impl PyRawSpectrum {
     #[new]
+    #[pyo3(signature = (file_id, ms_level, id, precursors, representation, scan_start_time, ion_injection_time, total_ion_current, mz, intensity, mobility=None))]
     pub fn new(
         file_id: usize,
         ms_level: u8,
