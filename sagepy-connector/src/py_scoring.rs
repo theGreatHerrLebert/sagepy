@@ -957,7 +957,7 @@ impl PyScorer {
                         let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap_or(0.0)).sum();
                         let intensity_ms2: f32 = feature.ms2_intensity;
 
-                        let proteins: Vec<String> = peptide.proteins.iter().map(|arc| (**arc).clone()).collect();
+                        let proteins: Vec<String> = peptide.proteins.iter().map(|arc| arc.as_ref().to_string()).collect();
 
                         let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
                         let sequence_with_mods = sage_sequence_to_unimod_sequence(sequence.clone(), &peptide.modifications, &self.expected_mods);

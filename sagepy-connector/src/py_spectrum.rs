@@ -42,7 +42,7 @@ impl PyRepresentation {
 #[pyclass]
 #[derive(Clone)]
 pub struct PyProcessedSpectrum {
-    pub inner: ProcessedSpectrum,
+    pub inner: ProcessedSpectrum<Peak>,
     pub collision_energies: Vec<Option<f32>>,
 }
 
@@ -185,6 +185,7 @@ impl PyRawSpectrum {
         total_ion_current: f32,
         mz: &Bound<'_, PyArray1<f32>>,
         intensity: &Bound<'_, PyArray1<f32>>,
+        mobility: Option<Vec<f32>>,
     ) -> Self {
         let mz_vec = unsafe { mz.as_array().to_vec() };
         let intensity_vec = unsafe { intensity.as_array().to_vec() };
@@ -205,6 +206,7 @@ impl PyRawSpectrum {
                 total_ion_current,
                 mz: mz_vec,
                 intensity: intensity_vec,
+                mobility,
             },
             collision_energies,
         }
@@ -267,24 +269,79 @@ impl PyRawSpectrum {
     }
 
     pub fn filter_top_n(&self, n: usize) -> PyRawSpectrum {
-        let mut mz_intensity = self.inner.mz.iter().zip(self.inner.intensity.iter()).map(|(m, i)| Peak { mass: *m, intensity: *i }).collect::<Vec<_>>();
-        mz_intensity.sort_by(|a, b| b.intensity.partial_cmp(&a.intensity).unwrap());
-        let mut peaks = mz_intensity.into_iter().take(n).collect::<Vec<_>>();
-        peaks.sort_by(|a, b| a.mass.partial_cmp(&b.mass).unwrap());
-        PyRawSpectrum {
-            inner: RawSpectrum {
-                file_id: self.inner.file_id,
-                ms_level: self.inner.ms_level,
-                id: self.inner.id.clone(),
-                precursors: self.inner.precursors.clone(),
-                representation: self.inner.representation,
-                scan_start_time: self.inner.scan_start_time,
-                ion_injection_time: self.inner.ion_injection_time,
-                total_ion_current: self.inner.total_ion_current,
-                mz: peaks.iter().map(|p| p.mass).collect(),
-                intensity: peaks.iter().map(|p| p.intensity).collect(),
-            },
-            collision_energies: self.collision_energies.clone(),
+        if let Some(mobility_vec) = &self.inner.mobility {
+            // Define inline struct for 3D peak
+            struct Peak3D {
+                mass: f32,
+                intensity: f32,
+                mobility: f32,
+            }
+
+            let mz_iter = self.inner.mz.iter();
+            let intensity_iter = self.inner.intensity.iter();
+
+            let mut peaks = mz_iter
+                .zip(intensity_iter)
+                .zip(mobility_vec.iter())
+                .map(|((m, i), mob)| Peak3D {
+                    mass: *m,
+                    intensity: *i,
+                    mobility: *mob,
+                })
+                .collect::<Vec<_>>();
+
+            peaks.sort_by(|a, b| b.intensity.partial_cmp(&a.intensity).unwrap_or(std::cmp::Ordering::Equal));
+            let mut top_peaks = peaks.into_iter().take(n).collect::<Vec<_>>();
+            top_peaks.sort_by(|a, b| a.mass.partial_cmp(&b.mass).unwrap_or(std::cmp::Ordering::Equal));
+
+            PyRawSpectrum {
+                inner: RawSpectrum {
+                    file_id: self.inner.file_id,
+                    ms_level: self.inner.ms_level,
+                    id: self.inner.id.clone(),
+                    precursors: self.inner.precursors.clone(),
+                    representation: self.inner.representation,
+                    scan_start_time: self.inner.scan_start_time,
+                    ion_injection_time: self.inner.ion_injection_time,
+                    total_ion_current: self.inner.total_ion_current,
+                    mz: top_peaks.iter().map(|p| p.mass).collect(),
+                    intensity: top_peaks.iter().map(|p| p.intensity).collect(),
+                    mobility: Some(top_peaks.iter().map(|p| p.mobility).collect()),
+                },
+                collision_energies: self.collision_energies.clone(),
+            }
+        } else {
+            // Define inline struct for 2D peak
+            struct Peak {
+                mass: f32,
+                intensity: f32,
+            }
+
+            let mut peaks = self.inner.mz.iter()
+                .zip(self.inner.intensity.iter())
+                .map(|(m, i)| Peak { mass: *m, intensity: *i })
+                .collect::<Vec<_>>();
+
+            peaks.sort_by(|a, b| b.intensity.partial_cmp(&a.intensity).unwrap_or(std::cmp::Ordering::Equal));
+            let mut top_peaks = peaks.into_iter().take(n).collect::<Vec<_>>();
+            top_peaks.sort_by(|a, b| a.mass.partial_cmp(&b.mass).unwrap_or(std::cmp::Ordering::Equal));
+
+            PyRawSpectrum {
+                inner: RawSpectrum {
+                    file_id: self.inner.file_id,
+                    ms_level: self.inner.ms_level,
+                    id: self.inner.id.clone(),
+                    precursors: self.inner.precursors.clone(),
+                    representation: self.inner.representation,
+                    scan_start_time: self.inner.scan_start_time,
+                    ion_injection_time: self.inner.ion_injection_time,
+                    total_ion_current: self.inner.total_ion_current,
+                    mz: top_peaks.iter().map(|p| p.mass).collect(),
+                    intensity: top_peaks.iter().map(|p| p.intensity).collect(),
+                    mobility: None,
+                },
+                collision_energies: self.collision_energies.clone(),
+            }
         }
     }
 }

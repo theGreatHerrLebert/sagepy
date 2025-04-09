@@ -32,7 +32,7 @@ impl PyPeptide {
         let arc_sequence = Arc::from(boxed_sequence); // Convert Box<[u8]> to Arc<[u8]> without dereferencing
 
         // Convert Python list of strings to Vec<Arc<String>>
-        let arc_proteins = proteins.into_iter().map(Arc::new).collect();
+        let arc_proteins = proteins.into_iter().map(Arc::from).collect();
 
         Ok(PyPeptide {
             inner: Peptide {

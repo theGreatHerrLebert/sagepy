@@ -6,7 +6,7 @@ use sage_core::lfq::{FeatureMap, IntegrationStrategy, LfqSettings, PeakScoringSt
 use sage_core::lfq::PrecursorId::{Charged, Combined};
 use sage_core::ml::retention_alignment::Alignment;
 use sage_core::scoring::Feature;
-use sage_core::spectrum::ProcessedSpectrum;
+use sage_core::spectrum::{MS1Spectra, ProcessedSpectrum};
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_retention_alignment::PyAlignment;
@@ -204,6 +204,7 @@ impl PyLfqSettings {
         spectral_angle: f64,
         ppm_tolerance: f32,
         combine_charge_states: bool,
+        mobility_pct_tolerance: f32,
     ) -> Self {
         PyLfqSettings {
             inner: LfqSettings {
@@ -212,6 +213,7 @@ impl PyLfqSettings {
                 spectral_angle,
                 ppm_tolerance,
                 combine_charge_states,
+                mobility_pct_tolerance,
             },
         }
     }
@@ -259,6 +261,8 @@ impl PyPrecursorRange {
         rt: f32,
         mass_lo: f32,
         mass_hi: f32,
+        mobility_hi: f32,
+        mobility_lo: f32,
         charge: u8,
         isotope: usize,
         peptide: PyPeptideIx,
@@ -270,6 +274,8 @@ impl PyPrecursorRange {
                 rt,
                 mass_lo,
                 mass_hi,
+                mobility_hi,
+                mobility_lo,
                 charge,
                 isotope,
                 peptide: peptide.inner,
@@ -367,6 +373,7 @@ impl PyFeatureMap {
         self.inner.ranges.len()
     }
 
+    /*
     pub fn quantify(
         &self,
         database: &PyIndexedDatabase,
@@ -374,7 +381,7 @@ impl PyFeatureMap {
         alignments: Vec<PyAlignment>,
     ) -> PyResult<HashMap<(PyPrecursorId, bool), (PyPeak, Vec<f64>)>> {
         // Extract the inner collections from the vectors
-        let ms1_inner: Vec<ProcessedSpectrum> = ms1.into_iter().map(|s| s.inner.clone()).collect();
+        let ms1_inner: Vec<ProcessedSpectrum<MS1Spectra>> = ms1.into_iter().map(|s| s.inner.clone()).collect();
         let alignments_inner: Vec<Alignment> = alignments.into_iter().map(|a| a.inner.clone()).collect();
 
         // Call the inner `quantify` method
@@ -398,6 +405,7 @@ impl PyFeatureMap {
         }
         Ok(result)
     }
+     */
 }
 
 #[pyclass]
