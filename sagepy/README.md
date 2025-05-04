@@ -162,13 +162,3 @@ potential output:
 ```
 [Feature(idx: PeptideIx(1009105), peptide_len: 9, spec_id: DEMO-SPEC, file_id: 1, rank: 1, label: 1, exp. mass: 1011.5254516601562, cal. mass: 1011.5347900390625, charge: 2, retention time: 0.0, aligned rt: 0.0, predicted rt: 0.0, delta rt model: 0.9990000128746033, delta mass: 2989.41943359375, isotope error: 3.010050058364868, average ppm: 5.889466285705566, hyperscore: 15.020833459653923, delta_next: 0.0, delta_best: 0.0, matched peaks: 5, longest b: 0,longest y: 4, longest y pct: 0.4444444477558136, missed cleavages: 0, matched intensity pct: 14.81151294708252, scored candidates: 9340, poisson: -2.177020383746938, discriminant score: 0.0, posterior error: 1.0, spectrum q: 1.0, peptide q: 1.0, protein q: 1.0, ms2 intensity: 4652.0, ms1 intensity: 0.0), Feature(idx: PeptideIx(1009105), peptide_len: 9, spec_id: DEMO-SPEC, file_id: 1, rank: 2, label: 1, exp. mass: 1011.5254516601562, cal. mass: 1011.5347900390625, charge: 2, retention time: 0.0, aligned rt: 0.0, predicted rt: 0.0, delta rt model: 0.9990000128746033, delta mass: 1001.641845703125, isotope error: 1.003350019454956, average ppm: 5.889466285705566, hyperscore: 15.020833459653923, delta_next: 0.0, delta_best: 0.0, matched peaks: 5, longest b: 0,longest y: 4, longest y pct: 0.4444444477558136, missed cleavages: 0, matched intensity pct: 14.81151294708252, scored candidates: 9340, poisson: -2.177020383746938, discriminant score: 0.0, posterior error: 1.0, spectrum q: 1.0, peptide q: 1.0, protein q: 1.0, ms2 intensity: 4652.0, ms1 intensity: 0.0)]
 ```
-
-## Citation
-
-If you find sagepy useful, please cite the original SAGE publication and consider citing our paper on sagepy:
-
-Lazear, M. “Sage: An Open-Source Tool for Fast Proteomics Searching and Quantification at Scale.” [Journal of Proteome Research (2023)](https://pubs.acs.org/doi/10.1021/acs.jproteome.3c00486).
-
-Teschner, D et al. “Rustims: An Open-Source Framework for Rapid Development and Processing of timsTOF Data-Dependent Acquisition Data.” [Journal of Proteome Research (2025)]( https://pubs.acs.org/doi/full/10.1021/acs.jproteome.4c00966).
-
-Thanks for supporting free and open-source software and science!

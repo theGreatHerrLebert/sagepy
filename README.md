@@ -19,3 +19,14 @@ Check out the tutorial notebooks to dive into [DB generation, searching, and FDR
 
 ## Get involved
 Do you have any questions or want to contribute? Feel free to reach out at any time!
+
+
+## Cite
+
+If you find sagepy useful, please cite the original SAGE publication and consider citing our paper on sagepy:
+
+Lazear, M. “Sage: An Open-Source Tool for Fast Proteomics Searching and Quantification at Scale.” [Journal of Proteome Research (2023)](https://pubs.acs.org/doi/10.1021/acs.jproteome.3c00486).
+
+Teschner, D et al. “Rustims: An Open-Source Framework for Rapid Development and Processing of timsTOF Data-Dependent Acquisition Data.” [Journal of Proteome Research (2025)]( https://pubs.acs.org/doi/full/10.1021/acs.jproteome.4c00966).
+
+Thanks for supporting free and open-source software and science!
