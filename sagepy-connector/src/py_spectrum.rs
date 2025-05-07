@@ -380,6 +380,11 @@ impl PyRawSpectrum {
     pub fn intensity(&self, py: Python) -> Py<PyArray1<f32>> {
         self.inner.intensity.clone().into_pyarray(py).unbind()
     }
+    
+    #[getter]
+    pub fn mobility(&self, py: Python) -> Option<Py<PyArray1<f32>>> {
+        self.inner.mobility.as_ref().map(|mob| mob.clone().into_pyarray(py).unbind())
+    }
 
     pub fn filter_top_n(&self, n: usize) -> PyRawSpectrum {
         if let Some(mobility_vec) = &self.inner.mobility {

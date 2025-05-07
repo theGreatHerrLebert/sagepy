@@ -416,37 +416,56 @@ class ProcessedIMSpectrum:
 
 
 
+from typing import Optional
+import numpy as np
+from numpy.typing import NDArray
+
 class RawSpectrum:
     def __init__(self,
                  file_id: int,
                  spec_id: str,
                  total_ion_current: float,
                  precursors: List[Precursor],
-                 mz: NDArray[float],
-                 intensity: NDArray[float],
+                 mz: NDArray[np.float32],
+                 intensity: NDArray[np.float32],
+                 mobility: Optional[NDArray[np.float32]] = None,
                  representation: Representation = Representation(),
                  scan_start_time: float = 0.0,
                  ion_injection_time: float = 0.0,
-                 ms_level: int = 2,
-                 ):
-        """RawSpectrum class
+                 ms_level: int = 2):
+        """RawSpectrum class with optional ion mobility
 
         Args:
             file_id (int): The file id of the spectrum
             spec_id (str): The id of the spectrum
             total_ion_current (float): The total ion current of the spectrum
-            precursors (List[Precursor]): The precursors of the spectrum
-            mz (NDArray[float]): The mz of the peaks of the spectrum
-            intensity (NDArray[float]): The intensity of the peaks of the spectrum
-            representation (Representation, optional): The representation of the spectrum. Defaults to Representation().
-            scan_start_time (float, optional): The scan start time of the spectrum. Defaults to 0.0.
-            ion_injection_time (float, optional): The ion injection time of the spectrum. Defaults to 0.0.
-            ms_level (int, optional): The ms level of the spectrum. Defaults to 2.
+            precursors (List[Precursor]): List of precursor objects
+            mz (NDArray): Array of m/z values
+            intensity (NDArray): Array of intensities
+            mobility (Optional[NDArray], optional): Optional array of mobilities
+            representation (Representation): Profile or Centroided
+            scan_start_time (float): Start time
+            ion_injection_time (float): Injection time
+            ms_level (int): MSn level
         """
-        self.__raw_spectrum_ptr = psc.PyRawSpectrum(file_id, ms_level, spec_id, [p.get_py_ptr() for p in precursors],
-                                                    representation.get_py_ptr(),
-                                                    scan_start_time, ion_injection_time, total_ion_current,
-                                                    mz, intensity)
+
+        if mobility is not None:
+            # Ensure it's passed as a list of floats TODO: make this accept numpy array
+            mobility = mobility.tolist()
+
+        self.__raw_spectrum_ptr = psc.PyRawSpectrum(
+            file_id,
+            ms_level,
+            spec_id,
+            [p.get_py_ptr() for p in precursors],
+            representation.get_py_ptr(),
+            scan_start_time,
+            ion_injection_time,
+            total_ion_current,
+            mz.astype(np.float32),
+            intensity.astype(np.float32),
+            mobility  # Will be `None` or a list
+        )
     @classmethod
     def from_py_raw_spectrum(cls, raw_spectrum: psc.PyRawSpectrum):
         instance = cls.__new__(cls)
@@ -488,6 +507,10 @@ class RawSpectrum:
     @property
     def intensity(self) -> NDArray[float]:
         return self.__raw_spectrum_ptr.intensity
+
+    @property
+    def mobility(self) -> Optional[NDArray[np.float32]]:
+        return self.__raw_spectrum_ptr.mobility
 
     def get_py_ptr(self):
         return self.__raw_spectrum_ptr
