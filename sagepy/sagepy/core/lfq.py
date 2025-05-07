@@ -5,6 +5,7 @@ from sagepy.core.database import PeptideIx
 import sagepy_connector
 
 from sagepy.core.ml.retention_alignment import Alignment
+from sagepy.core.spectrum import ProcessedIMSpectrum
 
 psc = sagepy_connector.py_lfq
 
@@ -278,6 +279,36 @@ class FeatureMap:
             Dict: Dictionary of quantified features
         """
         ret_tmp = self.__feature_map_ptr.quantify(
+            indexed_db.get_py_ptr(), [m.get_py_ptr() for m in ms1],
+            [a.get_py_ptr() for a in alignments]
+        )
+
+        ret_dict = {}
+
+        for key, value in ret_tmp.items():
+            key = (PrecursorId.from_py_precursor_id(key[0]), key[1])
+            value = (Peak.from_py_ptr(value[0]), value[1])
+            ret_dict[key] = value
+
+        return ret_dict
+
+    def quantify_with_mobility(
+            self,
+            indexed_db: 'IndexedDatabase',
+            ms1: List['ProcessedIMSpectrum'],
+            alignments: List['Alignment'],
+    ) -> Dict:
+        """Quantify the feature map using MS1 spectra with ion mobility.
+
+        Args:
+            indexed_db: Indexed database
+            ms1: List of processed MS-1 spectra with mobility
+            alignments: List of alignments
+
+        Returns:
+            Dict: Dictionary of quantified features
+        """
+        ret_tmp = self.__feature_map_ptr.quantify_with_mobility(
             indexed_db.get_py_ptr(), [m.get_py_ptr() for m in ms1],
             [a.get_py_ptr() for a in alignments]
         )

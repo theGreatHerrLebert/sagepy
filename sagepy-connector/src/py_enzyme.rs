@@ -84,7 +84,7 @@ impl PyDigest {
             inner: Digest {
                 decoy,
                 sequence: sequence.to_string(),
-                protein: Arc::new(protein.to_string()),
+                protein: Arc::from(protein.to_string()),
                 missed_cleavages,
                 position: position.inner,
                 semi_enzymatic,
@@ -258,7 +258,7 @@ impl PyEnzymeParameters {
     }
 
     pub fn digest(&self, py: Python, sequence: &str, protein: &str) -> PyResult<Py<PyList>> {
-        let digests = self.inner.digest(sequence, Arc::new(protein.to_string()));
+        let digests = self.inner.digest(sequence, Arc::from(protein.to_string()));
 
         // Create an empty Python list
         let list: Py<PyList> = PyList::empty(py).into();
