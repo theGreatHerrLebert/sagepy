@@ -4,14 +4,13 @@ use std::collections::HashMap;
 use sage_core::fdr::picked_precursor;
 use sage_core::lfq::{FeatureMap, IntegrationStrategy, LfqSettings, PeakScoringStrategy, PrecursorId, PrecursorRange, build_feature_map, Peak};
 use sage_core::lfq::PrecursorId::{Charged, Combined};
-use sage_core::ml::retention_alignment::Alignment;
 use sage_core::scoring::Feature;
-use sage_core::spectrum::{MS1Spectra, ProcessedSpectrum};
+use sage_core::spectrum::{MS1Spectra};
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_retention_alignment::PyAlignment;
 use crate::py_scoring::PyFeature;
-use crate::py_spectrum::{PyProcessedSpectrum};
+use crate::py_spectrum::{PyProcessedSpectrum, PyProcessedIMSpectrum};
 
 #[pyclass]
 pub struct PyPeak {
@@ -373,39 +372,57 @@ impl PyFeatureMap {
         self.inner.ranges.len()
     }
 
-    /*
     pub fn quantify(
         &self,
         database: &PyIndexedDatabase,
         ms1: Vec<PyProcessedSpectrum>,
         alignments: Vec<PyAlignment>,
     ) -> PyResult<HashMap<(PyPrecursorId, bool), (PyPeak, Vec<f64>)>> {
-        // Extract the inner collections from the vectors
-        let ms1_inner: Vec<ProcessedSpectrum<MS1Spectra>> = ms1.into_iter().map(|s| s.inner.clone()).collect();
-        let alignments_inner: Vec<Alignment> = alignments.into_iter().map(|a| a.inner.clone()).collect();
+        let spectra = ms1.into_iter().map(|s| s.inner).collect();
+        let alignments_inner = alignments.into_iter().map(|a| a.inner).collect::<Vec<_>>();
 
-        // Call the inner `quantify` method
-        let mut areas: HashMap<(PrecursorId, bool), (Peak, Vec<f64>), fnv::FnvBuildHasher> =
-            self.inner.quantify(&database.inner, &ms1_inner, alignments_inner.as_slice());
+        let ms1_enum = MS1Spectra::NoMobility(spectra);
+        let mut areas = self.inner.quantify(&database.inner, &ms1_enum, &alignments_inner);
 
-        // Perform picked precursor processing
         let _ = picked_precursor(&mut areas);
 
-        // Create the result HashMap
         let mut result = HashMap::new();
-
-        for ((precursor, is_charged), (peak, intensities)) in areas {
-            result.insert(
-                match precursor {
-                    Combined(id) => (PyPrecursorId { inner: Combined(id) }, is_charged),
-                    Charged((id, charge)) => (PyPrecursorId { inner: Charged((id, charge)) }, is_charged),
-                },
-                (PyPeak { inner: peak }, intensities),
-            );
+        for ((precursor, is_decoy), (peak, intensities)) in areas {
+            let py_precursor = match precursor {
+                Combined(id) => PyPrecursorId { inner: Combined(id) },
+                Charged((id, z)) => PyPrecursorId { inner: Charged((id, z)) },
+            };
+            result.insert((py_precursor, is_decoy), (PyPeak { inner: peak }, intensities));
         }
+
         Ok(result)
     }
-     */
+
+    pub fn quantify_with_mobility(
+        &self,
+        database: &PyIndexedDatabase,
+        ms1: Vec<PyProcessedIMSpectrum>,
+        alignments: Vec<PyAlignment>,
+    ) -> PyResult<HashMap<(PyPrecursorId, bool), (PyPeak, Vec<f64>)>> {
+        let spectra = ms1.into_iter().map(|s| s.inner).collect();
+        let alignments_inner = alignments.into_iter().map(|a| a.inner).collect::<Vec<_>>();
+
+        let ms1_enum = MS1Spectra::WithMobility(spectra);
+        let mut areas = self.inner.quantify(&database.inner, &ms1_enum, &alignments_inner);
+
+        let _ = picked_precursor(&mut areas);
+
+        let mut result = HashMap::new();
+        for ((precursor, is_decoy), (peak, intensities)) in areas {
+            let py_precursor = match precursor {
+                Combined(id) => PyPrecursorId { inner: Combined(id) },
+                Charged((id, z)) => PyPrecursorId { inner: Charged((id, z)) },
+            };
+            result.insert((py_precursor, is_decoy), (PyPeak { inner: peak }, intensities));
+        }
+
+        Ok(result)
+    }
 }
 
 #[pyclass]

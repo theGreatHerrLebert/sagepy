@@ -8,6 +8,41 @@ from numpy.typing import NDArray
 from sagepy.core.mass import Tolerance
 psc = sagepy_connector.py_spectrum
 
+class IMPeak:
+    def __init__(self, mass: float, intensity: float, mobility: float):
+        """IMPeak class
+
+        Args:
+            mass (float): The monoisotopic mass of the peak
+            intensity (float): The intensity of the peak
+            mobility (float): The ion mobility value
+        """
+        self.__peak_ptr = psc.PyIMPeak(mass, intensity, mobility)
+
+    @classmethod
+    def from_py_peak(cls, peak: psc.PyIMPeak):
+        instance = cls.__new__(cls)
+        instance.__peak_ptr = peak
+        return instance
+
+    @property
+    def mass(self):
+        return self.__peak_ptr.mass
+
+    @property
+    def intensity(self):
+        return self.__peak_ptr.intensity
+
+    @property
+    def mobility(self):
+        return self.__peak_ptr.mobility
+
+    def get_py_ptr(self):
+        return self.__peak_ptr
+
+    def __repr__(self):
+        return (f"IMPeak(mass: {self.mass}, intensity: {self.intensity}, "
+                f"mobility: {self.mobility})")
 
 class Peak:
     def __init__(self, mass: float, intensity: float):
@@ -284,6 +319,102 @@ class ProcessedSpectrum:
                 f"collision_energies: {self.collision_energies},"
                 f"total_ion_current: {self.total_ion_current})")
 
+class ProcessedIMSpectrum:
+    def __init__(self,
+                 id: str,
+                 level: int,
+                 file_id: int,
+                 scan_start_time: float,
+                 ion_injection_time: float,
+                 precursors: List[Precursor],
+                 peaks: List[IMPeak],
+                 total_ion_current: float):
+        """ProcessedIMSpectrum class
+
+        Args:
+            id (str): The ID of the spectrum
+            level (int): MSn level
+            file_id (int): File index
+            scan_start_time (float): Retention time
+            ion_injection_time (float): Ion injection time
+            precursors (List[Precursor]): List of precursor ions
+            peaks (List[IMPeak]): List of ion mobility peaks
+            total_ion_current (float): Total ion current
+        """
+        self.__processed_spectrum_ptr = psc.PyProcessedIMSpectrum(
+            level, id, file_id, scan_start_time,
+            ion_injection_time, [p.get_py_ptr() for p in precursors],
+            [p.get_py_ptr() for p in peaks], total_ion_current)
+
+    @classmethod
+    def from_py_processed_spectrum(cls, processed_spectrum: psc.PyProcessedIMSpectrum):
+        instance = cls.__new__(cls)
+        instance.__processed_spectrum_ptr = processed_spectrum
+        return instance
+
+    @property
+    def level(self):
+        return self.__processed_spectrum_ptr.level
+
+    @level.setter
+    def level(self, level: int):
+        self.__processed_spectrum_ptr.level = level
+
+    @property
+    def id(self):
+        return self.__processed_spectrum_ptr.id
+
+    @id.setter
+    def id(self, id: str):
+        self.__processed_spectrum_ptr.id = id
+
+    @property
+    def file_id(self):
+        return self.__processed_spectrum_ptr.file_id
+
+    @file_id.setter
+    def file_id(self, file_id: int):
+        self.__processed_spectrum_ptr.file_id = file_id
+
+    @property
+    def scan_start_time(self):
+        return self.__processed_spectrum_ptr.scan_start_time
+
+    @property
+    def ion_injection_time(self):
+        return self.__processed_spectrum_ptr.ion_injection_time
+
+    @property
+    def precursors(self):
+        return [Precursor.from_py_precursor(p) for p in self.__processed_spectrum_ptr.precursors]
+
+    @property
+    def peaks(self):
+        return [IMPeak.from_py_peak(p) for p in self.__processed_spectrum_ptr.peaks]
+
+    @property
+    def total_ion_current(self):
+        return self.__processed_spectrum_ptr.total_ion_current
+
+    @property
+    def collision_energies(self):
+        return self.__processed_spectrum_ptr.collision_energies
+
+    def get_py_ptr(self):
+        return self.__processed_spectrum_ptr
+
+    def __repr__(self):
+        return (f"ProcessedIMSpectrum(level: {self.level}, "
+                f"id: {self.id}, "
+                f"file_id: {self.file_id}, "
+                f"scan_start_time: {np.round(self.scan_start_time, 2)}, "
+                f"ion_injection_time: {np.round(self.ion_injection_time, 2)}, "
+                f"num_precursors: {len(self.precursors)}, "
+                f"num_peaks: {len(self.peaks)}, "
+                f"collision_energies: {self.collision_energies}, "
+                f"total_ion_current: {self.total_ion_current})")
+
+
 
 class RawSpectrum:
     def __init__(self,
@@ -413,3 +544,16 @@ class SpectrumProcessor:
 
     def process(self, raw_spectrum: RawSpectrum) -> ProcessedSpectrum:
         return ProcessedSpectrum.from_py_processed_spectrum(self.__spectrum_processor_ptr.process(raw_spectrum.get_py_ptr()))
+
+    def process_with_mobility(self, raw_spectrum: RawSpectrum) -> ProcessedIMSpectrum:
+        """Process a raw spectrum with ion mobility enabled (MS1 only)
+
+        Args:
+            raw_spectrum (RawSpectrum): The raw spectrum to process
+
+        Returns:
+            ProcessedIMSpectrum: The processed spectrum with mobility
+        """
+        return ProcessedIMSpectrum.from_py_processed_spectrum(
+            self.__spectrum_processor_ptr.process_with_mobility(raw_spectrum.get_py_ptr())
+        )
