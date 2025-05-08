@@ -180,8 +180,16 @@ class LfqSettings:
 
 
 class PrecursorRange:
-    def __init__(self, rt: float, mass_lo: float, mass_hi: float, charge: int,
-                 isotope: int, peptide: PeptideIx, file_id: int, decoy: bool):
+    def __init__(
+            self, rt: float,
+            mass_lo: float,
+            mass_hi: float,
+            charge: int,
+            isotope: int,
+            peptide: PeptideIx,
+            file_id: int,
+            decoy: bool
+    ):
         self.__precursor_range_ptr = psc.PyPrecursorRange(rt, mass_lo, mass_hi, charge, isotope,
                                                           peptide.get_py_ptr(), file_id, decoy)
 
