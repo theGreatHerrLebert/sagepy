@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Union
 
 from sagepy.core import Feature, Psm, IndexedDatabase, ProcessedSpectrum
 from sagepy.core.database import PeptideIx
@@ -393,7 +393,7 @@ def build_feature_map(
     return FeatureMap.from_py_feature_map(py_feature_map)
 
 def build_feature_map_psm(
-        psms: List[Psm],
+        psms: Union[Dict[str, List[Psm]], List[Psm]],
         precursor_charge: Tuple[int, int] = (2, 5),
         lfq_settings: LfqSettings = LfqSettings(),
 ) -> FeatureMap:
@@ -407,5 +407,9 @@ def build_feature_map_psm(
     Returns:
         FeatureMap: Feature map
     """
+
+    if isinstance(psms, dict):
+        psms = [psm for psm_list in psms.values() for psm in psm_list]
+
     py_feature_map = psc.py_build_feature_map_psm(lfq_settings.get_py_ptr(), precursor_charge, [p.sage_feature.get_py_ptr() for p in psms])
     return FeatureMap.from_py_feature_map(py_feature_map)
