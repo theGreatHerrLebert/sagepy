@@ -298,7 +298,7 @@ pub fn py_utility(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_psm_sequences_decoy_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_sequences_decoy_modified_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_spec_idx_par, m)?)?;
-    m.add_function(wrap_pyfunction!(get_psm_proteins_par, m)?)?;
+    m.add_function(wrap_pyfunction!(get_psm_peptide_idx_par, m)?)?;
     m.add_function(wrap_pyfunction!(get_psm_proteins_par, m)?)?;
     m.add_function(wrap_pyfunction!(py_compress_psms, m)?)?;
     m.add_function(wrap_pyfunction!(py_decompress_psms, m)?)?;
