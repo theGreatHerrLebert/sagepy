@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Dict
 import sagepy_connector
 from imspy.simulation.annotation import RustWrapperObject
 
