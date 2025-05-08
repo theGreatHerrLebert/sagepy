@@ -133,11 +133,14 @@ class LfqSettings:
                  integration_strategy: IntegrationStrategy = IntegrationStrategy(),
                  spectral_angle: float = 0.7,
                  ppm_tolerance: float = 5.0,
+                 mobility_pct_tolerance: float = 1.0,
                  combine_charge_states: bool = True
                  ):
         self.__lfq_settings_ptr = psc.PyLfqSettings(peak_scoring_strategy.get_py_ptr(),
                                                     integration_strategy.get_py_ptr(),
-                                                    spectral_angle, ppm_tolerance, combine_charge_states)
+                                                    spectral_angle, ppm_tolerance,
+                                                    mobility_pct_tolerance,
+                                                    combine_charge_states)
 
     @classmethod
     def from_py_lfq_settings(cls, lfq_settings: psc.PyLfqSettings):
