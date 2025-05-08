@@ -61,9 +61,7 @@ def global_alignment_psm(psms: Union[Dict[str, List[Psm]], List[Psm]]) -> List[A
     """
 
     if isinstance(psms, dict):
-        psms = []
-        for psm_list in psms.values():
-            psms.extend(psm_list)
+        psms = [psm for psm_list in psms.values() for psm in psm_list]
 
     n_files = len(set([p.sage_feature.file_id for p in psms]))
 
