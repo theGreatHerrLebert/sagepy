@@ -1,4 +1,6 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Union
+
+import pandas as pd
 
 from sagepy.core import Feature, Psm, IndexedDatabase, ProcessedSpectrum
 from sagepy.core.database import PeptideIx
@@ -6,6 +8,7 @@ import sagepy_connector
 
 from sagepy.core.ml.retention_alignment import Alignment
 from sagepy.core.spectrum import ProcessedIMSpectrum
+from sagepy.utility import sage_sequence_to_unimod
 
 psc = sagepy_connector.py_lfq
 
@@ -133,11 +136,15 @@ class LfqSettings:
                  integration_strategy: IntegrationStrategy = IntegrationStrategy(),
                  spectral_angle: float = 0.7,
                  ppm_tolerance: float = 5.0,
+                 mobility_pct_tolerance: float = 1.0,
                  combine_charge_states: bool = True
                  ):
         self.__lfq_settings_ptr = psc.PyLfqSettings(peak_scoring_strategy.get_py_ptr(),
                                                     integration_strategy.get_py_ptr(),
-                                                    spectral_angle, ppm_tolerance, combine_charge_states)
+                                                    spectral_angle, ppm_tolerance,
+                                                    combine_charge_states,
+                                                    mobility_pct_tolerance,
+                                                    )
 
     @classmethod
     def from_py_lfq_settings(cls, lfq_settings: psc.PyLfqSettings):
@@ -176,8 +183,16 @@ class LfqSettings:
 
 
 class PrecursorRange:
-    def __init__(self, rt: float, mass_lo: float, mass_hi: float, charge: int,
-                 isotope: int, peptide: PeptideIx, file_id: int, decoy: bool):
+    def __init__(
+            self, rt: float,
+            mass_lo: float,
+            mass_hi: float,
+            charge: int,
+            isotope: int,
+            peptide: PeptideIx,
+            file_id: int,
+            decoy: bool
+    ):
         self.__precursor_range_ptr = psc.PyPrecursorRange(rt, mass_lo, mass_hi, charge, isotope,
                                                           peptide.get_py_ptr(), file_id, decoy)
 
@@ -322,6 +337,77 @@ class FeatureMap:
 
         return ret_dict
 
+    def quantify_with_mobiliy_pandas(
+            self,
+            indexed_db: 'IndexedDatabase',
+            ms1: List['ProcessedIMSpectrum'],
+            alignments: List['Alignment'],
+            variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
+            static_mods: Union[Dict[str, str], Dict[str, int]] = None,
+            ) -> pd.DataFrame:
+        """Quantify the feature map using MS1 spectra with ion mobility.
+        Args:
+            indexed_db: Indexed database
+            ms1: List of processed MS-1 spectra with mobility
+            alignments: List of alignments
+            variable_mods: Variable modifications
+            static_mods: Static modifications
+
+        Returns:
+            pd.DataFrame: DataFrame of quantified features
+        """
+        ret_tmp = self.__feature_map_ptr.quantify_with_mobility(
+            indexed_db.get_py_ptr(), [m.get_py_ptr() for m in ms1],
+            [a.get_py_ptr() for a in alignments]
+        )
+
+        ret_dict = {}
+
+        for key, value in ret_tmp.items():
+            key = (PrecursorId.from_py_precursor_id(key[0]), key[1])
+            value = (Peak.from_py_ptr(value[0]), value[1])
+            ret_dict[key] = value
+
+        rows = []
+
+        for key, value in ret_dict.items():
+            (precursor, decoy) = key
+            prec_id = precursor.peptide_id.idx
+            charge = precursor.charge
+            peak, intensity = value
+            rt = peak.rt
+            spec_angle = peak.spectral_angle
+            score = peak.score
+            q_value = peak.q_value
+
+            match = indexed_db[prec_id]
+
+            sequence = sage_sequence_to_unimod(
+                match.sequence,
+                match.modifications,
+                variable_mods=variable_mods,
+                static_mods=static_mods,
+            )
+
+            row = {
+                "peptide": sequence,
+                "proteins": match.proteins,
+                "charge": charge,
+                "decoy": decoy,
+                "rt_bin": rt,
+                "spectral_angle": spec_angle,
+                "score": score,
+                "q_value": q_value,
+            }
+
+            # Add one intensity column per file
+            for i, val in enumerate(intensity):
+                row[f"intensity_file_{i}"] = val
+
+            rows.append(row)
+
+        return pd.DataFrame(rows).sort_values(["q_value"])
+
     def __repr__(self):
         return f"FeatureMap(num_ranges: {self.get_num_ranges()}, bin_size: {self.bin_size}, settings: {self.settings})"
 
@@ -393,7 +479,7 @@ def build_feature_map(
     return FeatureMap.from_py_feature_map(py_feature_map)
 
 def build_feature_map_psm(
-        psms: List[Psm],
+        psms: Union[Dict[str, List[Psm]], List[Psm]],
         precursor_charge: Tuple[int, int] = (2, 5),
         lfq_settings: LfqSettings = LfqSettings(),
 ) -> FeatureMap:
@@ -407,5 +493,9 @@ def build_feature_map_psm(
     Returns:
         FeatureMap: Feature map
     """
+
+    if isinstance(psms, dict):
+        psms = [psm for psm_list in psms.values() for psm in psm_list]
+
     py_feature_map = psc.py_build_feature_map_psm(lfq_settings.get_py_ptr(), precursor_charge, [p.sage_feature.get_py_ptr() for p in psms])
     return FeatureMap.from_py_feature_map(py_feature_map)

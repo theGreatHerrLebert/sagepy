@@ -1,3 +1,4 @@
+import warnings
 from typing import Dict, Tuple, List, Optional, Union
 
 import re
@@ -7,10 +8,12 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from sagepy.core.modification import process_variable_start_end_mods
 from sagepy.core.scoring import Psm
 from sagepy.core.spectrum import ProcessedSpectrum, RawSpectrum, Precursor, SpectrumProcessor, Representation
 from sagepy.core.mass import Tolerance
 from sagepy.core.database import IndexedDatabase, EnzymeBuilder, SageSearchConfiguration
+from sagepy.core.unimod import variable_unimod_mods_to_set, static_unimod_mods_to_set
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
 
 from pyteomics import mzml
@@ -473,6 +476,7 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
     sequence_decoy = psc.get_psm_sequences_decoy_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
     sequence_decoy_modified = psc.get_psm_sequences_decoy_modified_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
     spec_idx = psc.get_psm_spec_idx_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
+    peptide_idx = psc.get_psm_peptide_idx_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
     proteins = psc.get_psm_proteins_par([psm.get_py_ptr() for psm in psms], num_threads=num_threads)
 
     # get the feature names
@@ -486,13 +490,14 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
 
     # add the sequence and spectrum index columns
     PSM_pandas.insert(0, "spec_idx", spec_idx)
-    PSM_pandas.insert(1, "match_idx", sequence)
-    PSM_pandas.insert(2,"match_identity_candidates", proteins)
-    PSM_pandas.insert(3, "sequence", sequence)
-    PSM_pandas.insert(4, "sequence_modified", sequence_modified)
-    PSM_pandas.insert(5, "sequence_decoy", sequence_decoy)
-    PSM_pandas.insert(6, "sequence_decoy_modified", sequence_decoy_modified)
-    PSM_pandas.insert(7, "proteins", proteins)
+    PSM_pandas.insert(1, "peptide_idx", peptide_idx)
+    PSM_pandas.insert(2, "match_idx", sequence)
+    PSM_pandas.insert(3,"match_identity_candidates", proteins)
+    PSM_pandas.insert(4, "sequence", sequence)
+    PSM_pandas.insert(5, "sequence_modified", sequence_modified)
+    PSM_pandas.insert(6, "sequence_decoy", sequence_decoy)
+    PSM_pandas.insert(7, "sequence_decoy_modified", sequence_decoy_modified)
+    PSM_pandas.insert(8, "proteins", proteins)
 
     return PSM_pandas
 
@@ -637,3 +642,39 @@ def decompress_psms(data: bytes) -> List[Psm]:
         List[Psm]: The decompressed peptide spectrum matches
     """
     return [Psm.from_py_ptr(p) for p in psc.py_decompress_psms(data)]
+
+def sage_sequence_to_unimod(
+        sequence: str,
+        modifications: List[float],
+        variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
+        static_mods: Union[Dict[str, str], Dict[str, int]] = None,
+) -> str:
+    """Convert a sequence to a UNIMOD string.
+
+    Args:
+        sequence (str): The peptide sequence
+        modifications (List[float]): The modifications
+        variable_mods (Union[Dict[str, List[str]], Dict[str, List[int]]]): The variable modifications
+        static_mods (Union[Dict[str, str], Dict[str, int]]): The static modifications
+
+    Returns:
+        str: The UNIMOD string
+    """
+
+    if variable_mods is not None:
+        # Process variable mods, expanding wildcard start and end modifications to all possible amino acids
+        variable_mods = process_variable_start_end_mods(variable_mods)
+        variable_mods = variable_unimod_mods_to_set(variable_mods)
+    else:
+        warnings.warn("CAUTION! No variable modifications provided, using an empty set.")
+        variable_mods = set()
+
+    if static_mods is not None:
+        static_mods = static_unimod_mods_to_set(static_mods)
+    else:
+        warnings.warn("CAUTION! No static modifications provided, using an empty set.")
+        static_mods = set()
+
+    expected_modifications = variable_mods.union(static_mods)
+
+    return psc.sage_sequence_to_unimod(sequence, modifications, expected_modifications)

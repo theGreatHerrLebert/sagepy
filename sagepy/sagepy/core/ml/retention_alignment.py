@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union, Dict
 import sagepy_connector
 from imspy.simulation.annotation import RustWrapperObject
 
@@ -52,13 +52,16 @@ def global_alignment(features: List[Feature], n_files: int) -> List[Alignment]:
     py_alignments = psc.py_global_alignment([f.get_py_ptr() for f in features], n_files)
     return [Alignment.from_py_ptr(py_alignment) for py_alignment in py_alignments]
 
-def global_alignment_psm(psms: List[Psm]) -> List[Alignment]:
+def global_alignment_psm(psms: Union[Dict[str, List[Psm]], List[Psm]]) -> List[Alignment]:
     """ Perform global alignment on PSMs.
     Args:
         psms: A list of PSMs
     Returns:
         List[Alignment]: List of Alignment objects
     """
+
+    if isinstance(psms, dict):
+        psms = [psm for psm_list in psms.values() for psm in psm_list]
 
     n_files = len(set([p.sage_feature.file_id for p in psms]))
 
