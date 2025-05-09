@@ -50,7 +50,7 @@ pub fn py_predict_im(
 
 
 #[pymodule]
-pub fn py_ion_mobility_prediction(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+pub fn py_mobility_model(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_predict_im, m)?)?;
     Ok(())
 }

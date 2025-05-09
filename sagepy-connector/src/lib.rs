@@ -41,6 +41,8 @@ fn sagepy_connector(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(py_utility::py_utility))?;
     m.add_wrapped(wrap_pymodule!(py_intensity::py_intensity))?;
     m.add_wrapped(wrap_pymodule!(py_retention_alignment::py_retention_alignment))?;
+    m.add_wrapped(wrap_pymodule!(py_retention_model::py_retention_model))?;
+    m.add_wrapped(wrap_pymodule!(py_mobility_model::py_mobility_model))?;
 
     Ok(())
 }

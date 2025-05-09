@@ -50,7 +50,7 @@ pub fn py_predict_rt(
 
 
 #[pymodule]
-pub fn py_retention_time_prediction(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+pub fn py_retention_model(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_predict_rt, m)?)?;
     Ok(())
 }
