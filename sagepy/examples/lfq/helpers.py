@@ -17,36 +17,6 @@ from sagepy.core import (
     Tolerance
 )
 
-def sage_quant_map_to_pandas(quant_map: Dict) -> pd.DataFrame:
-    rows = []
-    for key, value in quant_map.items():
-        (precursor, decoy) = key
-        prec_id = precursor.peptide_id.idx
-        charge = precursor.charge
-        peak, intensity = value
-        rt = peak.rt
-        spec_angle = peak.spectral_angle
-        score = peak.score
-        q_value = peak.q_value
-        
-        row = {
-            "peptide_id": prec_id,
-            "charge": charge,
-            "decoy": decoy,
-            "rt_bin": rt,
-            "spectral_angle": spec_angle,
-            "score": score,
-            "q_value": q_value,
-        }
-        
-        # Add one intensity column per file
-        for i, val in enumerate(intensity):
-            row[f"intensity_file_{i}"] = val
-        
-        rows.append(row)
-
-    return pd.DataFrame(rows).sort_values(["q_value"])
-
 def process_timstof_datasets(
     dataset_dirs: Union[str, List[str]],
     use_bruker_sdk: bool = False,
@@ -99,7 +69,6 @@ def process_timstof_datasets(
         )
         ms1_processor = SpectrumProcessor(
             take_top_n=ms1_take_top_n,
-            deisotope=ms1_deisotope
         )
         ms1_spectra = [
             get_ms1_ims_spectrum(
