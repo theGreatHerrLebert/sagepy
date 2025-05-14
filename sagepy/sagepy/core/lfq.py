@@ -395,10 +395,10 @@ class FeatureMap:
         rows = []
 
         # get max rt value given in any of the spectra
-        max_rt = max([spectrum.rt for spectrum in ms1])
+        max_rt = max([spectrum.scan_start_time for spectrum in ms1])
 
         # get min rt value given in any of the spectra
-        min_rt = min([spectrum.rt for spectrum in ms1])
+        min_rt = min([spectrum.scan_start_time for spectrum in ms1])
 
         for key, value in ret_dict.items():
             (precursor, decoy) = key
