@@ -64,6 +64,26 @@ impl PyPeak {
     pub fn q_value(&self) -> f32 {
         self.inner.q_value
     }
+    
+    #[getter]
+    pub fn rt_min(&self) -> f32 {
+        self.inner.rt_min
+    }
+    
+    #[getter]
+    pub fn rt_max(&self) -> f32 {
+        self.inner.rt_max
+    }
+    
+    #[getter]
+    pub fn mobility_min(&self) -> Option<f32> {
+        self.inner.mobility_min
+    }
+    
+    #[getter]
+    pub fn mobility_max(&self) -> Option<f32> {
+        self.inner.mobility_max
+    }
 }
 
 #[pyclass]
@@ -255,6 +275,11 @@ impl PyLfqSettings {
     #[getter]
     pub fn combine_charge_states(&self) -> bool {
         self.inner.combine_charge_states
+    }
+    
+    #[getter]
+    pub fn mobility_pct_tolerance(&self) -> f32 {
+        self.inner.mobility_pct_tolerance
     }
 }
 
