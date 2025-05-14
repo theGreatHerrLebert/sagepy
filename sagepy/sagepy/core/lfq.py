@@ -39,8 +39,25 @@ class Peak:
     def q_value(self) -> float:
         return self.__peak_ptr.q_value
 
+    @property
+    def rt_min(self) -> float:
+        return self.__peak_ptr.rt_min
+
+    @property
+    def rt_max(self) -> float:
+        return self.__peak_ptr.rt_max
+
+    @property
+    def mobility_min(self) -> Union[None, float]:
+        return self.__peak_ptr.mobility_min
+
+    @property
+    def mobility_max(self) -> Union[None, float]:
+        return self.__peak_ptr.mobility_max
+
     def __repr__(self):
-        return f"Peak(rt: {self.rt}, spectral_angle: {self.spectral_angle}, score: {self.score}, q_value: {self.q_value})"
+        return f"Peak(rt: {self.rt}, spectral_angle: {self.spectral_angle}, score: {self.score}, q_value: {self.q_value}), " \
+                f"rt_min: {self.rt_min}, rt_max: {self.rt_max}, mobility_min: {self.mobility_min}, mobility_max: {self.mobility_max})"
 
     def get_py_ptr(self):
         return self.__peak_ptr
@@ -177,10 +194,15 @@ class LfqSettings:
     def combine_charge_states(self) -> bool:
         return self.__lfq_settings_ptr.combine_charge_states
 
+    @property
+    def mobility_pct_tolerance(self) -> float:
+        return self.__lfq_settings_ptr.mobility_pct_tolerance
+
     def __repr__(self):
         return (f"LfqSettings(peak_scoring_strategy: {self.peak_scoring_strategy}, "
                 f"integration_strategy: {self.integration_strategy}, "
                 f"spectral_angle: {self.spectral_angle}, ppm_tolerance: {self.ppm_tolerance}, "
+                f"mobility_pct_tolerance: {self.mobility_pct_tolerance}, "
                 f"combine_charge_states: {self.combine_charge_states})")
 
 
