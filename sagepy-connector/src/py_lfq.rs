@@ -20,11 +20,16 @@ pub struct PyPeak {
 #[pymethods]
 impl PyPeak {
     #[new]
+    #[pyo3(signature = (rt, spectral_angle, score, q_value, rt_min, rt_max, mobility_min=None, mobility_max=None))]
     pub fn new(
         rt: usize,
         spectral_angle: f64,
         score: f64,
         q_value: f32,
+        rt_min: f32,
+        rt_max: f32,
+        mobility_min: Option<f32>,
+        mobility_max: Option<f32>,
     ) -> Self {
         PyPeak {
             inner: Peak {
@@ -32,6 +37,10 @@ impl PyPeak {
                 spectral_angle,
                 score,
                 q_value,
+                rt_min,
+                rt_max,
+                mobility_min,
+                mobility_max,
             },
         }
     }
@@ -204,6 +213,7 @@ impl PyLfqSettings {
         ppm_tolerance: f32,
         combine_charge_states: bool,
         mobility_pct_tolerance: f32,
+        rt_tolerance: f32,
     ) -> Self {
         PyLfqSettings {
             inner: LfqSettings {
@@ -211,6 +221,7 @@ impl PyLfqSettings {
                 integration: integration.inner.clone(),
                 spectral_angle,
                 ppm_tolerance,
+                rt_tolerance,
                 combine_charge_states,
                 mobility_pct_tolerance,
             },

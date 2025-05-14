@@ -14,8 +14,8 @@ psc = sagepy_connector.py_lfq
 
 
 class Peak:
-    def __init__(self, rt: int, spectral_angle: float, score: float, q_value: float):
-        self.__peak_ptr = psc.PyPeak(rt, spectral_angle, score, q_value)
+    def __init__(self, rt: int, spectral_angle: float, score: float, q_value: float, rt_min: float, rt_max: float, mobility_min: Union[None, float], mobility_max: Union[None, float]):
+        self.__peak_ptr = psc.PyPeak(rt, spectral_angle, score, q_value, rt_min, rt_max, mobility_min, mobility_max)
 
     @classmethod
     def from_py_ptr(cls, peak: psc.PyPeak):
@@ -137,6 +137,7 @@ class LfqSettings:
                  spectral_angle: float = 0.7,
                  ppm_tolerance: float = 5.0,
                  mobility_pct_tolerance: float = 1.0,
+                 rt_tolerance: float = 0.005,
                  combine_charge_states: bool = True
                  ):
         self.__lfq_settings_ptr = psc.PyLfqSettings(peak_scoring_strategy.get_py_ptr(),
@@ -144,6 +145,7 @@ class LfqSettings:
                                                     spectral_angle, ppm_tolerance,
                                                     combine_charge_states,
                                                     mobility_pct_tolerance,
+                                                    rt_tolerance
                                                     )
 
     @classmethod
