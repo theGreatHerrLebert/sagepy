@@ -394,6 +394,12 @@ class FeatureMap:
 
         rows = []
 
+        # get max rt value given in any of the spectra
+        max_rt = max([spectrum.rt for spectrum in ms1])
+
+        # get min rt value given in any of the spectra
+        min_rt = min([spectrum.rt for spectrum in ms1])
+
         for key, value in ret_dict.items():
             (precursor, decoy) = key
             prec_id = precursor.peptide_id.idx
@@ -413,6 +419,10 @@ class FeatureMap:
                 static_mods=static_mods,
             )
 
+            # retention times are given as a fraction of the gradient length between 0 and 1, they need to be mapped to the actual RT
+            feature_lower_rt = min_rt + (max_rt - min_rt) * peak.rt_min
+            feature_upper_rt = min_rt + (max_rt - min_rt) * peak.rt_max
+
             row = {
                 "peptide": sequence,
                 "proteins": match.proteins,
@@ -422,6 +432,10 @@ class FeatureMap:
                 "spectral_angle": spec_angle,
                 "score": score,
                 "q_value": q_value,
+                "rt_min": feature_lower_rt,
+                "rt_max": feature_upper_rt,
+                "mobility_min": peak.mobility_min,
+                "mobility_max": peak.mobility_max,
             }
 
             # Add one intensity column per file
