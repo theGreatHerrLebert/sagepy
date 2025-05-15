@@ -491,13 +491,22 @@ impl PyParameters {
     }
 
     pub fn build_indexed_database(&self) -> PyResult<PyIndexedDatabase> {
-        Ok(PyIndexedDatabase {
-            inner: self.inner.clone().build(Fasta::parse(
-                self.inner.fasta.clone(),
-                self.inner.decoy_tag.clone(),
-                self.inner.generate_decoys,
+        let fasta = Fasta::parse(
+            self.inner.fasta.clone(),
+            self.inner.decoy_tag.clone(),
+            self.inner.generate_decoys,
+        );
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            self.inner.clone().build(fasta)
+        }));
+
+        match result {
+            Ok(db) => Ok(PyIndexedDatabase { inner: db }),
+            Err(_) => Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "Rust panic occurred during indexed database generation. Check if input FASTA is empty or digestion parameters are too restrictive.",
             )),
-        })
+        }
     }
 
     #[getter]
