@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from collections import defaultdict
+import scipy.stats
 
 from numpy.typing import NDArray
 from typing import Optional, Tuple, List
@@ -159,8 +159,7 @@ def generate_training_data(
 
 
 def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
-    """Split PSMs into multiple splits while ensuring that all PSMs
-    with the same sequence stay in the same split.
+    """ Split PSMs into multiple splits.
 
     Args:
         psm_list: List of PeptideSpectrumMatch objects
@@ -169,23 +168,21 @@ def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
     Returns:
         List[List[PeptideSpectrumMatch]]: List of splits
     """
-    # Group PSMs by sequence
-    seq_to_psms = defaultdict(list)
-    for psm in psm_list:
-        seq_to_psms[psm.sequence].append(psm)
 
-    # Sort sequence groups by decreasing group size (improves balance)
-    grouped_psms = sorted(seq_to_psms.values(), key=len, reverse=True)
+    # floor division by num_splits
+    split_size = len(psm_list) // num_splits
 
-    # Distribute groups into splits while maintaining size balance
-    splits = [[] for _ in range(num_splits)]
-    split_sizes = [0] * num_splits
+    # remainder for last split
+    remainder = len(psm_list) % num_splits
 
-    for group in grouped_psms:
-        # Assign a group to the split with the smallest current size
-        min_split_index = split_sizes.index(min(split_sizes))
-        splits[min_split_index].extend(group)
-        split_sizes[min_split_index] += len(group)
+    splits = []
+
+    start_index = 0
+
+    for i in range(num_splits):
+        end_index = start_index + split_size + (1 if i < remainder else 0)
+        splits.append(psm_list[start_index:end_index])
+        start_index = end_index
 
     return splits
 
