@@ -105,7 +105,7 @@ def get_features(
 
 def generate_training_data(
         psm_list: List[Psm],
-        method: str = "psm",
+        method: str = "peptide_q",
         q_max: float = 0.01,
         balance: bool = True,
         replace_nan: bool = True,
@@ -140,7 +140,13 @@ def generate_training_data(
     # select best positive examples
     # TARGET = TDC[(TDC.decoy == False) & (TDC.q_value <= q_max)]
 
-    TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.peptide_q <= q_max) & (PSM_pandas["rank"] == 1)]
+    if method == "spectrum_q":
+        TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.spectrum_q <= q_max) & (PSM_pandas["rank"] == 1)]
+    elif method == "peptide_q":
+        TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.peptide_q <= q_max) & (PSM_pandas["rank"] == 1)]
+    else:
+        raise ValueError(f"Unknown method: {method}. Use 'spectrum_q' or 'peptide_q'.")
+
     X_target, Y_target = get_features(TARGET, replace_nan=replace_nan)
 
     # select all decoys
