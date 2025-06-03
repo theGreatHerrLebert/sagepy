@@ -179,15 +179,15 @@ def get_list_index_by_sequence(psms, num_splits: int = 5, seed: int = 35):
     return index_dict
 
 
-def split_psm_list(psms: List[Psm], num_splits: int = 5) -> List[List]:
+def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List]:
     # Get sequence-to-split mapping
-    seq_to_split = get_list_index_by_sequence(psms, num_splits)
+    seq_to_split = get_list_index_by_sequence(psm_list, num_splits)
 
     # Preallocate split containers
     splits = [[] for _ in range(num_splits)]
 
     # Assign PSMs to their respective splits
-    for psm in psms:
+    for psm in psm_list:
         split_idx = seq_to_split[psm.sequence]
         splits[split_idx].append(psm)
 
