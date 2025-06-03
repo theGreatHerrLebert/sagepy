@@ -159,7 +159,7 @@ def generate_training_data(
     return X_train, Y_train
 
 
-def split_psm_list_by_psm_idx(
+def split_psm_list(
     psm_list: List[Psm],
     num_splits: int = 5
 ) -> List[List[Psm]]:
