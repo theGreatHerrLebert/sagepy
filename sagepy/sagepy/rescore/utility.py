@@ -158,54 +158,50 @@ def generate_training_data(
 
     return X_train, Y_train
 
-def split_psm_list(
+
+def split_psm_list_by_psm_idx(
     psm_list: List[Psm],
     num_splits: int = 5
 ) -> List[List[Psm]]:
     """
-    Split PSMs into multiple splits, ensuring that all PSMs
-    with the same sequence land in the same split. Uses a
-    greedy bin‐packing heuristic to balance the total count.
+    Split PSMs into `num_splits` bins such that:
+      - All PSMs sharing the same `.psm_idx` go into the same bin.
+      - We do not enforce anything about `.sequence` or `.spec_idx` here.
+
+    Uses a greedy min‐heap on block sizes to keep bins roughly balanced.
 
     Args:
-        psm_list: List of PeptideSpectrumMatch objects (each having a `.sequence`).
-        num_splits: Desired number of splits.
+        psm_list: List of PSM objects (each must have a hashable .psm_idx).
+        num_splits: Desired number of output bins.
 
     Returns:
-        List of splits (each split is a List[Psm]) such that
-        no sequence appears across multiple splits.
+        A list of length `num_splits`, where each element is a List[Psm].
     """
-    # 1. Group PSMs by their sequence:
-    seq_to_psms: Dict[str, List[Psm]] = defaultdict(list)
-    for psm in psm_list:
-        seq_to_psms[psm.sequence].append(psm)
+    n = len(psm_list)
+    if n == 0:
+        return [[] for _ in range(num_splits)]
 
-    # 2. Create a list of (group_size, sequence) and sort descending by group_size:
-    #    We'll pack largest groups first.
-    groups: List[Tuple[int, str]] = [
-        (len(psms), seq) for seq, psms in seq_to_psms.items()
-    ]
-    # Sort so that the largest groups are first (reverse=True).
-    groups.sort(reverse=True, key=lambda x: x[0])
+    # 1) Group PSMs by psm_idx
+    psmid_to_psms: Dict[int, List[Psm]] = defaultdict(list)
+    for p in psm_list:
+        psmid_to_psms[p.psm_idx].append(p)
 
-    # 3. Use a min‐heap to keep track of (current_bin_size, bin_index).
-    #    Start with all bins at size 0.
-    #
-    #    Note: heap entries are (size, index), so heapq always pops the bin with smallest size.
-    heap: List[Tuple[int, int]] = [(0, i) for i in range(num_splits)]
+    # 2) Build a list of (block_size, psm_list_for_that_id)
+    blocks = [(len(psms), psms) for psms in psmid_to_psms.values()]
+
+    # 3) Sort descending by block_size so we place big blocks first
+    blocks.sort(reverse=True, key=lambda x: x[0])
+
+    # 4) Prepare empty bins and a min-heap of (current_count, bin_index)
+    bins: List[List[Psm]] = [[] for _ in range(num_splits)]
+    heap = [(0, i) for i in range(num_splits)]
     heapq.heapify(heap)
 
-    # 4. Prepare empty bins.
-    bins: List[List[Psm]] = [[] for _ in range(num_splits)]
-
-    # 5. Greedily assign each sequence‐group to the bin with smallest current size.
-    for group_size, sequence in groups:
-        current_size, bin_index = heapq.heappop(heap)
-        # Append all PSMs with this sequence into that bin.
-        bins[bin_index].extend(seq_to_psms[sequence])
-        # Update that bin’s size in the heap.
-        new_size = current_size + group_size
-        heapq.heappush(heap, (new_size, bin_index))
+    # 5) Greedily assign each block to the bin with the smallest current_count
+    for block_size, block_psms in blocks:
+        current_count, bin_idx = heapq.heappop(heap)
+        bins[bin_idx].extend(block_psms)
+        heapq.heappush(heap, (current_count + block_size, bin_idx))
 
     return bins
 
