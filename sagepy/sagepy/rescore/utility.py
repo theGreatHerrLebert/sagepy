@@ -140,11 +140,11 @@ def generate_training_data(
     # select best positive examples
     # TARGET = TDC[(TDC.decoy == False) & (TDC.q_value <= q_max)]
 
-    TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.peptide_q <= q_max)]
+    TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.peptide_q <= q_max) & (PSM_pandas["rank"] == 1)]
     X_target, Y_target = get_features(TARGET, replace_nan=replace_nan)
 
     # select all decoys
-    DECOY = PSM_pandas[PSM_pandas.decoy]
+    DECOY = PSM_pandas[(PSM_pandas.decoy) & (PSM_pandas["rank"] == 1)]
     X_decoy, Y_decoy = get_features(DECOY, replace_nan=replace_nan)
 
     # balance the dataset such that the number of target and decoy examples are equal
