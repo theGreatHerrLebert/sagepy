@@ -144,7 +144,7 @@ def generate_training_data(
     X_target, Y_target = get_features(TARGET, replace_nan=replace_nan)
 
     # select all decoys
-    DECOY = TDC[TDC.decoy]
+    DECOY = PSM_pandas[PSM_pandas.decoy]
     X_decoy, Y_decoy = get_features(DECOY, replace_nan=replace_nan)
 
     # balance the dataset such that the number of target and decoy examples are equal
