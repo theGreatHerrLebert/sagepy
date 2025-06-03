@@ -126,19 +126,21 @@ def generate_training_data(
     # create pandas table from psms
     PSM_pandas = psm_collection_to_pandas(psm_list, num_threads=num_threads)
 
-    # calculate q-values to get inital "good" hits
-    PSM_q = target_decoy_competition_pandas(PSM_pandas, method=method)
-    PSM_pandas = PSM_pandas.drop(columns=["hyperscore"])
+    # calculate q-values to get initial "good" hits
+    # PSM_q = target_decoy_competition_pandas(PSM_pandas, method=method)
+    # PSM_pandas = PSM_pandas.drop(columns=["hyperscore"])
 
     # merge data with q-values
-    TDC = pd.merge(
-        PSM_q, PSM_pandas,
-        left_on=["spec_idx", "match_idx", "decoy"],
-        right_on=["spec_idx", "match_idx", "decoy"]
-    )
+    # TDC = pd.merge(
+    #     PSM_q, PSM_pandas,
+    #     left_on=["spec_idx", "match_idx", "decoy"],
+    #    right_on=["spec_idx", "match_idx", "decoy"]
+    # )
 
     # select best positive examples
-    TARGET = TDC[(TDC.decoy == False) & (TDC.q_value <= q_max)]
+    # TARGET = TDC[(TDC.decoy == False) & (TDC.q_value <= q_max)]
+
+    TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.peptide_q <= q_max)]
     X_target, Y_target = get_features(TARGET, replace_nan=replace_nan)
 
     # select all decoys
