@@ -5,7 +5,7 @@ from collections import defaultdict
 import heapq
 
 from numpy.typing import NDArray
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict
 
 from sagepy.core.scoring import Psm
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
@@ -165,13 +165,13 @@ def split_psm_list(
 ) -> List[List[Psm]]:
     """
     Split PSMs into `num_splits` bins such that:
-      - All PSMs sharing the same `.psm_idx` go into the same bin.
+      - All PSMs sharing the same `.spec_idx` go into the same bin.
       - We do not enforce anything about `.sequence` or `.spec_idx` here.
 
     Uses a greedy min‐heap on block sizes to keep bins roughly balanced.
 
     Args:
-        psm_list: List of PSM objects (each must have a hashable .psm_idx).
+        psm_list: List of PSM objects (each must have a hashable .spec_idx).
         num_splits: Desired number of output bins.
 
     Returns:
@@ -181,10 +181,10 @@ def split_psm_list(
     if n == 0:
         return [[] for _ in range(num_splits)]
 
-    # 1) Group PSMs by psm_idx
+    # 1) Group PSMs by spec_idx
     psmid_to_psms: Dict[int, List[Psm]] = defaultdict(list)
     for p in psm_list:
-        psmid_to_psms[p.psm_idx].append(p)
+        psmid_to_psms[p.spec_idx].append(p)
 
     # 2) Build a list of (block_size, psm_list_for_that_id)
     blocks = [(len(psms), psms) for psms in psmid_to_psms.values()]
