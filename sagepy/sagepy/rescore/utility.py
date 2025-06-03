@@ -159,54 +159,7 @@ def generate_training_data(
     return X_train, Y_train
 
 
-def split_psm_list(
-    psm_list: List[Psm],
-    num_splits: int = 5
-) -> List[List[Psm]]:
-    """
-    Split PSMs into `num_splits` bins such that:
-      - All PSMs sharing the same `.spec_idx` go into the same bin.
-      - We do not enforce anything about `.sequence` or `.spec_idx` here.
-
-    Uses a greedy min‐heap on block sizes to keep bins roughly balanced.
-
-    Args:
-        psm_list: List of PSM objects (each must have a hashable .spec_idx).
-        num_splits: Desired number of output bins.
-
-    Returns:
-        A list of length `num_splits`, where each element is a List[Psm].
-    """
-    n = len(psm_list)
-    if n == 0:
-        return [[] for _ in range(num_splits)]
-
-    # 1) Group PSMs by spec_idx
-    psmid_to_psms: Dict[int, List[Psm]] = defaultdict(list)
-    for p in psm_list:
-        psmid_to_psms[p.spec_idx].append(p)
-
-    # 2) Build a list of (block_size, psm_list_for_that_id)
-    blocks = [(len(psms), psms) for psms in psmid_to_psms.values()]
-
-    # 3) Sort descending by block_size so we place big blocks first
-    blocks.sort(reverse=True, key=lambda x: x[0])
-
-    # 4) Prepare empty bins and a min-heap of (current_count, bin_index)
-    bins: List[List[Psm]] = [[] for _ in range(num_splits)]
-    heap = [(0, i) for i in range(num_splits)]
-    heapq.heapify(heap)
-
-    # 5) Greedily assign each block to the bin with the smallest current_count
-    for block_size, block_psms in blocks:
-        current_count, bin_idx = heapq.heappop(heap)
-        bins[bin_idx].extend(block_psms)
-        heapq.heappush(heap, (current_count + block_size, bin_idx))
-
-    return bins
-
-
-def split_psm_list_old(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
+def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
     """ Split PSMs into multiple splits.
 
     Args:
