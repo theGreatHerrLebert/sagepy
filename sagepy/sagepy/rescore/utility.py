@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 
-import scipy.stats
+from collections import defaultdict
+import heapq
 
 from numpy.typing import NDArray
 from typing import Optional, Tuple, List
@@ -157,8 +158,59 @@ def generate_training_data(
 
     return X_train, Y_train
 
+def split_psm_list_by_sequence(
+    psm_list: List[Psm],
+    num_splits: int = 5
+) -> List[List[Psm]]:
+    """
+    Split PSMs into multiple splits, ensuring that all PSMs
+    with the same sequence land in the same split. Uses a
+    greedy bin‐packing heuristic to balance the total count.
 
-def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
+    Args:
+        psm_list: List of PeptideSpectrumMatch objects (each having a `.sequence`).
+        num_splits: Desired number of splits.
+
+    Returns:
+        List of splits (each split is a List[Psm]) such that
+        no sequence appears across multiple splits.
+    """
+    # 1. Group PSMs by their sequence:
+    seq_to_psms: Dict[str, List[Psm]] = defaultdict(list)
+    for psm in psm_list:
+        seq_to_psms[psm.sequence].append(psm)
+
+    # 2. Create a list of (group_size, sequence) and sort descending by group_size:
+    #    We'll pack largest groups first.
+    groups: List[Tuple[int, str]] = [
+        (len(psms), seq) for seq, psms in seq_to_psms.items()
+    ]
+    # Sort so that the largest groups are first (reverse=True).
+    groups.sort(reverse=True, key=lambda x: x[0])
+
+    # 3. Use a min‐heap to keep track of (current_bin_size, bin_index).
+    #    Start with all bins at size 0.
+    #
+    #    Note: heap entries are (size, index), so heapq always pops the bin with smallest size.
+    heap: List[Tuple[int, int]] = [(0, i) for i in range(num_splits)]
+    heapq.heapify(heap)
+
+    # 4. Prepare empty bins.
+    bins: List[List[Psm]] = [[] for _ in range(num_splits)]
+
+    # 5. Greedily assign each sequence‐group to the bin with smallest current size.
+    for group_size, sequence in groups:
+        current_size, bin_index = heapq.heappop(heap)
+        # Append all PSMs with this sequence into that bin.
+        bins[bin_index].extend(seq_to_psms[sequence])
+        # Update that bin’s size in the heap.
+        new_size = current_size + group_size
+        heapq.heappush(heap, (new_size, bin_index))
+
+    return bins
+
+
+def split_psm_list_old(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
     """ Split PSMs into multiple splits.
 
     Args:
