@@ -1,14 +1,10 @@
 import numpy as np
 import pandas as pd
 
-from collections import defaultdict
-import heapq
-
 from numpy.typing import NDArray
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, Tuple, List
 
 from sagepy.core.scoring import Psm
-from sagepy.qfdr.tdc import target_decoy_competition_pandas
 from sagepy.utility import psm_collection_to_pandas
 
 
@@ -167,7 +163,38 @@ def generate_training_data(
     return X_train, Y_train
 
 
-def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
+def get_list_index_by_sequence(psms, num_splits: int = 5, seed: int = 35):
+    # Set random seed for reproducibility
+    np.random.seed(seed)
+
+    # Extract unique sequences
+    unique_sequences = list({psm.sequence for psm in psms})
+
+    # Shuffle and split
+    shuffled = np.random.permutation(unique_sequences)
+    split = np.array_split(shuffled, num_splits)
+
+    # Create mapping from sequence -> split index
+    index_dict = {seq: i for i, group in enumerate(split) for seq in group}
+    return index_dict
+
+
+def split_psm_list(psms: List[Psm], num_splits: int = 5) -> List[List]:
+    # Get sequence-to-split mapping
+    seq_to_split = get_list_index_by_sequence(psms, num_splits)
+
+    # Preallocate split containers
+    splits = [[] for _ in range(num_splits)]
+
+    # Assign PSMs to their respective splits
+    for psm in psms:
+        split_idx = seq_to_split[psm.sequence]
+        splits[split_idx].append(psm)
+
+    return splits
+
+
+def split_psm_list_old(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
     """ Split PSMs into multiple splits.
 
     Args:
