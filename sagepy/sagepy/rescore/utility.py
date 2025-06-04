@@ -179,7 +179,7 @@ def get_list_index_by_sequence(psms, num_splits: int = 5, seed: int = 35):
     return index_dict
 
 
-def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List]:
+def split_psm_list_broken(psm_list: List[Psm], num_splits: int = 5) -> List[List]:
     # Get sequence-to-split mapping
     seq_to_split = get_list_index_by_sequence(psm_list, num_splits)
 
@@ -194,7 +194,7 @@ def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List]:
     return splits
 
 
-def split_psm_list_old(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
+def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
     """ Split PSMs into multiple splits.
 
     Args:
