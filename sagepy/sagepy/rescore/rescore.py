@@ -58,10 +58,11 @@ def rescore_psms(
     splits = split_psm_list(psm_list=psm_list, num_splits=num_splits, **kwargs)
 
     predictions = []
-
+    final_psms = []
     for i in tqdm(range(num_splits), disable=not verbose, desc='Re-scoring PSMs', ncols=100):
 
         target = splits[i]
+        final_psms.extend(target)
         features = []
 
         for j in range(num_splits):
@@ -84,7 +85,7 @@ def rescore_psms(
             predictions.extend(Y_pred[:, 1])  # Use class probabilities (second column for binary classification)
 
     # assign the re-scored values to the PSMs
-    for score, match in zip(predictions, psm_list):
+    for score, match in zip(predictions, final_psms):
         match.re_score = score
 
-    return psm_list
+    return final_psms
