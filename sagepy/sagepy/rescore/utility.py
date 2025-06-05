@@ -175,24 +175,14 @@ def generate_training_data(
     # create pandas table from psms
     PSM_pandas = psm_collection_to_pandas(psm_list, num_threads=num_threads)
 
-    # calculate q-values to get initial "good" hits
-    # PSM_q = target_decoy_competition_pandas(PSM_pandas, method=method)
-    # PSM_pandas = PSM_pandas.drop(columns=["hyperscore"])
-
-    # merge data with q-values
-    # TDC = pd.merge(
-    #     PSM_q, PSM_pandas,
-    #     left_on=["spec_idx", "match_idx", "decoy"],
-    #    right_on=["spec_idx", "match_idx", "decoy"]
-    # )
-
-    # select best positive examples
-    # TARGET = TDC[(TDC.decoy == False) & (TDC.q_value <= q_max)]
-
     if method == "spectrum_q":
         TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.spectrum_q <= q_max) & (PSM_pandas["rank"] == 1)]
     elif method == "peptide_q":
         TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.peptide_q <= q_max) & (PSM_pandas["rank"] == 1)]
+
+    elif method == "decoy_quantile":
+        cutoff = PSM_pandas[PSM_pandas.decoy].hyperscore.quantile(1 - q_max)
+        TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas["rank"] == 1) & (PSM_pandas.hyperscore >= cutoff)]
     else:
         raise ValueError(f"Unknown method: {method}. Use 'spectrum_q' or 'peptide_q'.")
 
@@ -246,7 +236,7 @@ def split_psm_list_broken(psm_list: List[Psm], num_splits: int = 5) -> List[List
 
     return splits
 
-def split_psm_list(psm_list: List[Psm], num_splits: int = 5, seed: None| int = None, key_maker: Callable = peptide_key_maker) -> List[List[Psm]]:
+def split_psm_list(psm_list: List[Psm], num_splits: int = 5, seed: None| int = None, key_maker: Callable = peptide_key_maker, **kwargs) -> List[List[Psm]]:
     """
     Split PSMs into multiple splits.
 

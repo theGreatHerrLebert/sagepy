@@ -18,6 +18,7 @@ def rescore_psms(
         replace_nan: bool = True,
         score: str = "hyperscore",
         num_threads: int = 16,
+        **kwargs,
 ) -> List[Psm]:
     """ Re-score PSMs using a model (e.g. Random Forest, Gradient Boosting, etc.).
     Args:
@@ -54,7 +55,7 @@ def rescore_psms(
     scaler.fit(X_all)
 
     # split the PSMs into num_splits folds to perform cross-validation
-    splits = split_psm_list(psm_list=psm_list, num_splits=num_splits)
+    splits = split_psm_list(psm_list=psm_list, num_splits=num_splits, **kwargs)
 
     predictions = []
 
