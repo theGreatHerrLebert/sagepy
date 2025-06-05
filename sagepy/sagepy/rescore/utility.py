@@ -159,6 +159,7 @@ def generate_training_data(
         balance: bool = True,
         replace_nan: bool = True,
         num_threads: int = 16,
+        **kwargs
 ) -> Tuple[NDArray, NDArray]:
     """ Generate training data.
     Args:

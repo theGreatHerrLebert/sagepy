@@ -70,7 +70,7 @@ def rescore_psms(
                 features.extend(splits[j])
 
         # generate training data
-        X_train, Y_train = generate_training_data(features, balance=balance, replace_nan=replace_nan, num_threads=num_threads)
+        X_train, Y_train = generate_training_data(features, balance=balance, replace_nan=replace_nan, num_threads=num_threads, **kwargs)
 
         # get features for target that we want to re-score
         X, _ = get_features(psm_collection_to_pandas(target), replace_nan=replace_nan)
