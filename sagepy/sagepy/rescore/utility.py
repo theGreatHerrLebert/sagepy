@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import pandas as pd
 
 from numpy.typing import NDArray
@@ -6,6 +7,58 @@ from typing import Optional, Tuple, List
 
 from sagepy.core.scoring import Psm
 from sagepy.utility import psm_collection_to_pandas
+
+from collections import defaultdict
+from typing import Callable
+
+peptide_key_maker = lambda psm: (psm.sequence,)
+ion_key_maker = lambda psm: (psm.sequence, psm.charge)
+
+
+def assign_random_groups(group_count, number_of_assignments, seed=None):
+    """
+    Assign random groups to a number of assignments.
+    Args:
+        group_count: int, number of groups to assign to
+        number_of_assignments: int, number of assignments to make
+        seed: None | int, random seed for reproducibility
+
+    Returns:
+        list: a list of group assignments, where each assignment is an integer in the range [0, group_count - 1]
+    """
+    if seed is not None:
+        random.seed(seed)
+    return [random.randint(0, group_count - 1) for _ in range(number_of_assignments)]
+
+
+def split_into_chunks(
+        psms: list,
+        splits_count: int = 3,
+        key_maker: Callable = peptide_key_maker,
+        seed: None | int = None,
+) -> list[list]:
+    """
+    Split a list of PSMs into multiple chunks based on a key maker function.
+    Args:
+        psms: list of Psm objects
+        splits_count: int, number of splits to create
+        key_maker: Callable, a function that takes a Psm object and returns a key for grouping
+        seed: None | int, random seed for reproducibility
+
+    Returns:
+        list[list]: a list of lists, where each inner list contains Psm objects that share the same key
+    """
+    grouped_psms = defaultdict(list)
+    for psm in psms:
+        grouped_psms[key_maker(psm)].append(psm)
+
+    split_assignments = assign_random_groups(splits_count, len(grouped_psms), seed=seed)
+
+    splits = [[] for _ in range(splits_count)]
+    for split_assignment, (group, grouped_psms) in zip(split_assignments, grouped_psms.items()):
+        splits[split_assignment].extend(grouped_psms)
+
+    return splits
 
 
 def dict_to_dense_array(peak_dict, array_length=174):
@@ -193,9 +246,25 @@ def split_psm_list_broken(psm_list: List[Psm], num_splits: int = 5) -> List[List
 
     return splits
 
+def split_psm_list(psm_list: List[Psm], num_splits: int = 5, seed: None| int = None, key_maker: Callable = peptide_key_maker) -> List[List[Psm]]:
+    """
+    Split PSMs into multiple splits.
 
+    Args:
+        psm_list: List of PeptideSpectrumMatch objects
+        num_splits: Number of splits
+        seed: Optional seed for reproducibility
+        key_maker: Callable function to create keys for grouping PSMs
+
+    Returns:
+        List[List[PeptideSpectrumMatch]]: List of splits
+
+    """
+    return split_into_chunks(psm_list, num_splits, seed=seed, key_maker=key_maker)
+
+"""
 def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
-    """ Split PSMs into multiple splits.
+     Split PSMs into multiple splits.
 
     Args:
         psm_list: List of PeptideSpectrumMatch objects
@@ -203,7 +272,6 @@ def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
 
     Returns:
         List[List[PeptideSpectrumMatch]]: List of splits
-    """
 
     # floor division by num_splits
     split_size = len(psm_list) // num_splits
@@ -221,7 +289,7 @@ def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
         start_index = end_index
 
     return splits
-
+"""
 
 def transform_psm_to_mokapot_pin(psm_df, seq_modified: bool = False):
     """ Transform a PSM DataFrame to a mokapot PIN DataFrame.
