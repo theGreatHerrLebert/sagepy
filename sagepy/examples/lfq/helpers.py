@@ -80,6 +80,8 @@ def process_timstof_datasets(
             ) for spec in precursor_frames
         ]
 
+        del precursor_frames
+
         # Extract and summarize PASEF fragments
         fragments = handle.get_pasef_fragments(num_threads=num_threads)
         fragments = fragments.groupby('precursor_id').agg({

@@ -1,14 +1,64 @@
 import numpy as np
+import random
 import pandas as pd
-
-import scipy.stats
 
 from numpy.typing import NDArray
 from typing import Optional, Tuple, List
 
 from sagepy.core.scoring import Psm
-from sagepy.qfdr.tdc import target_decoy_competition_pandas
 from sagepy.utility import psm_collection_to_pandas
+
+from collections import defaultdict
+from typing import Callable
+
+peptide_key_maker = lambda psm: (psm.sequence,)
+ion_key_maker = lambda psm: (psm.sequence, psm.charge)
+
+
+def assign_random_groups(group_count, number_of_assignments, seed=None):
+    """
+    Assign random groups to a number of assignments.
+    Args:
+        group_count: int, number of groups to assign to
+        number_of_assignments: int, number of assignments to make
+        seed: None | int, random seed for reproducibility
+
+    Returns:
+        list: a list of group assignments, where each assignment is an integer in the range [0, group_count - 1]
+    """
+    if seed is not None:
+        random.seed(seed)
+    return [random.randint(0, group_count - 1) for _ in range(number_of_assignments)]
+
+
+def split_into_chunks(
+        psms: list,
+        splits_count: int = 3,
+        key_maker: Callable = peptide_key_maker,
+        seed: None | int = None,
+) -> list[list]:
+    """
+    Split a list of PSMs into multiple chunks based on a key maker function.
+    Args:
+        psms: list of Psm objects
+        splits_count: int, number of splits to create
+        key_maker: Callable, a function that takes a Psm object and returns a key for grouping
+        seed: None | int, random seed for reproducibility
+
+    Returns:
+        list[list]: a list of lists, where each inner list contains Psm objects that share the same key
+    """
+    grouped_psms = defaultdict(list)
+    for psm in psms:
+        grouped_psms[key_maker(psm)].append(psm)
+
+    split_assignments = assign_random_groups(splits_count, len(grouped_psms), seed=seed)
+
+    splits = [[] for _ in range(splits_count)]
+    for split_assignment, (group, grouped_psms) in zip(split_assignments, grouped_psms.items()):
+        splits[split_assignment].extend(grouped_psms)
+
+    return splits
 
 
 def dict_to_dense_array(peak_dict, array_length=174):
@@ -104,11 +154,12 @@ def get_features(
 
 def generate_training_data(
         psm_list: List[Psm],
-        method: str = "psm",
+        method: str = "peptide_q",
         q_max: float = 0.01,
         balance: bool = True,
         replace_nan: bool = True,
         num_threads: int = 16,
+        **kwargs
 ) -> Tuple[NDArray, NDArray]:
     """ Generate training data.
     Args:
@@ -125,23 +176,21 @@ def generate_training_data(
     # create pandas table from psms
     PSM_pandas = psm_collection_to_pandas(psm_list, num_threads=num_threads)
 
-    # calculate q-values to get inital "good" hits
-    PSM_q = target_decoy_competition_pandas(PSM_pandas, method=method)
-    PSM_pandas = PSM_pandas.drop(columns=["hyperscore"])
+    if method == "spectrum_q":
+        TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.spectrum_q <= q_max) & (PSM_pandas["rank"] == 1)]
+    elif method == "peptide_q":
+        TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas.peptide_q <= q_max) & (PSM_pandas["rank"] == 1)]
 
-    # merge data with q-values
-    TDC = pd.merge(
-        PSM_q, PSM_pandas,
-        left_on=["spec_idx", "match_idx", "decoy"],
-        right_on=["spec_idx", "match_idx", "decoy"]
-    )
+    elif method == "decoy_quantile":
+        cutoff = PSM_pandas[PSM_pandas.decoy].hyperscore.quantile(1 - q_max)
+        TARGET = PSM_pandas[(PSM_pandas.decoy == False) & (PSM_pandas["rank"] == 1) & (PSM_pandas.hyperscore >= cutoff)]
+    else:
+        raise ValueError(f"Unknown method: {method}. Use 'spectrum_q' or 'peptide_q'.")
 
-    # select best positive examples
-    TARGET = TDC[(TDC.decoy == False) & (TDC.q_value <= q_max)]
     X_target, Y_target = get_features(TARGET, replace_nan=replace_nan)
 
     # select all decoys
-    DECOY = TDC[TDC.decoy]
+    DECOY = PSM_pandas[PSM_pandas.decoy & (PSM_pandas["rank"] == 1)]
     X_decoy, Y_decoy = get_features(DECOY, replace_nan=replace_nan)
 
     # balance the dataset such that the number of target and decoy examples are equal
@@ -158,8 +207,55 @@ def generate_training_data(
     return X_train, Y_train
 
 
+def get_list_index_by_sequence(psms, num_splits: int = 5, seed: int = 35):
+    # Set random seed for reproducibility
+    np.random.seed(seed)
+
+    # Extract unique sequences
+    unique_sequences = list({psm.sequence for psm in psms})
+
+    # Shuffle and split
+    shuffled = np.random.permutation(unique_sequences)
+    split = np.array_split(shuffled, num_splits)
+
+    # Create mapping from sequence -> split index
+    index_dict = {seq: i for i, group in enumerate(split) for seq in group}
+    return index_dict
+
+
+def split_psm_list_broken(psm_list: List[Psm], num_splits: int = 5) -> List[List]:
+    # Get sequence-to-split mapping
+    seq_to_split = get_list_index_by_sequence(psm_list, num_splits)
+
+    # Preallocate split containers
+    splits = [[] for _ in range(num_splits)]
+
+    # Assign PSMs to their respective splits
+    for psm in psm_list:
+        split_idx = seq_to_split[psm.sequence]
+        splits[split_idx].append(psm)
+
+    return splits
+
+def split_psm_list(psm_list: List[Psm], num_splits: int = 5, seed: None| int = None, key_maker: Callable = peptide_key_maker, **kwargs) -> List[List[Psm]]:
+    """
+    Split PSMs into multiple splits.
+
+    Args:
+        psm_list: List of PeptideSpectrumMatch objects
+        num_splits: Number of splits
+        seed: Optional seed for reproducibility
+        key_maker: Callable function to create keys for grouping PSMs
+
+    Returns:
+        List[List[PeptideSpectrumMatch]]: List of splits
+
+    """
+    return split_into_chunks(psm_list, num_splits, seed=seed, key_maker=key_maker)
+
+"""
 def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
-    """ Split PSMs into multiple splits.
+     Split PSMs into multiple splits.
 
     Args:
         psm_list: List of PeptideSpectrumMatch objects
@@ -167,7 +263,6 @@ def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
 
     Returns:
         List[List[PeptideSpectrumMatch]]: List of splits
-    """
 
     # floor division by num_splits
     split_size = len(psm_list) // num_splits
@@ -185,7 +280,7 @@ def split_psm_list(psm_list: List[Psm], num_splits: int = 5) -> List[List[Psm]]:
         start_index = end_index
 
     return splits
-
+"""
 
 def transform_psm_to_mokapot_pin(psm_df, seq_modified: bool = False):
     """ Transform a PSM DataFrame to a mokapot PIN DataFrame.

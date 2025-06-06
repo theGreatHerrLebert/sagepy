@@ -18,6 +18,7 @@ def rescore_psms(
         replace_nan: bool = True,
         score: str = "hyperscore",
         num_threads: int = 16,
+        **kwargs,
 ) -> List[Psm]:
     """ Re-score PSMs using a model (e.g. Random Forest, Gradient Boosting, etc.).
     Args:
@@ -54,13 +55,14 @@ def rescore_psms(
     scaler.fit(X_all)
 
     # split the PSMs into num_splits folds to perform cross-validation
-    splits = split_psm_list(psm_list=psm_list, num_splits=num_splits)
+    splits = split_psm_list(psm_list=psm_list, num_splits=num_splits, **kwargs)
 
     predictions = []
-
+    final_psms = []
     for i in tqdm(range(num_splits), disable=not verbose, desc='Re-scoring PSMs', ncols=100):
 
         target = splits[i]
+        final_psms.extend(target)
         features = []
 
         for j in range(num_splits):
@@ -68,7 +70,7 @@ def rescore_psms(
                 features.extend(splits[j])
 
         # generate training data
-        X_train, Y_train = generate_training_data(features, balance=balance, replace_nan=replace_nan, num_threads=num_threads)
+        X_train, Y_train = generate_training_data(features, balance=balance, replace_nan=replace_nan, num_threads=num_threads, **kwargs)
 
         # get features for target that we want to re-score
         X, _ = get_features(psm_collection_to_pandas(target), replace_nan=replace_nan)
@@ -83,7 +85,7 @@ def rescore_psms(
             predictions.extend(Y_pred[:, 1])  # Use class probabilities (second column for binary classification)
 
     # assign the re-scored values to the PSMs
-    for score, match in zip(predictions, psm_list):
+    for score, match in zip(predictions, final_psms):
         match.re_score = score
 
-    return psm_list
+    return final_psms
