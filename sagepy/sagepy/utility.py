@@ -455,7 +455,10 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
         num_threads (int, optional): The number of threads to use. Defaults to 4.
 
     Returns:
-        pd.DataFrame: The pandas dataframe
+        pd.DataFrame: The pandas dataframe. Includes additional mass error
+        columns ``ppm_error`` (precursor mass error in parts per million) and
+        ``fragment_ppm_error``/``frag_ppm_error`` (fragment mass error). These
+        columns mirror the naming used by the Sage CLI TSV output.
     """
 
     psms = []
@@ -498,6 +501,22 @@ def psm_collection_to_pandas(psm_collection: Union[List[Psm], Dict[str, List[Psm
     PSM_pandas.insert(6, "sequence_decoy", sequence_decoy)
     PSM_pandas.insert(7, "sequence_decoy_modified", sequence_decoy_modified)
     PSM_pandas.insert(8, "proteins", proteins)
+
+    # ---------------------------------------------------------------------
+    # Derive additional mass error columns to mirror Sage CLI TSV output.
+    # ``ppm_error`` represents the precursor mass error in PPM and is
+    # calculated from the experimental and calculated precursor masses.
+    # ``fragment_ppm_error`` and ``frag_ppm_error`` are aliases for the
+    # existing ``average_ppm`` column describing the fragment mass error.
+    # ---------------------------------------------------------------------
+    if {"delta_mass", "calcmass"}.issubset(PSM_pandas.columns):
+        PSM_pandas["ppm_error"] = (
+            PSM_pandas["delta_mass"] / PSM_pandas["calcmass"] * 1_000_000
+        )
+
+    if "average_ppm" in PSM_pandas.columns:
+        PSM_pandas["fragment_ppm_error"] = PSM_pandas["average_ppm"]
+        PSM_pandas["frag_ppm_error"] = PSM_pandas["average_ppm"]
 
     return PSM_pandas
 
