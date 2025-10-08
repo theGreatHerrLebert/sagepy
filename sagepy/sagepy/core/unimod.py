@@ -1,3 +1,4 @@
+import warnings
 from typing import Dict, Union, List
 from sagepy.core.modification import ModificationSpecificity
 
@@ -65,7 +66,17 @@ def unimod_static_mods_to_sage_static_mods(
     sage_raw_dict = {}
 
     for key, value in unimod_static_mods.items():
-        mass = mod_to_mass[value]
+        try:
+            mass = mod_to_mass[value]
+        except KeyError:
+            # check if the value can be parsed as a float
+            try:
+                mass = float(value)
+                warnings.warn(f"Unimod ID {value} for modification {key} not found. "
+                              f"Interpreting as mass value {mass}.", UserWarning)
+            except ValueError:
+                raise KeyError(f"Unimod ID {value} for modification {key} not found.")
+
         sage_raw_dict[key] = mass
 
     return validate_mods(sage_raw_dict)
@@ -100,12 +111,25 @@ def unimod_variable_mods_to_sage_variable_mods(
 
     for key, values in unimod_variable_mods.items():
         for value in values:
-            mass = mod_to_mass[value]
+            try:
+                mass = mod_to_mass[value]
 
-            if key in sage_raw_dict:
-                sage_raw_dict[key].append(mass)
-            else:
-                sage_raw_dict[key] = [mass]
+                if key in sage_raw_dict:
+                    sage_raw_dict[key].append(mass)
+                else:
+                    sage_raw_dict[key] = [mass]
+            except KeyError:
+                # check if the value can be parsed as a float
+                try:
+                    mass = float(value)
+                    warnings.warn(f"Unimod ID {value} for modification {key} not found. "
+                                  f"Interpreting as mass value {mass}.", UserWarning)
+                    if key in sage_raw_dict:
+                        sage_raw_dict[key].append(mass)
+                    else:
+                        sage_raw_dict[key] = [mass]
+                except ValueError:
+                    raise KeyError(f"Unimod ID {value} for modification {key} not found.")
 
     return validate_var_mods(sage_raw_dict)
 
