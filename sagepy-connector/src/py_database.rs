@@ -450,14 +450,12 @@ impl PyParameters {
                     .unwrap_or_else(|| vec![Kind::B, Kind::Y]),
                 min_ion_index,
                 static_mods: static_mods
-                    .extract::<HashMap<PyModificationSpecificity, f32>>()
-                    .unwrap()
+                    .extract::<HashMap<PyModificationSpecificity, f32>>()?
                     .iter()
                     .map(|(k, v)| (k.inner.clone(), *v))
                     .collect(),
                 variable_mods: variable_mods
-                    .extract::<HashMap<PyModificationSpecificity, Vec<f32>>>()
-                    .unwrap()
+                    .extract::<HashMap<PyModificationSpecificity, Vec<f32>>>()?
                     .iter()
                     .map(|(k, v)| (k.inner.clone(), v.clone()))
                     .collect(),
