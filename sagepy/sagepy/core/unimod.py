@@ -65,7 +65,18 @@ def unimod_static_mods_to_sage_static_mods(
     sage_raw_dict = {}
 
     for key, value in unimod_static_mods.items():
-        mass = mod_to_mass[value]
+        try:
+            mass = mod_to_mass[value]
+        except KeyError:
+            # check if the value can be parsed as a float
+            try:
+                mass = float(value)
+                print(f"Unimod ID {value} for static modification {key} not found. "
+                              f"Interpreting as mass shift: {mass}. If this was intentional, be sure to manually map "
+                                f"search results with a custom modification mapping to avoid issues during rescoring.")
+            except ValueError:
+                raise KeyError(f"Unimod ID {value} for modification {key} not found.")
+
         sage_raw_dict[key] = mass
 
     return validate_mods(sage_raw_dict)
@@ -100,12 +111,27 @@ def unimod_variable_mods_to_sage_variable_mods(
 
     for key, values in unimod_variable_mods.items():
         for value in values:
-            mass = mod_to_mass[value]
+            try:
+                mass = mod_to_mass[value]
 
-            if key in sage_raw_dict:
-                sage_raw_dict[key].append(mass)
-            else:
-                sage_raw_dict[key] = [mass]
+                if key in sage_raw_dict:
+                    sage_raw_dict[key].append(mass)
+                else:
+                    sage_raw_dict[key] = [mass]
+
+            except KeyError:
+                # check if the value can be parsed as a float
+                try:
+                    mass = float(value)
+                    print(f"Unimod ID {value} for variable modification {key} not found. "
+                                  f"Interpreting as mass shift: {mass}. If this was intentional, be sure to manually map "
+                                  f"search results with a custom modification mapping to avoid issues during rescoring.")
+                    if key in sage_raw_dict:
+                        sage_raw_dict[key].append(mass)
+                    else:
+                        sage_raw_dict[key] = [mass]
+                except ValueError:
+                    raise KeyError(f"Unimod ID {value} for modification {key} not found.")
 
     return validate_var_mods(sage_raw_dict)
 

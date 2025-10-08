@@ -1,55 +1,72 @@
 use unimod::unimod::{quanzie_mass, quantized_mass_to_unimod};
 use std::collections::HashSet;
 
-/// Convert a Sage sequence and modifications to a Unimod sequence
+/// Convert a Sage sequence and modifications to a Unimod/ProForma-like sequence
 ///
 /// # Arguments
 ///
 /// * `sequence` - A string representing the amino acid sequence
-/// * `modifications` - A vector of floats representing the modifications
+/// * `modifications` - A vector of floats representing the modifications (per-residue delta mass)
 ///
 /// # Returns
 ///
-/// * `String` - A string representing the Unimod sequence
+/// * `String` - A string representing the sequence with UNIMOD or delta-mass annotations
 ///
-pub fn sage_sequence_to_unimod_sequence(sequence: String, modifications: &Vec<f32>, expected_modifications: &HashSet<String>) -> String {
+pub fn sage_sequence_to_unimod_sequence(
+    sequence: String,
+    modifications: &Vec<f32>,
+    expected_modifications: &HashSet<String>,
+) -> String {
+    assert_eq!(
+        sequence.len(),
+        modifications.len(),
+        "Sequence and modifications must be the same length"
+    );
 
-    assert_eq!(sequence.len(), modifications.len(), "Sequence and modifications must be the same length");
-
-    // go over each char and check if modification is present (not 0.0) and possibly convert to unimod
     let mut unimod_sequence = String::new();
     let unimod_modifications_qunatized = quantized_mass_to_unimod();
-    let empty_vec = Vec::new();
+    let empty_vec: Vec<&str> = Vec::new();
 
     for (idx, aa) in sequence.chars().enumerate() {
-
-        // add amino acid to the unimod sequence
         unimod_sequence.push(aa);
 
-        // check if the modification is nonzero, need to translate to unimod
-        if modifications[idx] != 0.0 {
+        let mass_shift = modifications[idx];
+        if mass_shift != 0.0 {
+            // quantize mass to lookup bucket
+            let quantized_mass = quanzie_mass(mass_shift);
 
-            // quantize the mass from nonzero modification
-            let quantized_mass = quanzie_mass(modifications[idx]);
+            // candidate UNIMOD strings (likely like "[UNIMOD:5]")
+            let candidates = unimod_modifications_qunatized
+                .get(&quantized_mass)
+                .unwrap_or(&empty_vec);
 
-            // find the candidate modifications for the quantized mass
-            let modifications = unimod_modifications_qunatized.get(&quantized_mass).unwrap_or(&empty_vec);
+            // collect all candidates that are in expected_modifications, stripping outer brackets
+            let mut matching: Vec<String> = candidates
+                .iter()
+                .filter(|m| expected_modifications.contains(&m.to_string()))
+                .map(|m| {
+                    let s = m.to_string();
+                    s.trim_start_matches('[')
+                        .trim_end_matches(']')
+                        .to_string()
+                })
+                .collect();
 
-            let mut found = false;
+            if !matching.is_empty() {
+                // stable output
+                matching.sort_unstable();
 
-            // check if the expected modification is in the candidate modifications
-            for modification in modifications {
-                if expected_modifications.contains(&modification.to_string()) {
-                    unimod_sequence.push_str(modification);
-                    found = true;
-                }
-            }
-
-            // if the expected modification is not found, add a placeholder
-            if !found {
-                unimod_sequence.push_str("[UNIMOD:?]");
+                unimod_sequence.push('[');
+                unimod_sequence.push_str(&matching.join("|"));
+                unimod_sequence.push(']');
+            } else {
+                // unknown → print delta mass with fixed precision
+                unimod_sequence.push('[');
+                unimod_sequence.push_str(&format!("{:+.5}", mass_shift));
+                unimod_sequence.push(']');
             }
         }
     }
+
     unimod_sequence
 }
