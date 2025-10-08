@@ -71,7 +71,7 @@ def unimod_static_mods_to_sage_static_mods(
             # check if the value can be parsed as a float
             try:
                 mass = float(value)
-                print(f"Unimod ID {value} for modification {key} not found. "
+                print(f"Unimod ID {value} for static modification {key} not found. "
                               f"Interpreting as mass shift: {mass}. If this was intentional, be sure to manually map "
                                 f"search results with a custom modification mapping to avoid issues during rescoring.")
             except ValueError:
@@ -123,7 +123,7 @@ def unimod_variable_mods_to_sage_variable_mods(
                 # check if the value can be parsed as a float
                 try:
                     mass = float(value)
-                    print(f"Unimod ID {value} for modification {key} not found. "
+                    print(f"Unimod ID {value} for variable modification {key} not found. "
                                   f"Interpreting as mass shift: {mass}. If this was intentional, be sure to manually map "
                                   f"search results with a custom modification mapping to avoid issues during rescoring.")
                     if key in sage_raw_dict:
