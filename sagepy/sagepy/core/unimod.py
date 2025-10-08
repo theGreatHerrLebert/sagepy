@@ -72,7 +72,7 @@ def unimod_static_mods_to_sage_static_mods(
             try:
                 mass = float(value)
                 print(f"Unimod ID {value} for modification {key} not found. "
-                              f"Interpreting as mass value {mass}. If this was intentional, be sure to manually map "
+                              f"Interpreting as mass shift: {mass}. If this was intentional, be sure to manually map "
                                 f"search results with a custom modification mapping to avoid issues during rescoring.")
             except ValueError:
                 raise KeyError(f"Unimod ID {value} for modification {key} not found.")
@@ -124,7 +124,7 @@ def unimod_variable_mods_to_sage_variable_mods(
                 try:
                     mass = float(value)
                     print(f"Unimod ID {value} for modification {key} not found. "
-                                  f"Interpreting as mass value {mass}. If this was intentional, be sure to manually map "
+                                  f"Interpreting as mass shift: {mass}. If this was intentional, be sure to manually map "
                                   f"search results with a custom modification mapping to avoid issues during rescoring.")
                     if key in sage_raw_dict:
                         sage_raw_dict[key].append(mass)
