@@ -5,6 +5,7 @@ use qfdrust::psm::Psm;
 use crate::utilities::sage_sequence_to_unimod_sequence;
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
+use sage_core::database::IndexedDatabase;
 use sage_core::ion_series::Kind;
 
 use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
@@ -860,7 +861,7 @@ impl PyScorer {
             .map(|f| PyFeature { inner: f })
             .collect()
     }
-
+    
     pub fn score_collection(
         &self,
         db: &PyIndexedDatabase,
@@ -1275,7 +1276,7 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMa
     merged_map
 }
 
-fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, Vec<PyPsm>> {
+pub(crate) fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, Vec<PyPsm>> {
     // Parallelize the processing of the BTreeMap entries
     let new_map: BTreeMap<String, Vec<PyPsm>> = psm_map
         .into_par_iter() // Parallel iterator over the map entries
@@ -1379,6 +1380,26 @@ pub fn peptide_spectrum_match_list_to_intensity_feature_matrix_parallel(
             peptide_spectrum_match_to_feature_vector(psm, epsilon, reduce_matched)
         }).collect()
     })
+}
+
+pub(crate) fn make_sage_scorer<'a>(scorer: &PyScorer, db: &'a IndexedDatabase) -> Scorer<'a> { 
+    Scorer {
+        db,
+        precursor_tol: scorer.precursor_tolerance.inner.clone(),
+        fragment_tol: scorer.fragment_tolerance.inner.clone(),
+        min_matched_peaks: scorer.min_matched_peaks,
+        min_isotope_err: scorer.min_isotope_err,
+        max_isotope_err: scorer.max_isotope_err,
+        min_precursor_charge: scorer.min_precursor_charge,
+        max_precursor_charge: scorer.max_precursor_charge,
+        max_fragment_charge: scorer.max_fragment_charge,
+        chimera: scorer.chimera,
+        report_psms: scorer.report_psms,
+        wide_window: scorer.wide_window,
+        annotate_matches: scorer.annotate_matches,
+        override_precursor_charge: scorer.override_precursor_charge,
+        score_type: scorer.score_type.clone().map(|s| s.inner).unwrap_or(SageHyperScore),
+    }
 }
 
 #[pymodule]

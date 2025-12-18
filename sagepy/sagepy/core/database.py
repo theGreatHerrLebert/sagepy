@@ -218,6 +218,32 @@ class SageSearchConfiguration:
         instance.__py_parameter_ptr = parameters
         return instance
 
+    def prefilter_build_and_search_psm(
+            self,
+            spectra: List["ProcessedSpectrum"],  # whatever your Python class is
+            scorer_cfg: "Scorer",  # your Python scorer wrapper
+            chunk_size: int,
+            low_memory: bool,
+            num_threads: int,
+            max_hits: int,
+    ) -> Tuple["IndexedDatabase", Dict[str, List["Psm"]], int]:
+        py_db, py_psm_map, num_kept = self.__py_parameter_ptr.prefilter_build_and_search_psm(
+            [s.get_py_ptr() for s in spectra],
+            scorer_cfg.get_py_ptr(),
+            chunk_size,
+            low_memory,
+            num_threads,
+            max_hits,
+        )
+
+        db = IndexedDatabase.from_py_indexed_database(py_db)
+
+        # py_psm_map is dict[str, list[PyPsm]] already
+        # wrap PyPsm -> your Python Psm wrapper if you have one; otherwise return raw PyPsm
+        psm_map = {k: [v for v in psms] for k, psms in py_psm_map.items()}
+
+        return db, psm_map, num_kept
+
     def get_py_ptr(self):
         return self.__py_parameter_ptr
 

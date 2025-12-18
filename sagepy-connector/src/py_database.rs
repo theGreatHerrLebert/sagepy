@@ -14,6 +14,16 @@ use sage_core::database::{
 };
 use sage_core::fasta::Fasta;
 use sage_core::ion_series::Kind;
+use sage_core::peptide::Peptide;
+use sage_core::scoring::{Feature, Scorer};
+use crate::py_scoring::{make_sage_scorer, remove_duplicates, PyPsm, PyScorer};
+use crate::py_spectrum::PyProcessedSpectrum;
+
+use std::collections::BTreeMap;
+use qfdrust::psm::Psm;
+use rayon::prelude::*;
+use rayon::ThreadPool;
+use crate::utilities::sage_sequence_to_unimod_sequence;
 
 #[pyclass]
 #[derive(Clone)]
@@ -580,7 +590,218 @@ impl PyParameters {
     pub fn fasta(&self) -> String {
         self.inner.fasta.clone()
     }
+
+    pub fn prefilter_build_and_search_psm(
+        &self,
+        py: Python,
+        spectra: Vec<PyProcessedSpectrum>,
+        scorer_cfg: &PyScorer,
+        chunk_size: usize,
+        low_memory: bool,
+        num_threads: usize,
+        max_hits: usize,
+    ) -> PyResult<(PyIndexedDatabase, BTreeMap<String, Vec<PyPsm>>, usize)> {
+        py.allow_threads(|| -> PyResult<(PyIndexedDatabase, BTreeMap<String, Vec<PyPsm>>, usize)> {
+            use rayon::prelude::*;
+            use rayon::ThreadPoolBuilder;
+            use std::sync::atomic::{AtomicBool, Ordering};
+
+            // 0) Parse FASTA once
+            let fasta = Fasta::parse(
+                self.inner.fasta.clone(),
+                self.inner.decoy_tag.clone(),
+                self.inner.generate_decoys,
+            );
+
+            // 1) Thread pool
+            let pool = ThreadPoolBuilder::new()
+                .num_threads(num_threads)
+                .build()
+                .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+
+            // 2) Prefilter peptides
+            let params = self.inner.clone();
+            let mut kept_all: Vec<Peptide> = Vec::new();
+
+            for fasta_chunk in fasta.iter_chunks(chunk_size) {
+                let mut db = params.clone().build(fasta_chunk);
+
+                // one AtomicBool per peptide in this chunk
+                let keep: Vec<AtomicBool> = (0..db.peptides.len())
+                    .map(|_| AtomicBool::new(false))
+                    .collect();
+
+                // scorer borrows chunk-db
+                let sage_scorer = make_sage_scorer(scorer_cfg, &db);
+
+                pool.install(|| {
+                    spectra
+                        .par_iter()
+                        .filter(|s| s.inner.level == 2)
+                        .for_each(|s| {
+                            let _ = sage_scorer.quick_score(&s.inner, low_memory, keep.as_slice());
+                        });
+                });
+
+                // drain kept peptides
+                let kept = db
+                    .peptides
+                    .drain(..)
+                    .enumerate()
+                    .filter_map(|(ix, pep)| {
+                        keep[ix].load(Ordering::Relaxed).then_some(pep)
+                    })
+                    .collect::<Vec<_>>();
+
+                kept_all.extend(kept);
+            }
+
+            Parameters::reorder_peptides(&mut kept_all);
+
+            let num_kept_peptides = kept_all.len();
+
+            // 3) Build final DB once (moved out at end)
+            let final_db = params.build_from_peptides(kept_all);
+
+            // 4) Build PSM map using wrapper spectra (so CE is available)
+            let psm_map: BTreeMap<String, Vec<PyPsm>> = build_psm_map_from_py_spectra(
+                &final_db,
+                scorer_cfg,
+                spectra.as_slice(),
+                &pool,
+                max_hits,
+            );
+
+            Ok((PyIndexedDatabase { inner: final_db }, psm_map, num_kept_peptides))
+        })
+    }
 }
+
+pub(crate) fn build_psm_map_from_py_spectra(
+    db: &IndexedDatabase,
+    scorer_cfg: &PyScorer,
+    spectra: &[PyProcessedSpectrum],
+    pool: &ThreadPool,
+    max_hits: usize,
+) -> BTreeMap<String, Vec<PyPsm>> {
+    // scorer borrows `db` (no clone)
+    let scorer: Scorer<'_> = make_sage_scorer(scorer_cfg, db);
+
+    // 1) Score all spectra (parallel)
+    let features_per_spec: Vec<Vec<Feature>> = pool.install(|| {
+        spectra
+            .par_iter()
+            .map(|s| scorer.score(&s.inner))
+            .collect()
+    });
+
+    // 2) Build raw PSM map (parallel zip)
+    let psm_map_raw: BTreeMap<String, Vec<Psm>> = pool.install(|| {
+        spectra
+            .par_iter()
+            .zip(features_per_spec.into_par_iter())
+            .map(|(spectrum, features)| {
+                // MS1 intensity from inner (as in your code)
+                let intensity_ms1: f32 = spectrum
+                    .inner
+                    .precursors
+                    .iter()
+                    .map(|p| p.intensity.unwrap_or(0.0))
+                    .sum();
+
+                // CE from OUTER wrapper (your correction)
+                let collision_energy: f32 = spectrum
+                    .collision_energies
+                    .first()
+                    .copied()
+                    .flatten()
+                    .unwrap_or(0.0f32);
+
+                let mut psms: Vec<Psm> = Vec::with_capacity(features.len());
+
+                for feature in &features {
+                    let peptide = db[feature.peptide_idx].clone();
+
+                    let intensity_ms2: f32 = feature.ms2_intensity;
+
+                    let proteins: Vec<String> = peptide
+                        .proteins
+                        .iter()
+                        .map(|arc| arc.as_ref().to_string())
+                        .collect();
+
+                    let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
+                    let sequence_with_mods = sage_sequence_to_unimod_sequence(
+                        sequence.clone(),
+                        &peptide.modifications,
+                        &scorer_cfg.expected_mods,
+                    );
+
+                    // avoid calling reverse(true) twice
+                    let decoy = peptide.reverse(true);
+                    let sequence_decoy = std::str::from_utf8(&decoy.sequence).unwrap().to_string();
+                    let sequence_decoy_with_mods = sage_sequence_to_unimod_sequence(
+                        sequence_decoy.clone(),
+                        &decoy.modifications,
+                        &scorer_cfg.expected_mods,
+                    );
+
+                    let psm = Psm::new(
+                        spectrum.inner.id.clone(),
+                        feature.peptide_idx.0,
+                        proteins,
+                        feature.clone(),
+                        Some(sequence),
+                        Some(sequence_with_mods),
+                        Some(sequence_decoy),
+                        Some(sequence_decoy_with_mods),
+                        Some(intensity_ms1),
+                        Some(intensity_ms2),
+                        Some(collision_energy),
+                        None, // collision_energy_calibrated
+                        None, // retention_time_projected
+                        None, // prosit_predicted_intensities
+                        None, // re_score
+                    );
+
+                    psms.push(psm);
+                }
+
+                (spectrum.inner.id.clone(), psms)
+            })
+            .collect()
+    });
+
+    // 3) Wrap into PyPsm
+    let mut out: BTreeMap<String, Vec<PyPsm>> = BTreeMap::new();
+    for (spec_id, psms) in psm_map_raw {
+        out.insert(spec_id, psms.into_iter().map(|p| PyPsm { inner: p }).collect());
+    }
+
+    // 4) Sort + clip before de-dup (optional)
+    for (_, psms) in out.iter_mut() {
+        // descending hyperscore is what your remove_duplicates assumes anyway
+        psms.sort_by(|a, b| {
+            b.inner
+                .sage_feature
+                .hyperscore
+                .partial_cmp(&a.inner.sage_feature.hyperscore)
+                .unwrap()
+                .then_with(|| a.inner.peptide_idx.partial_cmp(&b.inner.peptide_idx).unwrap())
+                .then_with(|| a.inner.sage_feature.label.partial_cmp(&b.inner.sage_feature.label).unwrap())
+        });
+        psms.truncate(max_hits);
+    }
+
+    // 5) De-dup + final clip
+    let mut out = remove_duplicates(out);
+    for (_, psms) in out.iter_mut() {
+        psms.truncate(max_hits);
+    }
+
+    out
+}
+
 
 #[pymodule]
 pub fn py_database(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
