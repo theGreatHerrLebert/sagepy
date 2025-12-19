@@ -549,6 +549,9 @@ class Scorer:
         else:
             return self.__scorer_ptr.max_fragment_charge
 
+    def get_py_ptr(self):
+        return self.__scorer_ptr
+
     def __repr__(self):
         return (f"Scorer({self.precursor_tolerance}, {self.fragment_tolerance}, {self.min_matched_peaks}, "
                 f"{self.min_isotope_err}, {self.max_isotope_err}, {self.min_precursor_charge}, "
