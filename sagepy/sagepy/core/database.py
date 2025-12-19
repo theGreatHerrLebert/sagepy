@@ -238,6 +238,9 @@ class SageSearchConfiguration:
                 Returns:
                     Tuple[IndexedDatabase, Dict[str, List[Psm]], int]: The indexed database,
         """
+
+        from sagepy.core.scoring import Psm
+
         py_db, py_psm_map, num_kept = self.__py_parameter_ptr.prefilter_build_and_search_psm(
             [s.get_py_ptr() for s in spectra],
             scorer_cfg.get_py_ptr(),
@@ -249,9 +252,10 @@ class SageSearchConfiguration:
 
         db = IndexedDatabase.from_py_indexed_database(py_db)
 
-        # py_psm_map is dict[str, list[PyPsm]] already
-        # wrap PyPsm -> your Python Psm wrapper if you have one; otherwise return raw PyPsm
-        psm_map = {k: [v for v in psms] for k, psms in py_psm_map.items()}
+        psm_map: Dict[str, List[Psm]] = {
+            key: [Psm.from_py_ptr(psm) for psm in psms]
+            for key, psms in py_psm_map.items()
+        }
 
         return db, psm_map, num_kept
 
