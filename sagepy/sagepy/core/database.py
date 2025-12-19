@@ -227,6 +227,17 @@ class SageSearchConfiguration:
             num_threads: int,
             max_hits: int,
     ) -> Tuple["IndexedDatabase", Dict[str, List["Psm"]], int]:
+        """Prefilter, build indexed database, and search PSMs
+                Args:
+                    spectra (List[ProcessedSpectrum]): The spectra to search
+                    scorer_cfg (Scorer): The scorer configuration
+                    chunk_size (int): The chunk size for pre-filtering
+                    low_memory (bool): Whether to use low memory for pre-filtering
+                    num_threads (int): The number of threads to use
+                    max_hits (int): The maximum number of hits to return per spectrum
+                Returns:
+                    Tuple[IndexedDatabase, Dict[str, List[Psm]], int]: The indexed database,
+        """
         py_db, py_psm_map, num_kept = self.__py_parameter_ptr.prefilter_build_and_search_psm(
             [s.get_py_ptr() for s in spectra],
             scorer_cfg.get_py_ptr(),
