@@ -80,7 +80,6 @@ def _split_psm_list_stratified_groups(
 # ----------------------------
 # Main rescoring function
 # ----------------------------
-
 def rescore_psms(
     psm_collection: Union[List[Psm], Dict[str, List[Psm]]],
     model,
