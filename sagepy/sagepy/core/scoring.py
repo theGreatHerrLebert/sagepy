@@ -438,8 +438,8 @@ class Scorer:
             wide_window: bool = False,
             annotate_matches: bool = True,
             override_precursor_charge: bool = False,
-            score_type: ScoreType = ScoreType("openmshyperscore"),
-            max_fragment_charge: Optional[int] = 3,
+            score_type: ScoreType = ScoreType("hyperscore"),
+            max_fragment_charge: Optional[int] = 2,
             variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
             static_mods: Union[Dict[str, str], Dict[str, int]] = None,
     ):
@@ -451,7 +451,7 @@ class Scorer:
             min_matched_peaks (int, optional): The minimum number of matched peaks. Defaults to 6.
             min_isotope_err (int, optional): The minimum isotope error. Defaults to -1.
             max_isotope_err (int, optional): The maximum isotope error. Defaults to 3.
-            min_precursor_charge (int, optional): The minimum precursor charge. Defaults to 2.
+            min_precursor_charge (int, optional): The minimum precursor charge. Defaults to 1.
             max_precursor_charge (int, optional): The maximum precursor charge. Defaults to 4.
             chimera (bool, optional): Should chimera be used. Defaults to False.
             report_psms (int, optional): The number of PSMs to report. Defaults to 1.
@@ -459,7 +459,7 @@ class Scorer:
             annotate_matches (bool, optional): Should matches be annotated. Defaults to True.
             override_precursor_charge (bool, optional): Should the precursor charge be overridden. Defaults to False.
             score_type (ScoreType, optional): The score type. Defaults to ScoreType("openms").
-            max_fragment_charge (Optional[int], optional): The maximum fragment charge. Defaults to 1.
+            max_fragment_charge (Optional[int], optional): The maximum fragment charge. Defaults to 2.
         """
 
         if variable_mods is not None:
