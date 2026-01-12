@@ -124,22 +124,22 @@ impl PyPsm {
 
     #[getter]
     pub fn sequence(&self) -> Option<String> {
-        Some(self.inner.clone().sequence?.sequence)
+        self.inner.sequence.as_ref().map(|s| s.sequence.clone())
     }
 
     #[getter]
     pub fn sequence_modified(&self) -> Option<String> {
-        Some(self.inner.clone().sequence_modified?.sequence)
+        self.inner.sequence_modified.as_ref().map(|s| s.sequence.clone())
     }
 
     #[getter]
     pub fn sequence_decoy(&self) -> Option<String> {
-        Some(self.inner.clone().sequence_decoy?.sequence)
+        self.inner.sequence_decoy.as_ref().map(|s| s.sequence.clone())
     }
 
     #[getter]
     pub fn sequence_decoy_modified(&self) -> Option<String> {
-        Some(self.inner.clone().sequence_decoy_modified?.sequence)
+        self.inner.sequence_decoy_modified.as_ref().map(|s| s.sequence.clone())
     }
 
     #[getter]
@@ -327,7 +327,7 @@ impl PyPsm {
 
     #[getter]
     pub fn get_spectral_angle_similarity(&self) -> f32 {
-        self.inner.fragment_intensity_prediction.clone().unwrap().spectral_angle_similarity(0.001, false)
+        self.inner.fragment_intensity_prediction.as_ref().unwrap().spectral_angle_similarity(0.001, false)
     }
 
     pub fn get_fragment_intensity_prediction(&self) -> PyFragmentIntensityPrediction {
@@ -362,7 +362,7 @@ impl PyPsm {
 }
 
 #[pyclass]
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct PyScoreType {
     pub inner: ScoreType,
 }
@@ -796,6 +796,29 @@ pub struct PyScorer {
     pub score_type: Option<PyScoreType>,
 }
 
+impl PyScorer {
+    /// Create a Scorer instance borrowing the database
+    fn make_scorer<'a>(&self, db: &'a PyIndexedDatabase) -> Scorer<'a> {
+        Scorer {
+            db: &db.inner,
+            precursor_tol: self.precursor_tolerance.inner,
+            fragment_tol: self.fragment_tolerance.inner,
+            min_matched_peaks: self.min_matched_peaks,
+            min_isotope_err: self.min_isotope_err,
+            max_isotope_err: self.max_isotope_err,
+            min_precursor_charge: self.min_precursor_charge,
+            max_precursor_charge: self.max_precursor_charge,
+            max_fragment_charge: self.max_fragment_charge,
+            chimera: self.chimera,
+            report_psms: self.report_psms,
+            wide_window: self.wide_window,
+            annotate_matches: self.annotate_matches,
+            override_precursor_charge: self.override_precursor_charge,
+            score_type: self.score_type.as_ref().expect("score_type must be set").inner,
+        }
+    }
+}
+
 #[pymethods]
 impl PyScorer {
     #[new]
@@ -837,25 +860,8 @@ impl PyScorer {
     }
 
     pub fn score(&self, db: &PyIndexedDatabase, spectrum: &PyProcessedSpectrum) -> Vec<PyFeature> {
-        let scorer = Scorer {
-            db: &db.inner,
-            precursor_tol: self.precursor_tolerance.inner.clone(),
-            fragment_tol: self.fragment_tolerance.inner.clone(),
-            min_matched_peaks: self.min_matched_peaks,
-            min_isotope_err: self.min_isotope_err,
-            max_isotope_err: self.max_isotope_err,
-            min_precursor_charge: self.min_precursor_charge,
-            max_precursor_charge: self.max_precursor_charge,
-            max_fragment_charge: self.max_fragment_charge,
-            chimera: self.chimera,
-            report_psms: self.report_psms,
-            wide_window: self.wide_window,
-            annotate_matches: self.annotate_matches,
-            override_precursor_charge: self.override_precursor_charge,
-            score_type: self.score_type.clone().unwrap().inner,
-        };
-        let features = scorer.score(&spectrum.inner);
-        features
+        let scorer = self.make_scorer(db);
+        scorer.score(&spectrum.inner)
             .into_iter()
             .map(|f| PyFeature { inner: f })
             .collect()
@@ -867,43 +873,23 @@ impl PyScorer {
         spectra: Vec<PyProcessedSpectrum>,
         num_threads: usize,
     ) -> Vec<Vec<PyFeature>> {
-        let scorer = Scorer {
-            db: &db.inner,
-            precursor_tol: self.precursor_tolerance.inner.clone(),
-            fragment_tol: self.fragment_tolerance.inner.clone(),
-            min_matched_peaks: self.min_matched_peaks,
-            min_isotope_err: self.min_isotope_err,
-            max_isotope_err: self.max_isotope_err,
-            min_precursor_charge: self.min_precursor_charge,
-            max_precursor_charge: self.max_precursor_charge,
-            max_fragment_charge: self.max_fragment_charge,
-            chimera: self.chimera,
-            report_psms: self.report_psms,
-            wide_window: self.wide_window,
-            annotate_matches: self.annotate_matches,
-            override_precursor_charge: self.override_precursor_charge,
-            score_type: self.score_type.clone().unwrap().inner,
-        };
-        // Configure the global thread pool to the desired number of threads
+        let scorer = self.make_scorer(db);
         let pool = ThreadPoolBuilder::new()
             .num_threads(num_threads)
             .build()
             .unwrap();
 
-        let result = pool.install(|| {
+        pool.install(|| {
             spectra
                 .par_iter()
                 .map(|spectrum| {
-                    let features = scorer.score(&spectrum.inner);
-                    features
+                    scorer.score(&spectrum.inner)
                         .into_iter()
                         .map(|f| PyFeature { inner: f })
                         .collect()
                 })
                 .collect()
-        });
-
-        result
+        })
     }
     
     pub fn score_candidates(
@@ -912,23 +898,7 @@ impl PyScorer {
         spectra: Vec<PyProcessedSpectrum>,
         num_threads: usize,
     ) -> BTreeMap<String, Vec<PyPsm>> {
-        let scorer = Scorer {
-            db: &db.inner,
-            precursor_tol: self.precursor_tolerance.inner.clone(),
-            fragment_tol: self.fragment_tolerance.inner.clone(),
-            min_matched_peaks: self.min_matched_peaks,
-            min_isotope_err: self.min_isotope_err,
-            max_isotope_err: self.max_isotope_err,
-            min_precursor_charge: self.min_precursor_charge,
-            max_precursor_charge: self.max_precursor_charge,
-            max_fragment_charge: self.max_fragment_charge,
-            chimera: self.chimera,
-            report_psms: self.report_psms,
-            wide_window: self.wide_window,
-            annotate_matches: self.annotate_matches,
-            override_precursor_charge: self.override_precursor_charge,
-            score_type: self.score_type.clone().unwrap().inner,
-        };
+        let scorer = self.make_scorer(db);
 
         let pool = ThreadPoolBuilder::new()
             .num_threads(num_threads)
@@ -947,13 +917,11 @@ impl PyScorer {
             spectra.par_iter().zip(result.into_par_iter())
                 
                 .map(|(spectrum, features)| {
-                    
-                    let mut psms = Vec::new();
-                    
+                    let mut psms = Vec::with_capacity(features.len());
+
                     for feature in &features {
-                        
                         let peptide = db.inner[feature.peptide_idx].clone();
-                        
+
                         let intensity_ms1: f32 = spectrum.inner.precursors.iter().map(|p| p.intensity.unwrap_or(0.0)).sum();
                         let intensity_ms2: f32 = feature.ms2_intensity;
 
@@ -962,14 +930,15 @@ impl PyScorer {
                         let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
                         let sequence_with_mods = sage_sequence_to_unimod_sequence(sequence.clone(), &peptide.modifications, &self.expected_mods);
 
-                        let sequence_decoy = std::str::from_utf8(&peptide.reverse(true).sequence).unwrap().to_string();
-                        let sequence_decoy_with_mods = sage_sequence_to_unimod_sequence(sequence_decoy.clone(), &peptide.reverse(true).modifications, &self.expected_mods);
-                        
+                        let peptide_reversed = peptide.reverse(true);
+                        let sequence_decoy = std::str::from_utf8(&peptide_reversed.sequence).unwrap().to_string();
+                        let sequence_decoy_with_mods = sage_sequence_to_unimod_sequence(sequence_decoy.clone(), &peptide_reversed.modifications, &self.expected_mods);
+
                         let collision_energy = spectrum.collision_energies.first().unwrap_or(&None).unwrap_or(0.0f32);
-                        
+
                         let psm = Psm::new(
                             spectrum.inner.id.clone(),
-                            feature.clone().peptide_idx.0,
+                            feature.peptide_idx.0,
                             proteins,
                             feature.clone(),
                             Some(sequence), // sequence
@@ -1016,25 +985,8 @@ impl PyScorer {
         db: &PyIndexedDatabase,
         query: &PyProcessedSpectrum,
     ) -> Vec<PyFeature> {
-        let scorer = Scorer {
-            db: &db.inner,
-            precursor_tol: self.precursor_tolerance.inner.clone(),
-            fragment_tol: self.fragment_tolerance.inner.clone(),
-            min_matched_peaks: self.min_matched_peaks,
-            min_isotope_err: self.min_isotope_err,
-            max_isotope_err: self.max_isotope_err,
-            min_precursor_charge: self.min_precursor_charge,
-            max_precursor_charge: self.max_precursor_charge,
-            max_fragment_charge: self.max_fragment_charge,
-            chimera: self.chimera,
-            report_psms: self.report_psms,
-            wide_window: self.wide_window,
-            annotate_matches: self.annotate_matches,
-            override_precursor_charge: self.override_precursor_charge,
-            score_type: self.score_type.clone().unwrap().inner,
-        };
-        let features = scorer.score_chimera_fast(&query.inner);
-        features
+        let scorer = self.make_scorer(db);
+        scorer.score_chimera_fast(&query.inner)
             .into_iter()
             .map(|f| PyFeature { inner: f })
             .collect()
@@ -1045,25 +997,8 @@ impl PyScorer {
         db: &PyIndexedDatabase,
         query: &PyProcessedSpectrum,
     ) -> Vec<PyFeature> {
-        let scorer = Scorer {
-            db: &db.inner,
-            precursor_tol: self.precursor_tolerance.inner.clone(),
-            fragment_tol: self.fragment_tolerance.inner.clone(),
-            min_matched_peaks: self.min_matched_peaks,
-            min_isotope_err: self.min_isotope_err,
-            max_isotope_err: self.max_isotope_err,
-            min_precursor_charge: self.min_precursor_charge,
-            max_precursor_charge: self.max_precursor_charge,
-            max_fragment_charge: self.max_fragment_charge,
-            chimera: self.chimera,
-            report_psms: self.report_psms,
-            wide_window: self.wide_window,
-            annotate_matches: self.annotate_matches,
-            override_precursor_charge: self.override_precursor_charge,
-            score_type: self.score_type.clone().map(|s| s.inner).unwrap(),
-        };
-        let features = scorer.score_standard(&query.inner);
-        features
+        let scorer = self.make_scorer(db);
+        scorer.score_standard(&query.inner)
             .into_iter()
             .map(|f| PyFeature { inner: f })
             .collect()
@@ -1071,12 +1006,12 @@ impl PyScorer {
 
     #[getter]
     pub fn precursor_tolerance(&self) -> PyTolerance {
-        self.precursor_tolerance.clone()
+        self.precursor_tolerance
     }
 
     #[getter]
     pub fn fragment_tolerance(&self) -> PyTolerance {
-        self.fragment_tolerance.clone()
+        self.fragment_tolerance
     }
 
     #[getter]
@@ -1139,26 +1074,22 @@ pub fn prosit_intensities_to_py_fragments(
     flat_intensities: Vec<f32>,
 ) -> PyFragments {
     let fragments = flat_prosit_array_to_fragments_map(flat_intensities);
+    let half_cap = fragments.len() / 2 + 1;
 
-    let mut predicted_kinds_b: Vec<Kind> = Vec::new();
-    let mut predicted_kinds_y: Vec<Kind> = Vec::new();
+    let mut predicted_kinds_b: Vec<Kind> = Vec::with_capacity(half_cap);
+    let mut predicted_kinds_y: Vec<Kind> = Vec::with_capacity(half_cap);
 
-    let mut predicted_fragment_ordinals_b = Vec::new();
-    let mut predicted_fragment_ordinals_y = Vec::new();
+    let mut predicted_fragment_ordinals_b: Vec<i32> = Vec::with_capacity(half_cap);
+    let mut predicted_fragment_ordinals_y: Vec<i32> = Vec::with_capacity(half_cap);
 
-    let mut predicted_charges_b = Vec::new();
-    let mut predicted_charges_y = Vec::new();
+    let mut predicted_charges_b: Vec<i32> = Vec::with_capacity(half_cap);
+    let mut predicted_charges_y: Vec<i32> = Vec::with_capacity(half_cap);
 
-    let mut predicted_intensities_b = Vec::new();
-    let mut predicted_intensities_y = Vec::new();
+    let mut predicted_intensities_b: Vec<f32> = Vec::with_capacity(half_cap);
+    let mut predicted_intensities_y: Vec<f32> = Vec::with_capacity(half_cap);
 
-    for (key, _) in fragments.iter() {
-
-        let (kind, charge, fragment_ordinal) = key;
-
-        let predicted_intensity = fragments.get(key).unwrap_or(&0.0);
-
-        let kind = match kind {
+    for ((kind_id, charge, fragment_ordinal), intensity) in &fragments {
+        let kind = match kind_id {
             0 => Kind::B,
             1 => Kind::Y,
             _ => panic!("Invalid kind"),
@@ -1168,12 +1099,12 @@ pub fn prosit_intensities_to_py_fragments(
             predicted_kinds_b.push(kind);
             predicted_charges_b.push(*charge);
             predicted_fragment_ordinals_b.push(*fragment_ordinal);
-            predicted_intensities_b.push(*predicted_intensity);
+            predicted_intensities_b.push(*intensity);
         } else {
             predicted_kinds_y.push(kind);
             predicted_charges_y.push(*charge);
             predicted_fragment_ordinals_y.push(*fragment_ordinal);
-            predicted_intensities_y.push(*predicted_intensity);
+            predicted_intensities_y.push(*intensity);
         }
     }
 
@@ -1183,17 +1114,21 @@ pub fn prosit_intensities_to_py_fragments(
     predicted_fragment_ordinals_y.reverse();
     predicted_intensities_y.reverse();
 
-    let fragments = Fragments {
-        charges: predicted_charges_b.iter().chain(predicted_charges_y.iter()).cloned().collect(),
-        kinds: predicted_kinds_b.iter().chain(predicted_kinds_y.iter()).cloned().collect(),
-        fragment_ordinals: predicted_fragment_ordinals_b.iter().chain(predicted_fragment_ordinals_y.iter()).cloned().collect(),
-        intensities: predicted_intensities_b.iter().chain(predicted_intensities_y.iter()).cloned().collect(),
-        mz_calculated: Vec::new(),
-        mz_experimental: Vec::new(),
-    };
+    // Combine b and y fragments efficiently
+    predicted_charges_b.extend(predicted_charges_y);
+    predicted_kinds_b.extend(predicted_kinds_y);
+    predicted_fragment_ordinals_b.extend(predicted_fragment_ordinals_y);
+    predicted_intensities_b.extend(predicted_intensities_y);
 
     PyFragments {
-        inner: fragments
+        inner: Fragments {
+            charges: predicted_charges_b,
+            kinds: predicted_kinds_b,
+            fragment_ordinals: predicted_fragment_ordinals_b,
+            intensities: predicted_intensities_b,
+            mz_calculated: Vec::new(),
+            mz_experimental: Vec::new(),
+        }
     }
 }
 
@@ -1277,15 +1212,15 @@ pub fn merge_psm_maps(left_map: BTreeMap<String, Vec<PyPsm>>, right_map: BTreeMa
 
 fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, Vec<PyPsm>> {
     // Parallelize the processing of the BTreeMap entries
-    let new_map: BTreeMap<String, Vec<PyPsm>> = psm_map
-        .into_par_iter() // Parallel iterator over the map entries
+    psm_map
+        .into_par_iter()
         .map(|(key, psms)| {
-            let mut new_psms: Vec<PyPsm> = Vec::new();
+            let mut new_psms: Vec<PyPsm> = Vec::with_capacity(psms.len());
             let mut target_seen: HashSet<String> = HashSet::new();
             let mut decoy_seen: HashSet<String> = HashSet::new();
 
             // Sort the psms by hyperscore descending
-            for psm in psms.iter().sorted_by(|a, b| {
+            for psm in psms.into_iter().sorted_by(|a, b| {
                 b.inner
                     .sage_feature
                     .hyperscore
@@ -1293,68 +1228,48 @@ fn remove_duplicates(psm_map: BTreeMap<String, Vec<PyPsm>>) -> BTreeMap<String, 
                     .unwrap()
             }) {
                 // Get either the target or decoy sequence
-                let sequence = match psm.inner.sage_feature.label == -1 {
-                    true => psm.inner.sequence_decoy.clone().unwrap().sequence,
-                    false => psm.inner.sequence.clone().unwrap().sequence,
+                let is_decoy = psm.inner.sage_feature.label == -1;
+                let sequence = if is_decoy {
+                    psm.inner.sequence_decoy.as_ref().unwrap().sequence.clone()
+                } else {
+                    psm.inner.sequence.as_ref().unwrap().sequence.clone()
                 };
 
-                if psm.inner.sage_feature.label == -1 {
-                    // Process decoys
-                    if decoy_seen.contains(&sequence) {
-                        let existing_psm = new_psms
-                            .iter()
-                            .find(|p| {
-                                p.inner.sequence_decoy.clone().unwrap().sequence == sequence
-                            })
-                            .unwrap();
-                        let mut existing_proteins = existing_psm.inner.proteins.clone();
+                let seen_set = if is_decoy { &mut decoy_seen } else { &mut target_seen };
+
+                if seen_set.contains(&sequence) {
+                    // Find existing PSM and merge proteins
+                    if let Some(existing_psm) = new_psms.iter_mut().find(|p| {
+                        if is_decoy {
+                            p.inner.sequence_decoy.as_ref().unwrap().sequence == sequence
+                        } else {
+                            p.inner.sequence.as_ref().unwrap().sequence == sequence
+                        }
+                    }) {
                         for protein in &psm.inner.proteins {
-                            if !existing_proteins.contains(protein) {
-                                existing_proteins.push(protein.clone());
+                            if !existing_psm.inner.proteins.contains(protein) {
+                                existing_psm.inner.proteins.push(protein.clone());
                             }
                         }
-                    } else {
-                        decoy_seen.insert(sequence.clone());
-                        new_psms.push(psm.clone());
                     }
                 } else {
-                    // Process targets
-                    if target_seen.contains(&sequence) {
-                        let existing_psm = new_psms
-                            .iter()
-                            .find(|p| p.inner.sequence.clone().unwrap().sequence == sequence)
-                            .unwrap();
-                        let mut existing_proteins = existing_psm.inner.proteins.clone();
-                        for protein in &psm.inner.proteins {
-                            if !existing_proteins.contains(protein) {
-                                existing_proteins.push(protein.clone());
-                            }
-                        }
-                    } else {
-                        target_seen.insert(sequence.clone());
-                        new_psms.push(psm.clone());
-                    }
+                    seen_set.insert(sequence);
+                    new_psms.push(psm);
                 }
             }
 
-            // Sort the new_psms by hyperscore descending and return the result
-            let sorted_psms = new_psms
-                .iter()
-                .sorted_by(|a, b| {
-                    b.inner
-                        .sage_feature
-                        .hyperscore
-                        .partial_cmp(&a.inner.sage_feature.hyperscore)
-                        .unwrap()
-                })
-                .cloned()
-                .collect();
+            // Sort the new_psms by hyperscore descending
+            new_psms.sort_by(|a, b| {
+                b.inner
+                    .sage_feature
+                    .hyperscore
+                    .partial_cmp(&a.inner.sage_feature.hyperscore)
+                    .unwrap()
+            });
 
-            (key, sorted_psms)
+            (key, new_psms)
         })
-        .collect();
-
-    new_map
+        .collect()
 }
 #[pyfunction]
 pub fn peptide_spectrum_match_to_feature_vector(

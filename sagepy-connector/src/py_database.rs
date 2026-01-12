@@ -51,12 +51,12 @@ impl PyIndexedQuery {
 
     #[getter]
     pub fn precursor_tolerance(&self) -> PyTolerance {
-        self.precursor_tolerance.clone()
+        self.precursor_tolerance
     }
 
     #[getter]
     pub fn fragment_tolerance(&self) -> PyTolerance {
-        self.fragment_tolerance.clone()
+        self.fragment_tolerance
     }
 
     #[getter]

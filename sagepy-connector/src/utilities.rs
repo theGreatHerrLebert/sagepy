@@ -70,3 +70,51 @@ pub fn sage_sequence_to_unimod_sequence(
 
     unimod_sequence
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unmodified_sequence() {
+        let sequence = "PEPTIDE".to_string();
+        let modifications = vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let expected_mods = HashSet::new();
+
+        let result = sage_sequence_to_unimod_sequence(sequence, &modifications, &expected_mods);
+        assert_eq!(result, "PEPTIDE");
+    }
+
+    #[test]
+    fn test_unknown_modification_shows_delta_mass() {
+        let sequence = "PEP".to_string();
+        let modifications = vec![0.0, 15.9949, 0.0]; // Oxidation mass
+        let expected_mods = HashSet::new(); // Empty - no expected mods
+
+        let result = sage_sequence_to_unimod_sequence(sequence, &modifications, &expected_mods);
+        // Should show delta mass since no expected mods match
+        assert!(result.starts_with("PE[+"));
+        assert!(result.contains("15.99"));
+    }
+
+    #[test]
+    fn test_known_modification_shows_unimod() {
+        let sequence = "PEP".to_string();
+        let modifications = vec![0.0, 15.9949, 0.0]; // Oxidation mass
+        let mut expected_mods = HashSet::new();
+        expected_mods.insert("[UNIMOD:35]".to_string()); // Oxidation
+
+        let result = sage_sequence_to_unimod_sequence(sequence, &modifications, &expected_mods);
+        assert_eq!(result, "PE[UNIMOD:35]P");
+    }
+
+    #[test]
+    #[should_panic(expected = "Sequence and modifications must be the same length")]
+    fn test_mismatched_lengths_panics() {
+        let sequence = "PEPTIDE".to_string();
+        let modifications = vec![0.0, 0.0]; // Too short
+        let expected_mods = HashSet::new();
+
+        sage_sequence_to_unimod_sequence(sequence, &modifications, &expected_mods);
+    }
+}

@@ -99,7 +99,7 @@ impl PyComposition {
 }
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct PyTolerance {
     pub inner: Tolerance,
 }
@@ -152,7 +152,7 @@ impl PyTolerance {
     }
 
     fn __mul__(&self, rhs: f64) -> PyResult<Self> {
-        let result = self.inner.clone() * rhs as f32;
+        let result = self.inner * rhs as f32;
         Ok(PyTolerance { inner: result })
     }
 }
@@ -167,4 +167,60 @@ pub fn py_mass(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyTolerance>()?;
     m.add_class::<PyComposition>()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tolerance_ppm_bounds() {
+        // Test from sage: Tolerance::Ppm(-10.0, 20.0).bounds(1000.0) == (999.99, 1000.02)
+        let tol = Tolerance::Ppm(-10.0, 20.0);
+        let (lo, hi) = tol.bounds(1000.0);
+        assert!((lo - 999.99).abs() < 0.001);
+        assert!((hi - 1000.02).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_tolerance_ppm_bounds_smaller_mass() {
+        // Test from sage: Tolerance::Ppm(-10.0, 10.0).bounds(487.0) == (486.99513, 487.00487)
+        let tol = Tolerance::Ppm(-10.0, 10.0);
+        let (lo, hi) = tol.bounds(487.0);
+        assert!((lo - 486.99513).abs() < 0.0001);
+        assert!((hi - 487.00487).abs() < 0.0001);
+    }
+
+    #[test]
+    fn test_tolerance_da_bounds() {
+        let tol = Tolerance::Da(-0.5, 0.5);
+        let (lo, hi) = tol.bounds(500.0);
+        assert!((lo - 499.5).abs() < 0.001);
+        assert!((hi - 500.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_tolerance_contains() {
+        let tol = Tolerance::Ppm(-10.0, 10.0);
+        // 1000.0 +/- 10 ppm = 999.99 to 1000.01
+        assert!(tol.contains(1000.0, 1000.005));
+        assert!(tol.contains(1000.0, 999.995));
+        assert!(!tol.contains(1000.0, 1000.02));
+        assert!(!tol.contains(1000.0, 999.97));
+    }
+
+    #[test]
+    fn test_tolerance_copy() {
+        let tol1 = Tolerance::Ppm(-10.0, 10.0);
+        let tol2 = tol1; // Copy
+        assert_eq!(tol1.bounds(1000.0), tol2.bounds(1000.0));
+    }
+
+    #[test]
+    fn test_constants() {
+        assert!(H2O > 18.0 && H2O < 18.02);
+        assert!(PROTON > 1.0 && PROTON < 1.01);
+        assert!(NEUTRON > 1.0 && NEUTRON < 1.01);
+        assert!(NH3 > 17.0 && NH3 < 17.03);
+    }
 }

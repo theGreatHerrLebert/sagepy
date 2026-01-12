@@ -58,6 +58,7 @@ impl PyPeak {
 }
 
 #[pyclass]
+#[derive(Clone, Copy)]
 pub struct PyPeakScoringStrategy {
     pub inner: PeakScoringStrategy,
 }
@@ -90,6 +91,7 @@ impl PyPeakScoringStrategy {
 
 
 #[pyclass]
+#[derive(Clone, Copy)]
 pub struct PyIntegrationStrategy {
     pub inner: IntegrationStrategy,
 }
@@ -197,6 +199,7 @@ pub struct PyLfqSettings {
 #[pymethods]
 impl PyLfqSettings {
     #[new]
+    #[pyo3(signature = (peak_scoring, integration, spectral_angle, ppm_tolerance, combine_charge_states, mobility_pct_tolerance, peptide_q_value=0.01))]
     pub fn new(
         peak_scoring: &PyPeakScoringStrategy,
         integration: &PyIntegrationStrategy,
@@ -204,6 +207,7 @@ impl PyLfqSettings {
         ppm_tolerance: f32,
         combine_charge_states: bool,
         mobility_pct_tolerance: f32,
+        peptide_q_value: f32,
     ) -> Self {
         PyLfqSettings {
             inner: LfqSettings {
@@ -213,6 +217,7 @@ impl PyLfqSettings {
                 ppm_tolerance,
                 combine_charge_states,
                 mobility_pct_tolerance,
+                peptide_q_value,
             },
         }
     }
@@ -244,6 +249,11 @@ impl PyLfqSettings {
     #[getter]
     pub fn combine_charge_states(&self) -> bool {
         self.inner.combine_charge_states
+    }
+
+    #[getter]
+    pub fn peptide_q_value(&self) -> f32 {
+        self.inner.peptide_q_value
     }
 }
 
@@ -490,7 +500,7 @@ pub fn py_build_feature_map(
     precursor_charge: (u8, u8),
     features: Vec<PyFeature>,
 ) -> PyFeatureMap {
-    let features: Vec<Feature> = features.iter().map(|f| f.inner.clone()).collect();
+    let features: Vec<Feature> = features.into_iter().map(|f| f.inner).collect();
     let feature_map = build_feature_map(settings.inner, precursor_charge, features.as_slice());
     PyFeatureMap {
         inner: feature_map,
@@ -503,7 +513,7 @@ pub fn py_build_feature_map_psm(
     precursor_charge: (u8, u8),
     features: Vec<PyFeature>,
 ) -> PyFeatureMap {
-    let features: Vec<Feature> = features.iter().map(|f| f.inner.clone()).collect();
+    let features: Vec<Feature> = features.into_iter().map(|f| f.inner).collect();
     let feature_map = build_feature_map(settings.inner, precursor_charge, features.as_slice());
     PyFeatureMap {
         inner: feature_map,
@@ -523,4 +533,68 @@ pub fn py_lfq(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_build_feature_map, m)?)?;
     m.add_function(wrap_pyfunction!(py_build_feature_map_psm, m)?)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_peak_scoring_strategy_copy() {
+        let s1 = PyPeakScoringStrategy::new("hybrid");
+        let s2 = s1; // Copy
+        assert_eq!(s1.strategy(), s2.strategy());
+    }
+
+    #[test]
+    fn test_peak_scoring_strategy_variants() {
+        assert_eq!(PyPeakScoringStrategy::new("retention_time").strategy(), "retention_time");
+        assert_eq!(PyPeakScoringStrategy::new("spectral_angle").strategy(), "spectral_angle");
+        assert_eq!(PyPeakScoringStrategy::new("intensity").strategy(), "intensity");
+        assert_eq!(PyPeakScoringStrategy::new("hybrid").strategy(), "hybrid");
+    }
+
+    #[test]
+    fn test_integration_strategy_copy() {
+        let s1 = PyIntegrationStrategy::new("apex");
+        let s2 = s1; // Copy
+        assert_eq!(s1.strategy(), s2.strategy());
+    }
+
+    #[test]
+    fn test_integration_strategy_variants() {
+        assert_eq!(PyIntegrationStrategy::new("apex").strategy(), "apex");
+        assert_eq!(PyIntegrationStrategy::new("sum").strategy(), "sum");
+    }
+
+    #[test]
+    fn test_peak_getters() {
+        let peak = PyPeak::new(100, 0.95, 50.0, 0.01);
+        assert_eq!(peak.rt(), 100);
+        assert!((peak.spectral_angle() - 0.95).abs() < 0.001);
+        assert!((peak.score() - 50.0).abs() < 0.001);
+        assert!((peak.q_value() - 0.01).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_lfq_settings_peptide_q_value_default() {
+        let peak_scoring = PyPeakScoringStrategy::new("hybrid");
+        let integration = PyIntegrationStrategy::new("sum");
+
+        // Using default peptide_q_value
+        let settings = PyLfqSettings::new(
+            &peak_scoring,
+            &integration,
+            0.70,  // spectral_angle
+            5.0,   // ppm_tolerance
+            true,  // combine_charge_states
+            1.0,   // mobility_pct_tolerance
+            0.01,  // peptide_q_value (default)
+        );
+
+        assert!((settings.peptide_q_value() - 0.01).abs() < 0.001);
+        assert!((settings.spectral_angle() - 0.70).abs() < 0.001);
+        assert!((settings.ppm_tolerance() - 5.0).abs() < 0.001);
+        assert!(settings.combine_charge_states());
+    }
 }

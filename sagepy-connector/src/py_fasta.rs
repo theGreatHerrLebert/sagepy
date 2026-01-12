@@ -19,7 +19,7 @@ impl PyFasta {
         })
     }
 
-    fn digest(&self, py: Python, enzyme_params: &PyEnzymeParameters) -> PyResult<PyObject> {
+    fn digest(&self, py: Python, enzyme_params: &PyEnzymeParameters) -> PyResult<Py<PyAny>> {
         let digests = self.inner.digest(&enzyme_params.inner);
         let py_digests: Vec<PyDigest> =
             digests.into_iter().map(|d| PyDigest { inner: d }).collect();
