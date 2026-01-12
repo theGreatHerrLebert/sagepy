@@ -68,6 +68,13 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Configure Cargo for git CLI
+        shell: bash
+        run: |
+          mkdir -p ~/.cargo
+          echo '[net]' >> ~/.cargo/config.toml
+          echo 'git-fetch-with-cli = true' >> ~/.cargo/config.toml
+
       - name: Change to sagepy-connector directory
         run: cd sagepy-connector
 
