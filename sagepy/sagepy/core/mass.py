@@ -48,25 +48,11 @@ class Composition:
 
 
 class CONSTANTS:
-    @classmethod
-    @property
-    def NEUTRON(cls):
-        return psc.neutron()
-
-    @classmethod
-    @property
-    def PROTON(cls):
-        return psc.proton()
-
-    @classmethod
-    @property
-    def H2O(cls):
-        return psc.h2o()
-
-    @classmethod
-    @property
-    def NH3(cls):
-        return psc.nh3()
+    """Mass constants for common molecules and particles."""
+    NEUTRON: float = psc.neutron()
+    PROTON: float = psc.proton()
+    H2O: float = psc.h2o()
+    NH3: float = psc.nh3()
 
 
 class Tolerance:
