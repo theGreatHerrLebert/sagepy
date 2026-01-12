@@ -12,8 +12,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
-        python-version: ['3.11', '3.12']
+        os: [ubuntu-latest, windows-latest, macos-15, macos-14]
+        python-version: ['3.11', '3.12', '3.13']
         include:
           - os: ubuntu-latest
             python-version: '3.11'
@@ -21,7 +21,7 @@ jobs:
           - os: windows-latest
             python-version: '3.11'
             publish: true
-          - os: macos-13
+          - os: macos-15
             python-version: '3.11'
             publish: true
           - os: macos-14
@@ -33,18 +33,30 @@ jobs:
           - os: windows-latest
             python-version: '3.12'
             publish: true
-          - os: macos-13
+          - os: macos-15
             python-version: '3.12'
             publish: true
           - os: macos-14
             python-version: '3.12'
             publish: true
+          - os: ubuntu-latest
+            python-version: '3.13'
+            publish: true
+          - os: windows-latest
+            python-version: '3.13'
+            publish: true
+          - os: macos-15
+            python-version: '3.13'
+            publish: true
+          - os: macos-14
+            python-version: '3.13'
+            publish: true
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -54,11 +66,7 @@ jobs:
           pip install maturin
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Change to sagepy-connector directory
         run: cd sagepy-connector
