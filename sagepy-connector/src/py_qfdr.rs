@@ -85,9 +85,10 @@ pub fn assign_peptide_q(_py: Python, psm_collection: &Bound<'_, PyList>, use_hyp
         let feature: Bound<'_, PyPsm> = psm_collection.get_item(index).expect("Failed to get PyPsm").extract()?;
         let mut feature_borrow = feature.borrow_mut();
 
-        let key = match feature_borrow.inner.sage_feature.label {
-            -1 => feature_borrow.inner.sequence_decoy.clone().unwrap().sequence.clone(),
-            _ => feature_borrow.inner.sequence.clone().unwrap().sequence.clone(),
+        let key = if feature_borrow.inner.sage_feature.label == -1 {
+            feature_borrow.inner.sequence_decoy.as_ref().unwrap().sequence.clone()
+        } else {
+            feature_borrow.inner.sequence.as_ref().unwrap().sequence.clone()
         };
 
         feature_borrow.inner.sage_feature.peptide_q = *q_values.get(&key).unwrap_or(&1.0) as f32;

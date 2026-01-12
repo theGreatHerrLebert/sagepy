@@ -110,15 +110,14 @@ pub fn py_fragments_to_fragments_map(fragments: &PyFragments, normalize: bool) -
 
 pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
                             mz_calculated: Vec<f32>, mz_experimental: Vec<f32>) -> PyFragments {
+    let cap = fragments.len();
+    let mut kinds: Vec<Kind> = Vec::with_capacity(cap);
+    let mut ordinals: Vec<i32> = Vec::with_capacity(cap);
+    let mut charges: Vec<i32> = Vec::with_capacity(cap);
+    let mut intensities: Vec<f32> = Vec::with_capacity(cap);
 
-    let mut kinds: Vec<Kind> = Vec::new();
-    let mut ordinals: Vec<i32> = Vec::new();
-    let mut charges: Vec<i32> = Vec::new();
-    let mut intensities: Vec<f32> = Vec::new();
-
-    for (kind, ordinal, charge) in fragments.keys() {
-        let intensity = fragments.get(&(*kind, *charge, *ordinal)).unwrap();
-        let kind = match kind {
+    for ((kind_id, ordinal, charge), intensity) in fragments {
+        let kind = match kind_id {
             0 => Kind::B,
             1 => Kind::Y,
             _ => panic!("Invalid ion kind"),
@@ -129,17 +128,15 @@ pub fn _map_to_py_fragments(fragments: &HashMap<(u32, i32, i32), f32>,
         intensities.push(*intensity);
     }
 
-    let fragments = Fragments {
-        mz_calculated,
-        mz_experimental,
-        kinds,
-        fragment_ordinals: ordinals,
-        charges,
-        intensities,
-    };
-
     PyFragments {
-        inner: fragments,
+        inner: Fragments {
+            mz_calculated,
+            mz_experimental,
+            kinds,
+            fragment_ordinals: ordinals,
+            charges,
+            intensities,
+        },
     }
 }
 
@@ -156,16 +153,14 @@ pub fn psms_to_json(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String> {
 
 #[pyfunction]
 pub fn psms_to_json_bin(psms: Vec<PyPsm>) -> Vec<u8> {
-    let inner_psms = psms.iter().map(|psm| psm.inner.clone()).collect::<Vec<_>>();
+    let inner_psms: Vec<Psm> = psms.into_iter().map(|psm| psm.inner).collect();
     bincode::serialize(&inner_psms).unwrap()
 }
 
 #[pyfunction]
 pub fn json_bin_to_psms(json_bin: Vec<u8>) -> Vec<PyPsm> {
     let inner_psms: Vec<Psm> = bincode::deserialize(&json_bin).unwrap();
-    inner_psms.iter().map(|psm| PyPsm {
-        inner: psm.clone(),
-    }).collect()
+    inner_psms.into_iter().map(|psm| PyPsm { inner: psm }).collect()
 }
 
 #[pyfunction]
@@ -191,7 +186,7 @@ pub fn get_psm_sequences_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<String
 
     thread_pool.install(|| {
         psms.par_iter().map(|psm| {
-            psm.inner.sequence.clone().unwrap().sequence
+            psm.inner.sequence.as_ref().unwrap().sequence.clone()
         }).collect()
     })
 }
@@ -202,7 +197,7 @@ pub fn get_psm_peptide_idx_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<u32>
 
     thread_pool.install(|| {
         psms.par_iter().map(|psm| {
-            psm.inner.sage_feature.peptide_idx.0.clone()
+            psm.inner.sage_feature.peptide_idx.0
         }).collect()
     })
 }
@@ -213,7 +208,7 @@ pub fn get_psm_sequences_modified_par(psms: Vec<PyPsm>, num_threads: usize) -> V
 
     thread_pool.install(|| {
         psms.par_iter().map(|psm| {
-            psm.inner.sequence_modified.clone().unwrap().sequence
+            psm.inner.sequence_modified.as_ref().unwrap().sequence.clone()
         }).collect()
     })
 }
@@ -224,7 +219,7 @@ pub fn get_psm_sequences_decoy_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<
 
     thread_pool.install(|| {
         psms.par_iter().map(|psm| {
-            psm.inner.sequence_decoy.clone().unwrap().sequence
+            psm.inner.sequence_decoy.as_ref().unwrap().sequence.clone()
         }).collect()
     })
 }
@@ -271,16 +266,14 @@ pub fn get_psm_proteins_par(psms: Vec<PyPsm>, num_threads: usize) -> Vec<Vec<Str
 
 #[pyfunction]
 pub fn py_compress_psms(psms: Vec<PyPsm>) -> Vec<u8> {
-    let inner_psms = psms.iter().map(|psm| psm.inner.clone()).collect::<Vec<_>>();
+    let inner_psms: Vec<Psm> = psms.into_iter().map(|psm| psm.inner).collect();
     compress_psms(&inner_psms).unwrap()
 }
 
 #[pyfunction]
 pub fn py_decompress_psms(psms_bin: Vec<u8>) -> Vec<PyPsm> {
-    let inner_psms: Vec<Psm> = decompress_psms(&psms_bin.as_slice()).unwrap();
-    inner_psms.iter().map(|psm| PyPsm {
-        inner: psm.clone(),
-    }).collect()
+    let inner_psms: Vec<Psm> = decompress_psms(psms_bin.as_slice()).unwrap();
+    inner_psms.into_iter().map(|psm| PyPsm { inner: psm }).collect()
 }
 
 #[pymodule]

@@ -4,7 +4,7 @@ use sage_core::ion_series::{Ion, Kind};
 use sage_core::mass::monoisotopic;
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct PyKind {
     pub inner: Kind,
 }
@@ -115,10 +115,11 @@ impl PyIonSeries {
     }
 
     pub fn get_ion_series(&self) -> PyResult<Vec<PyIon>> {
-        let mut ions = Vec::new();
+        let seq_len = self.peptide.inner.sequence.len();
+        let mut ions = Vec::with_capacity(seq_len.saturating_sub(1));
         let mut cm = self.cumulative_mass;
 
-        for idx in 0..self.peptide.inner.sequence.len() - 1 {
+        for idx in 0..seq_len.saturating_sub(1) {
             let r = self.peptide.inner.sequence[idx];
             let m = self.peptide.inner.modifications.get(idx).unwrap_or(&0.0);
 
@@ -129,7 +130,7 @@ impl PyIonSeries {
 
             ions.push(PyIon {
                 inner: Ion {
-                    kind: self.kind.inner.clone(),
+                    kind: self.kind.inner,
                     monoisotopic_mass: cm,
                 },
             });
@@ -144,4 +145,72 @@ pub fn py_ion_series(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyIon>()?;
     m.add_class::<PyIonSeries>()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sage_core::enzyme::Digest;
+    use sage_core::ion_series::IonSeries;
+    use sage_core::peptide::Peptide;
+
+    fn make_peptide(s: &str) -> Peptide {
+        Peptide::try_from(Digest {
+            sequence: s.into(),
+            ..Default::default()
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn test_kind_copy() {
+        let k1 = PyKind { inner: Kind::B };
+        let k2 = k1; // Copy
+        assert_eq!(k1.kind_as_string(), k2.kind_as_string());
+    }
+
+    #[test]
+    fn test_kind_from_string() {
+        assert!(PyKind::new("b".to_string()).is_ok());
+        assert!(PyKind::new("Y".to_string()).is_ok());
+        assert!(PyKind::new("invalid".to_string()).is_err());
+    }
+
+    #[test]
+    fn test_ion_series_length() {
+        // Test directly with sage-core IonSeries
+        let peptide = make_peptide("PEPTIDE");
+        let ions: Vec<_> = IonSeries::new(&peptide, Kind::B).collect();
+
+        // PEPTIDE has 7 residues, so 6 fragment ions (n-1)
+        assert_eq!(ions.len(), 6);
+    }
+
+    #[test]
+    fn test_b_ion_masses_increase() {
+        let peptide = make_peptide("PEPTIDE");
+        let ions: Vec<_> = IonSeries::new(&peptide, Kind::B).collect();
+
+        // B ions should have increasing masses
+        for i in 1..ions.len() {
+            assert!(
+                ions[i].monoisotopic_mass > ions[i - 1].monoisotopic_mass,
+                "B ion masses should increase"
+            );
+        }
+    }
+
+    #[test]
+    fn test_y_ion_masses_decrease() {
+        let peptide = make_peptide("PEPTIDE");
+        let ions: Vec<_> = IonSeries::new(&peptide, Kind::Y).collect();
+
+        // Y ions should have decreasing masses (we iterate from N-term losing residues)
+        for i in 1..ions.len() {
+            assert!(
+                ions[i].monoisotopic_mass < ions[i - 1].monoisotopic_mass,
+                "Y ion masses should decrease"
+            );
+        }
+    }
 }
