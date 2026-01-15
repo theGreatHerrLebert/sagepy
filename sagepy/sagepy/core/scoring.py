@@ -347,9 +347,22 @@ class Psm:
 
 
 class ScoreType:
+    """
+    Score type for peptide spectrum matching.
+
+    Supported types:
+    - 'hyperscore': Sage X!Tandem-style hyperscore
+    - 'openmshyperscore': OpenMS variant of hyperscore
+    - 'weightedhyperscore': Hyperscore weighted by predicted fragment intensities
+    - 'weightedopenmshyperscore': OpenMS hyperscore weighted by predicted intensities
+
+    Use weighted score types in combination with a PredictedIntensityStore for
+    intensity-weighted scoring.
+    """
+
     def __init__(self, name: str):
         name = name.lower()
-        names = { "openmshyperscore", "hyperscore" }
+        names = {"openmshyperscore", "hyperscore", "weightedhyperscore", "weightedopenmshyperscore"}
         assert name in names, f"Invalid score type: {name}, allowed values are: {names}"
         self.__py_ptr = psc.PyScoreType(name)
 
@@ -555,19 +568,96 @@ class Scorer:
                 f"{self.max_precursor_charge}, "
                 f"{self.chimera}, {self.report_psms}, {self.wide_window}, {self.max_fragment_charge})")
 
-    def score(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
-        return [Feature.from_py_feature(f) for f in self.__scorer_ptr.score(db.get_py_ptr(), spectrum.get_py_ptr())]
+    def score(
+        self,
+        db: IndexedDatabase,
+        spectrum: ProcessedSpectrum,
+        intensity_store: Optional['PredictedIntensityStore'] = None,
+    ) -> List['Feature']:
+        """
+        Score a spectrum against the database.
 
-    def score_collection_top_n(self, db: IndexedDatabase,
-                               spectrum_collection: List[ProcessedSpectrum], num_threads: int = 4) -> List[
-        List['Feature']]:
-        scores = self.__scorer_ptr.score_collection(db.get_py_ptr(),
-                                                    [spec.get_py_ptr() for spec in spectrum_collection], num_threads)
+        Parameters
+        ----------
+        db : IndexedDatabase
+            The peptide database to search against
+        spectrum : ProcessedSpectrum
+            The processed spectrum to score
+        intensity_store : PredictedIntensityStore, optional
+            Store of predicted fragment intensities for weighted scoring.
+            Required when using weighted score types.
+
+        Returns
+        -------
+        List[Feature]
+            List of scored peptide spectrum matches
+        """
+        store_ptr = intensity_store.get_py_ptr() if intensity_store else None
+        return [Feature.from_py_feature(f) for f in
+                self.__scorer_ptr.score(db.get_py_ptr(), spectrum.get_py_ptr(), store_ptr)]
+
+    def score_collection_top_n(
+        self,
+        db: IndexedDatabase,
+        spectrum_collection: List[ProcessedSpectrum],
+        num_threads: int = 4,
+        intensity_store: Optional['PredictedIntensityStore'] = None,
+    ) -> List[List['Feature']]:
+        """
+        Score a collection of spectra, returning top N matches for each.
+
+        Parameters
+        ----------
+        db : IndexedDatabase
+            The peptide database to search against
+        spectrum_collection : List[ProcessedSpectrum]
+            List of processed spectra to score
+        num_threads : int
+            Number of threads for parallel processing
+        intensity_store : PredictedIntensityStore, optional
+            Store of predicted fragment intensities for weighted scoring
+
+        Returns
+        -------
+        List[List[Feature]]
+            Top N features for each spectrum
+        """
+        store_ptr = intensity_store.get_py_ptr() if intensity_store else None
+        scores = self.__scorer_ptr.score_collection(
+            db.get_py_ptr(),
+            [spec.get_py_ptr() for spec in spectrum_collection],
+            num_threads,
+            store_ptr,
+        )
         return [[Feature.from_py_feature(f) for f in score] for score in scores]
 
-    def score_collection(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
-                         num_threads: int = 4) -> List['Feature']:
-        scores = self.score_collection_top_n(db, spectrum_collection, num_threads)
+    def score_collection(
+        self,
+        db: IndexedDatabase,
+        spectrum_collection: List[Optional[ProcessedSpectrum]],
+        num_threads: int = 4,
+        intensity_store: Optional['PredictedIntensityStore'] = None,
+    ) -> List['Feature']:
+        """
+        Score a collection of spectra, returning top match for each.
+
+        Parameters
+        ----------
+        db : IndexedDatabase
+            The peptide database to search against
+        spectrum_collection : List[ProcessedSpectrum]
+            List of processed spectra to score
+        num_threads : int
+            Number of threads for parallel processing
+        intensity_store : PredictedIntensityStore, optional
+            Store of predicted fragment intensities for weighted scoring
+
+        Returns
+        -------
+        List[Feature]
+            Top feature for each spectrum (None if no match)
+        """
+        scores = self.score_collection_top_n(db, spectrum_collection, num_threads, intensity_store)
 
         result = []
 
@@ -579,12 +669,39 @@ class Scorer:
 
         return result
 
-    def score_collection_psm(self, db: IndexedDatabase, spectrum_collection: List[Optional[ProcessedSpectrum]],
-                             num_threads: int = 4) -> Dict[str, List[Psm]]:
+    def score_collection_psm(
+        self,
+        db: IndexedDatabase,
+        spectrum_collection: List[Optional[ProcessedSpectrum]],
+        num_threads: int = 4,
+        intensity_store: Optional['PredictedIntensityStore'] = None,
+    ) -> Dict[str, List[Psm]]:
+        """
+        Score a collection of spectra, returning PSM objects.
 
-        py_psms = self.__scorer_ptr.score_candidates(db.get_py_ptr(),
-                                                     [spec.get_py_ptr() for spec in spectrum_collection],
-                                                     num_threads)
+        Parameters
+        ----------
+        db : IndexedDatabase
+            The peptide database to search against
+        spectrum_collection : List[ProcessedSpectrum]
+            List of processed spectra to score
+        num_threads : int
+            Number of threads for parallel processing
+        intensity_store : PredictedIntensityStore, optional
+            Store of predicted fragment intensities for weighted scoring
+
+        Returns
+        -------
+        Dict[str, List[Psm]]
+            Dictionary mapping spectrum IDs to lists of PSMs
+        """
+        store_ptr = intensity_store.get_py_ptr() if intensity_store else None
+        py_psms = self.__scorer_ptr.score_candidates(
+            db.get_py_ptr(),
+            [spec.get_py_ptr() for spec in spectrum_collection],
+            num_threads,
+            store_ptr,
+        )
 
         ret_dict = {}
         for key, values in py_psms.items():
@@ -592,13 +709,25 @@ class Scorer:
 
         return ret_dict
 
-    def _score_chimera_fast(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
+    def _score_chimera_fast(
+        self,
+        db: IndexedDatabase,
+        spectrum: ProcessedSpectrum,
+        intensity_store: Optional['PredictedIntensityStore'] = None,
+    ) -> List['Feature']:
+        store_ptr = intensity_store.get_py_ptr() if intensity_store else None
         return [Feature.from_py_feature(f) for f in
-                self.__scorer_ptr.score_chimera_fast(db.get_py_ptr(), spectrum.get_py_ptr())]
+                self.__scorer_ptr.score_chimera_fast(db.get_py_ptr(), spectrum.get_py_ptr(), store_ptr)]
 
-    def _score_standard(self, db: IndexedDatabase, spectrum: ProcessedSpectrum) -> List['Feature']:
+    def _score_standard(
+        self,
+        db: IndexedDatabase,
+        spectrum: ProcessedSpectrum,
+        intensity_store: Optional['PredictedIntensityStore'] = None,
+    ) -> List['Feature']:
+        store_ptr = intensity_store.get_py_ptr() if intensity_store else None
         return [Feature.from_py_feature(f) for f in
-                self.__scorer_ptr.score_standard(db.get_py_ptr(), spectrum.get_py_ptr())]
+                self.__scorer_ptr.score_standard(db.get_py_ptr(), spectrum.get_py_ptr(), store_ptr)]
 
 
 class Feature:

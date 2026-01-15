@@ -11,7 +11,7 @@ use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments, ScoreType};
-use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore};
+use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore, WeightedOpenMSHyperScore, WeightedSageHyperScore};
 use serde::{Deserialize, Serialize};
 use crate::py_intensity::PyFragmentIntensityPrediction;
 use crate::py_ion_series::PyKind;
@@ -374,9 +374,11 @@ impl PyScoreType {
         let score = match name.to_lowercase().as_str() {
             "hyperscore" => SageHyperScore,
             "openmshyperscore" => OpenMSHyperScore,
-            _ => panic!("Invalid score type: {}", name),
+            "weightedhyperscore" | "weighted_hyperscore" => WeightedSageHyperScore,
+            "weightedopenmshyperscore" | "weighted_openms_hyperscore" => WeightedOpenMSHyperScore,
+            _ => panic!("Invalid score type: {}. Valid options: hyperscore, openmshyperscore, weightedhyperscore, weightedopenmshyperscore", name),
         };
-        
+
         PyScoreType {
             inner: score
         }
@@ -386,6 +388,8 @@ impl PyScoreType {
         match self.inner {
             SageHyperScore => "hyperscore".to_string(),
             OpenMSHyperScore => "openmshyperscore".to_string(),
+            WeightedSageHyperScore => "weightedhyperscore".to_string(),
+            WeightedOpenMSHyperScore => "weightedopenmshyperscore".to_string(),
         }
     }
 }
@@ -797,8 +801,12 @@ pub struct PyScorer {
 }
 
 impl PyScorer {
-    /// Create a Scorer instance borrowing the database
-    fn make_scorer<'a>(&self, db: &'a PyIndexedDatabase) -> Scorer<'a> {
+    /// Create a Scorer instance borrowing the database and optionally an intensity store
+    fn make_scorer<'a>(
+        &self,
+        db: &'a PyIndexedDatabase,
+        intensity_store: Option<&'a crate::py_intensity::PyPredictedIntensityStore>,
+    ) -> Scorer<'a> {
         Scorer {
             db: &db.inner,
             precursor_tol: self.precursor_tolerance.inner,
@@ -815,6 +823,7 @@ impl PyScorer {
             annotate_matches: self.annotate_matches,
             override_precursor_charge: self.override_precursor_charge,
             score_type: self.score_type.as_ref().expect("score_type must be set").inner,
+            intensity_store: intensity_store.map(|s| &s.inner),
         }
     }
 }
@@ -859,21 +868,29 @@ impl PyScorer {
         }
     }
 
-    pub fn score(&self, db: &PyIndexedDatabase, spectrum: &PyProcessedSpectrum) -> Vec<PyFeature> {
-        let scorer = self.make_scorer(db);
+    #[pyo3(signature = (db, spectrum, intensity_store=None))]
+    pub fn score(
+        &self,
+        db: &PyIndexedDatabase,
+        spectrum: &PyProcessedSpectrum,
+        intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
+    ) -> Vec<PyFeature> {
+        let scorer = self.make_scorer(db, intensity_store);
         scorer.score(&spectrum.inner)
             .into_iter()
             .map(|f| PyFeature { inner: f })
             .collect()
     }
 
+    #[pyo3(signature = (db, spectra, num_threads, intensity_store=None))]
     pub fn score_collection(
         &self,
         db: &PyIndexedDatabase,
         spectra: Vec<PyProcessedSpectrum>,
         num_threads: usize,
+        intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
     ) -> Vec<Vec<PyFeature>> {
-        let scorer = self.make_scorer(db);
+        let scorer = self.make_scorer(db, intensity_store);
         let pool = ThreadPoolBuilder::new()
             .num_threads(num_threads)
             .build()
@@ -892,13 +909,15 @@ impl PyScorer {
         })
     }
     
+    #[pyo3(signature = (db, spectra, num_threads, intensity_store=None))]
     pub fn score_candidates(
         &self,
         db: &PyIndexedDatabase,
         spectra: Vec<PyProcessedSpectrum>,
         num_threads: usize,
+        intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
     ) -> BTreeMap<String, Vec<PyPsm>> {
-        let scorer = self.make_scorer(db);
+        let scorer = self.make_scorer(db, intensity_store);
 
         let pool = ThreadPoolBuilder::new()
             .num_threads(num_threads)
@@ -980,24 +999,28 @@ impl PyScorer {
         remove_duplicates(result)
     }
 
+    #[pyo3(signature = (db, query, intensity_store=None))]
     pub fn score_chimera_fast(
         &self,
         db: &PyIndexedDatabase,
         query: &PyProcessedSpectrum,
+        intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
     ) -> Vec<PyFeature> {
-        let scorer = self.make_scorer(db);
+        let scorer = self.make_scorer(db, intensity_store);
         scorer.score_chimera_fast(&query.inner)
             .into_iter()
             .map(|f| PyFeature { inner: f })
             .collect()
     }
 
+    #[pyo3(signature = (db, query, intensity_store=None))]
     pub fn score_standard(
         &self,
         db: &PyIndexedDatabase,
         query: &PyProcessedSpectrum,
+        intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
     ) -> Vec<PyFeature> {
-        let scorer = self.make_scorer(db);
+        let scorer = self.make_scorer(db, intensity_store);
         scorer.score_standard(&query.inner)
             .into_iter()
             .map(|f| PyFeature { inner: f })
