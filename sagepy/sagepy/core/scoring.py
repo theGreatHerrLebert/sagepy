@@ -355,14 +355,15 @@ class ScoreType:
     - 'openmshyperscore': OpenMS variant of hyperscore
     - 'weightedhyperscore': Hyperscore weighted by predicted fragment intensities
     - 'weightedopenmshyperscore': OpenMS hyperscore weighted by predicted intensities
+    - 'betascore': Dot product of observed and predicted intensities with factorial terms
 
-    Use weighted score types in combination with a PredictedIntensityStore for
-    intensity-weighted scoring.
+    Use weighted score types (weightedhyperscore, weightedopenmshyperscore, betascore)
+    in combination with a PredictedIntensityStore for intensity-weighted scoring.
     """
 
     def __init__(self, name: str):
         name = name.lower()
-        names = {"openmshyperscore", "hyperscore", "weightedhyperscore", "weightedopenmshyperscore"}
+        names = {"openmshyperscore", "hyperscore", "weightedhyperscore", "weightedopenmshyperscore", "betascore"}
         assert name in names, f"Invalid score type: {name}, allowed values are: {names}"
         self.__py_ptr = psc.PyScoreType(name)
 

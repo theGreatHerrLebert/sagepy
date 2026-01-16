@@ -192,6 +192,9 @@ class SageSearchConfiguration:
         if static_mods is not None:
             static_mods = unimod_static_mods_to_sage_static_mods(static_mods)
 
+        # Convert IonType objects to PyKind for Rust backend
+        py_ion_kinds = [k.get_py_ptr() for k in ion_kinds] if ion_kinds is not None else None
+
         self.__py_parameter_ptr = psc.PyParameters(
             find_next_power_of_2(bucket_size),
             enzyme_builder.get_py_ptr(),
@@ -207,7 +210,7 @@ class SageSearchConfiguration:
             prefilter,
             prefilter_chunk_size,
             prefilter_low_memory,
-            ion_kinds,
+            py_ion_kinds,
             shuffle_decoys,
             keep_ends
         )
@@ -351,6 +354,37 @@ class IndexedDatabase:
     def peptides_as_string(self):
         return np.array(self.__indexed_database_ptr.peptides_as_string())
 
+    def peptides_as_unimod_string(self, expected_mods: list[str]) -> np.ndarray:
+        """Get peptide sequences with UNIMOD modification annotations.
+
+        This method returns sequences with modifications encoded in UNIMOD notation,
+        e.g., "PEPTC[UNIMOD:4]IDEK" for carbamidomethylated cysteine.
+
+        Unlike `peptides_as_string()` which returns plain amino acid sequences,
+        this method includes the modification state, enabling different intensity
+        predictions for different modification variants of the same peptide.
+
+        Args:
+            expected_mods: A list of expected UNIMOD modification strings
+                (e.g., ["[UNIMOD:4]", "[UNIMOD:35]"]). These are used to map
+                mass shifts back to UNIMOD identifiers. If a mass shift doesn't
+                match any expected mod, the delta mass is shown instead.
+
+        Returns:
+            np.ndarray: Array of peptide sequences with UNIMOD annotations.
+
+        Example:
+            >>> # Get UNIMOD sequences for database with C carbamidomethyl and M oxidation
+            >>> unimod_seqs = db.peptides_as_unimod_string(["[UNIMOD:4]", "[UNIMOD:35]"])
+            >>> print(unimod_seqs[:3])
+            ['PEPTC[UNIMOD:4]IDEK', 'PEPTM[UNIMOD:35]IDEK', 'PEPTIDEK']
+
+        Note:
+            For V2 intensity stores, use this method instead of `peptides_as_string()`
+            to ensure different modification states get different intensity predictions.
+        """
+        return np.array(self.__indexed_database_ptr.peptides_as_unimod_string(expected_mods))
+
     def mono_masses(self):
         return np.array(self.__indexed_database_ptr.mono_masses())
 
@@ -439,6 +473,39 @@ class IndexedDatabase:
                f"num_buckets: {len(self.min_value)}, " \
                f"bucket_size: {self.bucket_size}, generate_decoys: {self.generate_decoys}, " \
                f"decoy_tag: {self.decoy_tag})"
+
+    def save(self, path: str) -> None:
+        """Save the indexed database to a binary file (.sagdb format).
+
+        This allows reloading the database with stable peptide indices,
+        enabling reuse of intensity predictions stored in .sagi files.
+
+        Args:
+            path: Path to save the database file (recommended extension: .sagdb)
+
+        Raises:
+            IOError: If the file cannot be written
+        """
+        self.__indexed_database_ptr.save(path)
+
+    @classmethod
+    def load(cls, path: str) -> "IndexedDatabase":
+        """Load an indexed database from a binary file (.sagdb format).
+
+        This restores the database with the same peptide indices as when it was saved,
+        ensuring compatibility with intensity predictions stored in .sagi files.
+
+        Args:
+            path: Path to the database file to load
+
+        Returns:
+            IndexedDatabase: The loaded database
+
+        Raises:
+            IOError: If the file cannot be read or has invalid format
+        """
+        py_db = psc.PyIndexedDatabase.load(path)
+        return cls.from_py_indexed_database(py_db)
 
 
 class IndexedQuery:

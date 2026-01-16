@@ -141,6 +141,79 @@ class PredictionResult:
         )
 
 
+@dataclass
+class PredictionResultV2:
+    """
+    V2 Predicted intensities keyed by (unimod_sequence, charge) instead of peptide_idx.
+
+    This format decouples predictions from the database order, allowing:
+    - Database chunking (splitting peptides into batches)
+    - Reusing predictions across different database configurations
+    - Flexible parallel processing workflows
+    - **Different intensity predictions for different PTM states**
+
+    Attributes
+    ----------
+    predictions : dict[tuple[str, int], np.ndarray]
+        Map from (unimod_sequence, precursor_charge) to intensity tensor.
+        Each tensor has shape [n_ion_kinds, seq_len-1, max_frag_charge].
+        The unimod_sequence should include UNIMOD notation for modifications,
+        e.g., "PEPTC[UNIMOD:4]IDEK" for carbamidomethylated cysteine.
+        This allows different modifications to have different intensity predictions.
+    ion_kinds : list[int]
+        Ion type codes used (default: [1, 4] for B and Y ions)
+    max_fragment_charge : int
+        Maximum fragment charge state predicted
+
+    Example
+    -------
+    >>> predictions = {
+    ...     ("PEPTIDEK", 2): intensity_unmodified,
+    ...     ("PEPTC[UNIMOD:4]IDEK", 2): intensity_carbamidomethyl,
+    ...     ("PEPTM[UNIMOD:35]IDEK", 2): intensity_oxidized,
+    ... }
+    >>> result = PredictionResultV2(predictions=predictions)
+    """
+
+    predictions: dict[tuple[str, int], np.ndarray]
+    ion_kinds: list[int] = field(default_factory=lambda: DEFAULT_ION_KINDS.copy())
+    max_fragment_charge: int = 2
+
+    def __len__(self) -> int:
+        return len(self.predictions)
+
+    def __repr__(self) -> str:
+        return (
+            f"PredictionResultV2(n_entries={len(self)}, "
+            f"ion_kinds={self.ion_kinds}, "
+            f"max_fragment_charge={self.max_fragment_charge})"
+        )
+
+
+def compute_key_hash(sequence: str, charge: int) -> int:
+    """
+    Compute hash for (sequence, charge) key matching Rust implementation.
+
+    This uses the same hashing algorithm as the Rust implementation,
+    ensuring consistency between Python and Rust lookups.
+
+    Parameters
+    ----------
+    sequence : str
+        Raw peptide sequence (NOT UNIMOD notation)
+    charge : int
+        Precursor charge state
+
+    Returns
+    -------
+    int
+        Hash value for the (sequence, charge) key
+    """
+    import sagepy_connector as psc
+
+    return psc.py_intensity.PyPredictedIntensityStore.compute_key_hash(sequence, charge)
+
+
 def create_prediction_request(
     indexed_db: IndexedDatabase,
     charges: list[int] | None = None,
@@ -389,6 +462,8 @@ def read_intensity_file(path: str) -> dict:
     """
     Read predicted intensities from Sage binary format (.sagi).
 
+    Auto-detects the file format version (V1 or V2) and reads accordingly.
+
     Parameters
     ----------
     path : str
@@ -397,12 +472,27 @@ def read_intensity_file(path: str) -> dict:
     Returns
     -------
     dict
-        Dictionary with keys:
+        For V1 files:
+        - version: int (1)
         - peptide_count: int
         - max_charge: int
         - ion_kinds: list[int]
         - offsets: np.ndarray of uint64
         - data: np.ndarray of float32
+        - is_key_based: bool (False)
+
+        For V2 files:
+        - version: int (2)
+        - entry_count: int
+        - max_charge: int
+        - ion_kinds: list[int]
+        - is_key_based: bool (True)
+
+    Notes
+    -----
+    For V2 files, actual intensity data is accessed via the PredictedIntensityStore
+    class using key-based lookups (get_intensity_by_key). This function only reads
+    the header metadata.
     """
     with open(path, "rb") as f:
         magic = struct.unpack("<I", f.read(4))[0]
@@ -410,23 +500,147 @@ def read_intensity_file(path: str) -> dict:
             raise ValueError(f"Invalid magic: {hex(magic)}, expected 0x49474153 ('SAGI')")
 
         version = struct.unpack("<I", f.read(4))[0]
-        if version != 1:
+
+        if version == 1:
+            # V1 format: positional indexing
+            peptide_count = struct.unpack("<Q", f.read(8))[0]
+            max_charge = struct.unpack("<B", f.read(1))[0]
+            ion_kind_count = struct.unpack("<B", f.read(1))[0]
+            ion_kinds = [struct.unpack("<B", f.read(1))[0] for _ in range(ion_kind_count)]
+
+            offsets = np.frombuffer(f.read(peptide_count * 8), dtype="<u8")
+            data = np.frombuffer(f.read(), dtype="<f4")
+
+            return {
+                "version": 1,
+                "peptide_count": peptide_count,
+                "max_charge": max_charge,
+                "ion_kinds": ion_kinds,
+                "offsets": offsets,
+                "data": data,
+                "is_key_based": False,
+            }
+
+        elif version == 2:
+            # V2 format: key-based indexing
+            entry_count = struct.unpack("<Q", f.read(8))[0]
+            max_charge = struct.unpack("<B", f.read(1))[0]
+            ion_kind_count = struct.unpack("<B", f.read(1))[0]
+            ion_kinds = [struct.unpack("<B", f.read(1))[0] for _ in range(ion_kind_count)]
+
+            return {
+                "version": 2,
+                "entry_count": entry_count,
+                "max_charge": max_charge,
+                "ion_kinds": ion_kinds,
+                "is_key_based": True,
+            }
+
+        else:
             raise ValueError(f"Unsupported version: {version}")
 
-        peptide_count = struct.unpack("<Q", f.read(8))[0]
+
+def write_intensity_file_v2(
+    path: str,
+    predictions: dict[tuple[str, int], np.ndarray],
+    max_charge: int = 2,
+    ion_kinds: list[int] | None = None,
+) -> None:
+    """
+    Write predicted intensities to Sage V2 binary format (.sagi).
+
+    V2 format uses (unimod_sequence, charge) as the key, allowing database chunking,
+    reuse of predictions across different database configurations, and importantly,
+    **different intensity predictions for different PTM states**.
+
+    Parameters
+    ----------
+    path : str
+        Output file path (typically .sagi extension)
+    predictions : dict[tuple[str, int], np.ndarray]
+        Map from (unimod_sequence, precursor_charge) to intensity tensor.
+        Each tensor has shape [n_ion_kinds, seq_len-1, max_charge].
+        The unimod_sequence should include UNIMOD notation for modifications,
+        e.g., "PEPTC[UNIMOD:4]IDEK" for carbamidomethylated cysteine.
+    max_charge : int
+        Maximum fragment charge state. Default: 2
+    ion_kinds : list[int], optional
+        Ion type codes. Default: [1, 4] for B and Y ions
+
+    Example
+    -------
+    >>> predictions = {
+    ...     ("PEPTIDEK", 2): intensity_unmodified,
+    ...     ("PEPTC[UNIMOD:4]IDEK", 2): intensity_carbamidomethyl,
+    ...     ("PEPTM[UNIMOD:35]IDEK", 2): intensity_oxidized,
+    ... }
+    >>> write_intensity_file_v2("predictions_v2.sagi", predictions)
+    """
+    if ion_kinds is None:
+        ion_kinds = DEFAULT_ION_KINDS.copy()
+
+    # Convert predictions to format expected by Rust
+    # entries: list of (sequence_bytes, charge, peptide_len, flat_intensities)
+    entries = []
+    for (sequence, charge), intensity in predictions.items():
+        sequence_bytes = sequence.encode("utf-8") if isinstance(sequence, str) else sequence
+        peptide_len = intensity.shape[1] + 1  # intensity has shape [ion_kinds, seq_len-1, max_charge]
+        flat_intensities = intensity.astype(np.float32).flatten().tolist()
+        entries.append((list(sequence_bytes), charge, peptide_len, flat_intensities))
+
+    # Use Rust implementation to create and write the store
+    import sagepy_connector as psc
+
+    store = psc.py_intensity.PyPredictedIntensityStore.from_raw_predictions_v2(
+        entries, max_charge, ion_kinds
+    )
+    store.write(path)
+
+
+def read_intensity_file_v2(path: str) -> dict:
+    """
+    Read predicted intensities from Sage V2 binary format (.sagi).
+
+    Parameters
+    ----------
+    path : str
+        Path to .sagi V2 file
+
+    Returns
+    -------
+    dict
+        Dictionary with keys:
+        - version: int (2 for V2 format)
+        - entry_count: int
+        - max_charge: int
+        - ion_kinds: list[int]
+        - is_key_based: bool (True for V2)
+
+    Notes
+    -----
+    For V2 files, actual intensity data is accessed via the PredictedIntensityStore
+    class using key-based lookups (get_intensity_by_key).
+    """
+    with open(path, "rb") as f:
+        magic = struct.unpack("<I", f.read(4))[0]
+        if magic != 0x49474153:
+            raise ValueError(f"Invalid magic: {hex(magic)}, expected 0x49474153 ('SAGI')")
+
+        version = struct.unpack("<I", f.read(4))[0]
+        if version != 2:
+            raise ValueError(f"Expected V2 format (version 2), got version {version}")
+
+        entry_count = struct.unpack("<Q", f.read(8))[0]
         max_charge = struct.unpack("<B", f.read(1))[0]
         ion_kind_count = struct.unpack("<B", f.read(1))[0]
         ion_kinds = [struct.unpack("<B", f.read(1))[0] for _ in range(ion_kind_count)]
 
-        offsets = np.frombuffer(f.read(peptide_count * 8), dtype="<u8")
-        data = np.frombuffer(f.read(), dtype="<f4")
-
         return {
-            "peptide_count": peptide_count,
+            "version": version,
+            "entry_count": entry_count,
             "max_charge": max_charge,
             "ion_kinds": ion_kinds,
-            "offsets": offsets,
-            "data": data,
+            "is_key_based": True,
         }
 
 
@@ -567,12 +781,13 @@ class PredictedIntensityStore:
     """
     Store for predicted fragment ion intensities.
 
-    Wraps the Rust PredictedIntensityStore loaded from a .sagi file.
+    Wraps the Rust IntensityStore loaded from a .sagi file.
+    Supports both V1 (positional indexing) and V2 (key-based indexing) formats.
     This store is used during scoring to weight matched fragment peaks
     by their predicted intensities.
 
-    Example
-    -------
+    Example (V1 - positional lookup)
+    --------------------------------
     >>> store = PredictedIntensityStore("predictions.sagi")
     >>> print(f"Loaded {store.peptide_count} peptides")
     >>> intensity = store.get_intensity(
@@ -582,17 +797,31 @@ class PredictedIntensityStore:
     ...     position=3,
     ...     charge=1
     ... )
+
+    Example (V2 - key-based lookup)
+    -------------------------------
+    >>> store = PredictedIntensityStore("predictions_v2.sagi")
+    >>> print(f"Is key-based: {store.is_key_based}")
+    >>> intensity = store.get_intensity_by_key(
+    ...     sequence="PEPTIDEK",
+    ...     precursor_charge=2,
+    ...     ion_kind=ION_KIND_B,
+    ...     position=3,
+    ...     fragment_charge=1
+    ... )
     """
 
     def __init__(self, path: str):
         """
         Load intensity store from a .sagi binary file.
 
+        Auto-detects the file format version (V1 or V2) and loads accordingly.
+
         Parameters
         ----------
         path : str
-            Path to the .sagi file created by write_intensity_file()
-            or build_intensity_file_from_result()
+            Path to the .sagi file created by write_intensity_file(),
+            write_intensity_file_v2(), or from_predictions_v2()
         """
         import sagepy_connector as psc
 
@@ -613,7 +842,7 @@ class PredictedIntensityStore:
         ion_kinds: list[int] | None = None,
     ) -> "PredictedIntensityStore":
         """
-        Create a uniform intensity store where all intensities are 1.0.
+        Create a uniform V1 intensity store where all intensities are 1.0.
 
         This is useful for testing the weighted scoring code path without
         actual predictions. With uniform intensities, weighted scores should
@@ -632,7 +861,7 @@ class PredictedIntensityStore:
         Returns
         -------
         PredictedIntensityStore
-            Store with all intensities set to 1.0
+            V1 store with all intensities set to 1.0
 
         Example
         -------
@@ -650,9 +879,78 @@ class PredictedIntensityStore:
         )
         return cls.from_py_ptr(py_ptr)
 
+    @classmethod
+    def from_predictions_v2(
+        cls,
+        predictions: dict[tuple[str, int], np.ndarray],
+        max_charge: int = 2,
+        ion_kinds: list[int] | None = None,
+    ) -> "PredictedIntensityStore":
+        """
+        Create a V2 intensity store from prediction dict.
+
+        V2 format uses (unimod_sequence, charge) as the key, allowing database chunking,
+        reuse of predictions across different database configurations, and importantly,
+        **different intensity predictions for different PTM states**.
+
+        Parameters
+        ----------
+        predictions : dict[tuple[str, int], np.ndarray]
+            Map from (unimod_sequence, precursor_charge) to intensity tensor.
+            Each tensor has shape [n_ion_kinds, seq_len-1, max_charge].
+            The unimod_sequence should include UNIMOD notation for modifications,
+            e.g., "PEPTC[UNIMOD:4]IDEK" for carbamidomethylated cysteine.
+        max_charge : int
+            Maximum fragment charge state (default: 2)
+        ion_kinds : list[int], optional
+            Ion type codes (default: [1, 4] for B and Y ions)
+
+        Returns
+        -------
+        PredictedIntensityStore
+            V2 store with key-based indexing
+
+        Example
+        -------
+        >>> # Different predictions for different modification states
+        >>> predictions = {
+        ...     ("PEPTIDEK", 2): intensity_unmodified,
+        ...     ("PEPTC[UNIMOD:4]IDEK", 2): intensity_carbamidomethyl,
+        ...     ("PEPTM[UNIMOD:35]IDEK", 2): intensity_oxidized,
+        ... }
+        >>> store = PredictedIntensityStore.from_predictions_v2(predictions)
+        >>> # Use with different database chunks
+        >>> for chunk in database_chunks:
+        ...     scores = scorer.score(chunk, spectra, intensity_store=store)
+        """
+        import sagepy_connector as psc
+
+        if ion_kinds is None:
+            ion_kinds = DEFAULT_ION_KINDS.copy()
+
+        # Convert predictions to format expected by Rust
+        entries = []
+        for (sequence, charge), intensity in predictions.items():
+            sequence_bytes = (
+                sequence.encode("utf-8") if isinstance(sequence, str) else sequence
+            )
+            peptide_len = intensity.shape[1] + 1
+            flat_intensities = intensity.astype(np.float32).flatten().tolist()
+            entries.append((list(sequence_bytes), charge, peptide_len, flat_intensities))
+
+        py_ptr = psc.py_intensity.PyPredictedIntensityStore.from_raw_predictions_v2(
+            entries, max_charge, ion_kinds
+        )
+        return cls.from_py_ptr(py_ptr)
+
     def get_py_ptr(self):
         """Get the underlying PyO3 pointer for passing to Rust functions."""
         return self.__py_ptr
+
+    @property
+    def is_key_based(self) -> bool:
+        """True if this is a V2 store with key-based indexing."""
+        return self.__py_ptr.is_key_based
 
     def get_intensity(
         self,
@@ -663,7 +961,7 @@ class PredictedIntensityStore:
         charge: int,
     ) -> float | None:
         """
-        Get predicted intensity for a specific fragment.
+        Get predicted intensity for a specific fragment (V1 positional lookup).
 
         Parameters
         ----------
@@ -681,7 +979,7 @@ class PredictedIntensityStore:
         Returns
         -------
         float or None
-            The predicted intensity, or None if not found
+            The predicted intensity, or None if not found or if this is a V2 store
         """
         return self.__py_ptr.get_intensity(
             peptide_idx, peptide_len, ion_kind, position, charge
@@ -697,7 +995,7 @@ class PredictedIntensityStore:
         default: float = 1.0,
     ) -> float:
         """
-        Get predicted intensity with fallback to default.
+        Get predicted intensity with fallback to default (V1 positional lookup).
 
         Parameters
         ----------
@@ -724,9 +1022,115 @@ class PredictedIntensityStore:
         )
         return result if result is not None else default
 
+    def get_intensity_by_key(
+        self,
+        sequence: str,
+        precursor_charge: int,
+        ion_kind: int,
+        position: int,
+        fragment_charge: int,
+    ) -> float | None:
+        """
+        Get predicted intensity by sequence and charge (V2 key-based lookup).
+
+        Parameters
+        ----------
+        sequence : str
+            Raw peptide sequence (NOT UNIMOD notation)
+        precursor_charge : int
+            Precursor charge state
+        ion_kind : int
+            Ion type code (0=A, 1=B, 2=C, 3=X, 4=Y, 5=Z)
+        position : int
+            Fragment position (0-indexed)
+        fragment_charge : int
+            Fragment charge state (1-indexed)
+
+        Returns
+        -------
+        float or None
+            The predicted intensity, or None if not found or if this is a V1 store
+        """
+        return self.__py_ptr.get_intensity_by_key(
+            sequence, precursor_charge, ion_kind, position, fragment_charge
+        )
+
+    def get_intensity_by_key_or_default(
+        self,
+        sequence: str,
+        precursor_charge: int,
+        ion_kind: int,
+        position: int,
+        fragment_charge: int,
+        default: float = 1.0,
+    ) -> float:
+        """
+        Get predicted intensity by key with fallback to default (V2 lookup).
+
+        Parameters
+        ----------
+        sequence : str
+            Raw peptide sequence (NOT UNIMOD notation)
+        precursor_charge : int
+            Precursor charge state
+        ion_kind : int
+            Ion type code (0=A, 1=B, 2=C, 3=X, 4=Y, 5=Z)
+        position : int
+            Fragment position (0-indexed)
+        fragment_charge : int
+            Fragment charge state (1-indexed)
+        default : float
+            Value to return if intensity not found. Default: 1.0
+
+        Returns
+        -------
+        float
+            The predicted intensity, or default if not found
+        """
+        result = self.__py_ptr.get_intensity_by_key_or_default(
+            sequence, precursor_charge, ion_kind, position, fragment_charge
+        )
+        return result if result is not None else default
+
+    def contains_key(self, sequence: str, precursor_charge: int) -> bool:
+        """
+        Check if a key exists in the V2 store.
+
+        Parameters
+        ----------
+        sequence : str
+            Raw peptide sequence (NOT UNIMOD notation)
+        precursor_charge : int
+            Precursor charge state
+
+        Returns
+        -------
+        bool
+            True if the key exists, False for V1 stores or missing keys
+        """
+        return self.__py_ptr.contains_key(sequence, precursor_charge)
+
+    def write(self, path: str) -> None:
+        """
+        Write the store to a .sagi binary file.
+
+        The file format version (V1 or V2) is determined by the store type.
+
+        Parameters
+        ----------
+        path : str
+            Output file path
+        """
+        self.__py_ptr.write(path)
+
+    @property
+    def entry_count(self) -> int:
+        """Number of entries in the store (peptides for V1, keys for V2)."""
+        return self.__py_ptr.entry_count
+
     @property
     def peptide_count(self) -> int:
-        """Number of peptides in the store."""
+        """Number of peptides in the store (V1 only, returns 0 for V2)."""
         return self.__py_ptr.peptide_count
 
     @property
@@ -740,7 +1144,13 @@ class PredictedIntensityStore:
         return self.__py_ptr.ion_kinds
 
     def __repr__(self) -> str:
-        return (
-            f"PredictedIntensityStore(peptide_count={self.peptide_count}, "
-            f"max_charge={self.max_charge}, ion_kinds={self.ion_kinds})"
-        )
+        if self.is_key_based:
+            return (
+                f"PredictedIntensityStore(v2, entry_count={self.entry_count}, "
+                f"max_charge={self.max_charge}, ion_kinds={self.ion_kinds})"
+            )
+        else:
+            return (
+                f"PredictedIntensityStore(v1, peptide_count={self.peptide_count}, "
+                f"max_charge={self.max_charge}, ion_kinds={self.ion_kinds})"
+            )

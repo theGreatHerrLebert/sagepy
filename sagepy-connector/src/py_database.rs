@@ -1,5 +1,5 @@
 use numpy::{IntoPyArray, PyArray1};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::py_enzyme::PyEnzymeParameters;
 use crate::py_fasta::PyFasta;
@@ -7,6 +7,7 @@ use crate::py_ion_series::PyKind;
 use crate::py_mass::PyTolerance;
 use crate::py_modification::PyModificationSpecificity;
 use crate::py_peptide::PyPeptide;
+use crate::utilities::sage_sequence_to_unimod_sequence;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use sage_core::database::{
@@ -162,6 +163,35 @@ impl PyIndexedDatabase {
         peptides
     }
 
+    /// Get peptide sequences with UNIMOD modification annotations.
+    ///
+    /// This method returns sequences with modifications encoded in UNIMOD notation,
+    /// e.g., "PEPTC[UNIMOD:4]IDEK" for carbamidomethylated cysteine.
+    ///
+    /// Args:
+    ///     expected_mods: A list of expected UNIMOD modification strings (e.g., ["[UNIMOD:4]", "[UNIMOD:35]"]).
+    ///                    These are used to map mass shifts back to UNIMOD identifiers.
+    ///                    If a mass shift doesn't match any expected mod, the delta mass is shown instead.
+    ///
+    /// Returns:
+    ///     A list of peptide sequences with UNIMOD annotations.
+    ///
+    /// Example:
+    ///     >>> db.peptides_as_unimod_string(["[UNIMOD:4]", "[UNIMOD:35]"])
+    ///     ['PEPTC[UNIMOD:4]IDEK', 'PEPTM[UNIMOD:35]IDEK', 'PEPTIDEK']
+    pub fn peptides_as_unimod_string(&self, expected_mods: Vec<String>) -> Vec<String> {
+        let expected_mods_set: HashSet<String> = expected_mods.into_iter().collect();
+
+        self.inner
+            .peptides
+            .iter()
+            .map(|p| {
+                let sequence = String::from_utf8(p.sequence.clone().to_vec()).unwrap();
+                sage_sequence_to_unimod_sequence(sequence, &p.modifications, &expected_mods_set)
+            })
+            .collect()
+    }
+
     pub fn mono_masses(&self, py: Python) -> Py<PyArray1<f32>> {
         let masses = self
             .inner
@@ -275,6 +305,35 @@ impl PyIndexedDatabase {
         self.inner.decoy_tag.clone()
     }
 
+    /// Save the indexed database to a binary file (.sagdb format)
+    ///
+    /// This allows reloading the database with stable peptide indices,
+    /// enabling reuse of intensity predictions stored in .sagi files.
+    ///
+    /// Args:
+    ///     path: Path to save the database file
+    pub fn save(&self, path: &str) -> PyResult<()> {
+        self.inner
+            .save(path)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(e.to_string()))
+    }
+
+    /// Load an indexed database from a binary file (.sagdb format)
+    ///
+    /// This restores the database with the same peptide indices as when it was saved,
+    /// ensuring compatibility with intensity predictions stored in .sagi files.
+    ///
+    /// Args:
+    ///     path: Path to the database file to load
+    ///
+    /// Returns:
+    ///     PyIndexedDatabase: The loaded database
+    #[staticmethod]
+    pub fn load(path: &str) -> PyResult<Self> {
+        let inner = IndexedDatabase::load(path)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(e.to_string()))?;
+        Ok(PyIndexedDatabase { inner })
+    }
 }
 
 #[pyclass]

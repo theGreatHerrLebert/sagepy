@@ -11,7 +11,7 @@ use crate::py_database::{PyIndexedDatabase, PyPeptideIx};
 use crate::py_mass::PyTolerance;
 use crate::py_spectrum::{PyProcessedSpectrum};
 use sage_core::scoring::{Feature, Scorer, Fragments, ScoreType};
-use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore, WeightedOpenMSHyperScore, WeightedSageHyperScore};
+use sage_core::scoring::ScoreType::{BetaScore, OpenMSHyperScore, SageHyperScore, WeightedOpenMSHyperScore, WeightedSageHyperScore};
 use serde::{Deserialize, Serialize};
 use crate::py_intensity::PyFragmentIntensityPrediction;
 use crate::py_ion_series::PyKind;
@@ -376,7 +376,8 @@ impl PyScoreType {
             "openmshyperscore" => OpenMSHyperScore,
             "weightedhyperscore" | "weighted_hyperscore" => WeightedSageHyperScore,
             "weightedopenmshyperscore" | "weighted_openms_hyperscore" => WeightedOpenMSHyperScore,
-            _ => panic!("Invalid score type: {}. Valid options: hyperscore, openmshyperscore, weightedhyperscore, weightedopenmshyperscore", name),
+            "betascore" | "beta_score" => BetaScore,
+            _ => panic!("Invalid score type: {}. Valid options: hyperscore, openmshyperscore, weightedhyperscore, weightedopenmshyperscore, betascore", name),
         };
 
         PyScoreType {
@@ -390,6 +391,7 @@ impl PyScoreType {
             OpenMSHyperScore => "openmshyperscore".to_string(),
             WeightedSageHyperScore => "weightedhyperscore".to_string(),
             WeightedOpenMSHyperScore => "weightedopenmshyperscore".to_string(),
+            BetaScore => "betascore".to_string(),
         }
     }
 }
@@ -801,11 +803,25 @@ pub struct PyScorer {
 }
 
 impl PyScorer {
+    /// Generate UNIMOD sequences for all peptides in the database.
+    /// This is needed for V2 intensity store lookups.
+    fn generate_unimod_sequences(&self, db: &PyIndexedDatabase) -> Vec<String> {
+        db.inner
+            .peptides
+            .iter()
+            .map(|peptide| {
+                let sequence = String::from_utf8_lossy(&peptide.sequence).to_string();
+                sage_sequence_to_unimod_sequence(sequence, &peptide.modifications, &self.expected_mods)
+            })
+            .collect()
+    }
+
     /// Create a Scorer instance borrowing the database and optionally an intensity store
     fn make_scorer<'a>(
         &self,
         db: &'a PyIndexedDatabase,
         intensity_store: Option<&'a crate::py_intensity::PyPredictedIntensityStore>,
+        unimod_sequences: Option<&'a [String]>,
     ) -> Scorer<'a> {
         Scorer {
             db: &db.inner,
@@ -824,6 +840,7 @@ impl PyScorer {
             override_precursor_charge: self.override_precursor_charge,
             score_type: self.score_type.as_ref().expect("score_type must be set").inner,
             intensity_store: intensity_store.map(|s| &s.inner),
+            unimod_sequences,
         }
     }
 }
@@ -875,7 +892,12 @@ impl PyScorer {
         spectrum: &PyProcessedSpectrum,
         intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
     ) -> Vec<PyFeature> {
-        let scorer = self.make_scorer(db, intensity_store);
+        // Generate UNIMOD sequences if using V2 intensity store
+        let unimod_sequences = intensity_store
+            .filter(|store| store.inner.is_key_based())
+            .map(|_| self.generate_unimod_sequences(db));
+
+        let scorer = self.make_scorer(db, intensity_store, unimod_sequences.as_deref());
         scorer.score(&spectrum.inner)
             .into_iter()
             .map(|f| PyFeature { inner: f })
@@ -890,7 +912,12 @@ impl PyScorer {
         num_threads: usize,
         intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
     ) -> Vec<Vec<PyFeature>> {
-        let scorer = self.make_scorer(db, intensity_store);
+        // Generate UNIMOD sequences if using V2 intensity store
+        let unimod_sequences = intensity_store
+            .filter(|store| store.inner.is_key_based())
+            .map(|_| self.generate_unimod_sequences(db));
+
+        let scorer = self.make_scorer(db, intensity_store, unimod_sequences.as_deref());
         let pool = ThreadPoolBuilder::new()
             .num_threads(num_threads)
             .build()
@@ -908,7 +935,7 @@ impl PyScorer {
                 .collect()
         })
     }
-    
+
     #[pyo3(signature = (db, spectra, num_threads, intensity_store=None))]
     pub fn score_candidates(
         &self,
@@ -917,7 +944,12 @@ impl PyScorer {
         num_threads: usize,
         intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
     ) -> BTreeMap<String, Vec<PyPsm>> {
-        let scorer = self.make_scorer(db, intensity_store);
+        // Generate UNIMOD sequences if using V2 intensity store
+        let unimod_sequences = intensity_store
+            .filter(|store| store.inner.is_key_based())
+            .map(|_| self.generate_unimod_sequences(db));
+
+        let scorer = self.make_scorer(db, intensity_store, unimod_sequences.as_deref());
 
         let pool = ThreadPoolBuilder::new()
             .num_threads(num_threads)
@@ -1006,7 +1038,12 @@ impl PyScorer {
         query: &PyProcessedSpectrum,
         intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
     ) -> Vec<PyFeature> {
-        let scorer = self.make_scorer(db, intensity_store);
+        // Generate UNIMOD sequences if using V2 intensity store
+        let unimod_sequences = intensity_store
+            .filter(|store| store.inner.is_key_based())
+            .map(|_| self.generate_unimod_sequences(db));
+
+        let scorer = self.make_scorer(db, intensity_store, unimod_sequences.as_deref());
         scorer.score_chimera_fast(&query.inner)
             .into_iter()
             .map(|f| PyFeature { inner: f })
@@ -1020,7 +1057,12 @@ impl PyScorer {
         query: &PyProcessedSpectrum,
         intensity_store: Option<&crate::py_intensity::PyPredictedIntensityStore>,
     ) -> Vec<PyFeature> {
-        let scorer = self.make_scorer(db, intensity_store);
+        // Generate UNIMOD sequences if using V2 intensity store
+        let unimod_sequences = intensity_store
+            .filter(|store| store.inner.is_key_based())
+            .map(|_| self.generate_unimod_sequences(db));
+
+        let scorer = self.make_scorer(db, intensity_store, unimod_sequences.as_deref());
         scorer.score_standard(&query.inner)
             .into_iter()
             .map(|f| PyFeature { inner: f })

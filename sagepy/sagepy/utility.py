@@ -1,3 +1,4 @@
+import os
 import warnings
 from typing import Dict, Tuple, List, Optional, Union
 
@@ -253,8 +254,17 @@ def create_sage_database(
     bucket_size: int = 16384,
     static_mods: Union[Dict[str, str], Dict[int, str]] = {"C": "[UNIMOD:4]"},
     variable_mods: Union[Dict[str, List[int]], Dict[int, List[str]]] = {"M": ["[UNIMOD:35]"], "[": ["[UNIMOD:1]"]},
+    database_path: Optional[str] = None,
 ) -> IndexedDatabase:
-    """Create a SAGE database
+    """Create a SAGE database, optionally loading from or saving to disk.
+
+    This function supports database caching to avoid rebuilding the database
+    from FASTA on every run. When a database_path is provided:
+    - If the file exists, it will be loaded directly (skipping FASTA processing)
+    - If the file doesn't exist, the database will be built and saved to that path
+
+    This is especially useful when using intensity predictions (.sagi files),
+    as it ensures peptide indices remain stable across sessions.
 
     Args:
         fasta_path: The path to the FASTA file
@@ -268,10 +278,30 @@ def create_sage_database(
         bucket_size: The bucket size
         static_mods: The static modifications
         variable_mods: The variable modifications
+        database_path: Optional path to save/load the database (.sagdb format).
+            If provided and the file exists, the database will be loaded from disk.
+            If provided and the file doesn't exist, the database will be built
+            from FASTA and saved to this path.
 
     Returns:
         IndexedDatabase: The indexed database ready for searching
+
+    Example:
+        # First run - builds database and saves it
+        db = create_sage_database(
+            "proteins.fasta",
+            database_path="proteins.sagdb"
+        )
+
+        # Subsequent runs - loads from disk (much faster)
+        db = create_sage_database(
+            "proteins.fasta",
+            database_path="proteins.sagdb"
+        )
     """
+    # If database_path is provided and file exists, load from disk
+    if database_path is not None and os.path.exists(database_path):
+        return IndexedDatabase.load(database_path)
 
     # Configure enzyme digestion
     enzyme_builder = EnzymeBuilder(
@@ -297,8 +327,13 @@ def create_sage_database(
         bucket_size=bucket_size,
     )
 
-    # Generate and return the indexed database
+    # Generate the indexed database
     indexed_db = sage_config.generate_indexed_database()
+
+    # Save to disk if path provided
+    if database_path is not None:
+        indexed_db.save(database_path)
+
     return indexed_db
 
 
