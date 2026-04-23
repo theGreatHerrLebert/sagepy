@@ -11,6 +11,8 @@ A python interface to the core [SAGE](https://github.com/lazear/sage) search eng
 pip install sagepy
 ```
 
+Native mzML and MGF reading is powered by the Rust crate [mzdata](https://github.com/mobiusklein/mzdata).
+
 
 ### Build from source
 
