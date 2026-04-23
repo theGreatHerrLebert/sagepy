@@ -1,3 +1,4 @@
+import warnings
 from typing import List
 
 import sagepy_connector
@@ -60,15 +61,53 @@ class Tolerance:
         """Tolerance class
 
         Args:
-            da (float, optional): The tolerance in Da. Defaults to None.
-            ppm (float, optional): The tolerance in ppm. Defaults to None.
+            da (float, optional): Signed (low, high) tolerance in Da. The
+                conventional symmetric form is e.g. ``(-0.5, 0.5)``. Defaults
+                to None.
+            ppm (float, optional): Signed (low, high) tolerance in ppm. The
+                conventional symmetric form is e.g. ``(-10.0, 10.0)``. Note
+                that this is a SIGNED interval — passing ``(10.0, 10.0)``
+                yields a zero-width window that never matches anything.
+                Defaults to None.
+
+        Raises:
+            ValueError: if both / neither of da and ppm are provided, or if
+                low > high (reversed interval).
         """
         if da is not None and ppm is not None:
             raise ValueError("Only one of da or ppm can be set")
         elif da is None and ppm is None:
             raise ValueError("One of da or ppm must be set")
-        else:
-            self.__tolerance_ptr = psc.PyTolerance(da, ppm)
+
+        # Validate the (low, high) interval for whichever unit was supplied.
+        # A reversed interval is always a bug; a zero-width interval almost
+        # always is too — historically this footgun manifested as silent
+        # 0-PSM searches when callers wrote `Tolerance(ppm=(20, 20))` meaning
+        # "±20 ppm". Loud-warn on equal bounds, hard-error on swapped bounds.
+        bounds = ppm if ppm is not None else da
+        unit   = "ppm" if ppm is not None else "da"
+        try:
+            lo, hi = float(bounds[0]), float(bounds[1])
+        except (TypeError, IndexError, ValueError) as e:
+            raise ValueError(
+                f"{unit} must be a (low, high) tuple of two numbers"
+            ) from e
+        if lo > hi:
+            raise ValueError(
+                f"Tolerance({unit}=({lo}, {hi})): low > high — the interval "
+                f"is reversed; expected low <= high "
+                f"(e.g. {unit}=({-abs(hi)}, {abs(hi)}) for ±{abs(hi)})"
+            )
+        if lo == hi:
+            warnings.warn(
+                f"Tolerance({unit}=({lo}, {hi})): zero-width interval — "
+                f"this matches nothing. Did you mean "
+                f"{unit}=({-abs(hi)}, {abs(hi)})?",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        self.__tolerance_ptr = psc.PyTolerance(da, ppm)
 
     def get_py_ptr(self):
         return self.__tolerance_ptr

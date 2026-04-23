@@ -1,4 +1,5 @@
 """Tests for sagepy.core.mass module."""
+import warnings
 import pytest
 from sagepy.core.mass import Tolerance, Composition, CONSTANTS, monoisotopic
 
@@ -27,6 +28,43 @@ class TestTolerance:
         """Test that providing neither da nor ppm raises an error."""
         with pytest.raises(ValueError):
             Tolerance()
+
+    def test_zero_width_ppm_warns(self):
+        """A zero-width ppm window is almost always a mistake (the user
+        meant the symmetric form). It should warn but still construct."""
+        with pytest.warns(UserWarning, match="zero-width"):
+            tol = Tolerance(ppm=(20.0, 20.0))
+        assert tol.ppm == (20.0, 20.0)
+
+    def test_zero_width_da_warns(self):
+        """Same check for the Da branch."""
+        with pytest.warns(UserWarning, match="zero-width"):
+            tol = Tolerance(da=(0.5, 0.5))
+        assert tol.da == (0.5, 0.5)
+
+    def test_reversed_ppm_raises(self):
+        """A reversed (low > high) interval is always a bug."""
+        with pytest.raises(ValueError, match="reversed"):
+            Tolerance(ppm=(10.0, -10.0))
+
+    def test_reversed_da_raises(self):
+        """A reversed Da interval is always a bug."""
+        with pytest.raises(ValueError, match="reversed"):
+            Tolerance(da=(0.5, -0.5))
+
+    def test_symmetric_no_warning(self):
+        """The conventional symmetric usage must NOT warn."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # any warning becomes an exception
+            Tolerance(ppm=(-10.0, 10.0))
+            Tolerance(da=(-0.5, 0.5))
+
+    def test_asymmetric_no_warning(self):
+        """Legitimately asymmetric tolerances (e.g. systematic offset) must
+        not warn — only equal/reversed bounds are flagged."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            Tolerance(ppm=(-5.0, 15.0))
 
     def test_ppm_bounds(self):
         """Test PPM tolerance bounds calculation.
