@@ -1,4 +1,9 @@
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+try:
+    from sklearn.preprocessing import StandardScaler, MinMaxScaler
+except ImportError as exc:
+    raise ImportError(
+        "sagepy.rescore requires scikit-learn. Install it separately to use rescoring utilities."
+    ) from exc
 
 from tqdm import tqdm
 from typing import Union, List, Dict

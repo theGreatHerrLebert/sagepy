@@ -1,8 +1,161 @@
+use mzdata::io::{MZFileReader, MZReader as MzDataReader};
+use mzdata::prelude::{IonMobilityMeasure as _, SpectrumLike as _};
+use mzdata::spectrum::{
+    MultiLayerSpectrum as MzSpectrum, RefPeakDataLevel as MzRefPeakDataLevel,
+    SignalContinuity as MzSignalContinuity,
+};
 use numpy::{IntoPyArray, PyArray1, PyArrayMethods};
+use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 
 use crate::py_mass::PyTolerance;
-use sage_core::spectrum::{Deisotoped, IMPeak, Peak, Precursor, ProcessedSpectrum, RawSpectrum, Representation, SpectrumProcessor};
+use sage_core::mass::Tolerance as SageTolerance;
+use sage_core::spectrum::{
+    Deisotoped, IMPeak, Peak, Precursor, ProcessedSpectrum, RawSpectrum, Representation,
+    SpectrumProcessor,
+};
+
+type MzDataSpectrum = MzSpectrum<mzdata::mzpeaks::CentroidPeak, mzdata::mzpeaks::DeconvolutedPeak>;
+
+fn to_representation(signal_continuity: MzSignalContinuity) -> Representation {
+    match signal_continuity {
+        MzSignalContinuity::Profile => Representation::Profile,
+        _ => Representation::Centroid,
+    }
+}
+
+fn to_tolerance(window: &mzdata::spectrum::IsolationWindow) -> Option<SageTolerance> {
+    if window.is_empty() {
+        None
+    } else {
+        Some(SageTolerance::Da(window.lower_bound, window.upper_bound))
+    }
+}
+
+fn to_precursors(spectrum: &MzDataSpectrum) -> Vec<PyPrecursor> {
+    let fallback_ion_mobility = spectrum
+        .acquisition()
+        .iter()
+        .find_map(|scan| scan.ion_mobility())
+        .map(|value| value as f32);
+
+    spectrum
+        .precursor_iter()
+        .filter_map(|precursor| {
+            let selected_ion = precursor.ions.first()?;
+            let charge = selected_ion.charge.and_then(|value| value.try_into().ok());
+            let inverse_ion_mobility = selected_ion
+                .ion_mobility()
+                .or_else(|| fallback_ion_mobility.map(|value| value as f64))
+                .map(|value| value as f32);
+            let collision_energy =
+                (precursor.activation.energy != 0.0).then_some(precursor.activation.energy);
+
+            Some(PyPrecursor {
+                inner: Precursor {
+                    mz: selected_ion.mz as f32,
+                    intensity: Some(selected_ion.intensity),
+                    charge,
+                    spectrum_ref: precursor.precursor_id.clone(),
+                    isolation_window: to_tolerance(&precursor.isolation_window),
+                    inverse_ion_mobility,
+                },
+                collision_energy,
+            })
+        })
+        .collect()
+}
+
+fn extract_arrays(spectrum: &MzDataSpectrum) -> PyResult<(Vec<f32>, Vec<f32>, Option<Vec<f32>>)> {
+    match spectrum.peaks() {
+        MzRefPeakDataLevel::Missing => Ok((Vec::new(), Vec::new(), None)),
+        MzRefPeakDataLevel::RawData(arrays) => {
+            let mz = arrays
+                .mzs()
+                .map_err(|err| PyIOError::new_err(err.to_string()))?
+                .iter()
+                .map(|value| *value as f32)
+                .collect();
+            let intensity = arrays
+                .intensities()
+                .map_err(|err| PyIOError::new_err(err.to_string()))?
+                .iter()
+                .copied()
+                .collect();
+            let mobility = arrays
+                .ion_mobility()
+                .ok()
+                .map(|(values, _)| values.iter().map(|value| *value as f32).collect());
+            Ok((mz, intensity, mobility))
+        }
+        MzRefPeakDataLevel::Centroid(peaks) => {
+            let mz = peaks.iter().map(|peak| peak.mz as f32).collect();
+            let intensity = peaks.iter().map(|peak| peak.intensity).collect();
+            Ok((mz, intensity, None))
+        }
+        MzRefPeakDataLevel::Deconvoluted(peaks) => {
+            let mz = peaks.iter().map(|peak| peak.mz() as f32).collect();
+            let intensity = peaks.iter().map(|peak| peak.intensity).collect();
+            Ok((mz, intensity, None))
+        }
+    }
+}
+
+fn to_raw_spectrum(spectrum: &MzDataSpectrum, file_id: usize) -> PyResult<PyRawSpectrum> {
+    let (mz, intensity, mobility) = extract_arrays(spectrum)?;
+    let precursors = to_precursors(spectrum);
+    let collision_energies = precursors
+        .iter()
+        .map(|precursor| precursor.collision_energy)
+        .collect();
+    let ion_injection_time = spectrum
+        .acquisition()
+        .iter()
+        .next()
+        .map(|scan| scan.injection_time)
+        .unwrap_or_default();
+
+    Ok(PyRawSpectrum {
+        inner: RawSpectrum {
+            file_id,
+            ms_level: spectrum.ms_level(),
+            id: spectrum.id().to_string(),
+            precursors: precursors
+                .into_iter()
+                .map(|precursor| precursor.inner)
+                .collect(),
+            representation: to_representation(spectrum.signal_continuity()),
+            scan_start_time: spectrum.start_time() as f32,
+            ion_injection_time,
+            total_ion_current: spectrum.peaks().tic(),
+            mz,
+            intensity,
+            mobility,
+        },
+        collision_energies,
+    })
+}
+
+#[pyfunction]
+#[pyo3(signature = (path, file_id=0, ms_level=None))]
+pub fn read_spectra(
+    path: &str,
+    file_id: usize,
+    ms_level: Option<u8>,
+) -> PyResult<Vec<PyRawSpectrum>> {
+    let reader =
+        MzDataReader::open_path(path).map_err(|err| PyIOError::new_err(err.to_string()))?;
+    let mut spectra = Vec::new();
+
+    for spectrum in reader {
+        if ms_level.is_some_and(|level| spectrum.ms_level() != level) {
+            continue;
+        }
+        spectra.push(to_raw_spectrum(&spectrum, file_id)?);
+    }
+
+    Ok(spectra)
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -119,9 +272,14 @@ impl PyProcessedSpectrum {
     #[getter]
     pub fn precursors(&self) -> Vec<PyPrecursor> {
         self.inner
-            .precursors.iter().zip(self.collision_energies.iter())
+            .precursors
+            .iter()
+            .zip(self.collision_energies.iter())
             .into_iter()
-            .map(|p| PyPrecursor { inner: p.0.clone(), collision_energy: *p.1})
+            .map(|p| PyPrecursor {
+                inner: p.0.clone(),
+                collision_energy: *p.1,
+            })
             .collect()
     }
 
@@ -343,9 +501,14 @@ impl PyRawSpectrum {
     #[getter]
     pub fn precursors(&self) -> Vec<PyPrecursor> {
         self.inner
-            .precursors.iter().zip(self.collision_energies.iter())
+            .precursors
+            .iter()
+            .zip(self.collision_energies.iter())
             .into_iter()
-            .map(|p| PyPrecursor { inner: p.0.clone(), collision_energy: *p.1 })
+            .map(|p| PyPrecursor {
+                inner: p.0.clone(),
+                collision_energy: *p.1,
+            })
             .collect()
     }
 
@@ -380,10 +543,13 @@ impl PyRawSpectrum {
     pub fn intensity(&self, py: Python) -> Py<PyArray1<f32>> {
         self.inner.intensity.clone().into_pyarray(py).unbind()
     }
-    
+
     #[getter]
     pub fn mobility(&self, py: Python) -> Option<Py<PyArray1<f32>>> {
-        self.inner.mobility.as_ref().map(|mob| mob.clone().into_pyarray(py).unbind())
+        self.inner
+            .mobility
+            .as_ref()
+            .map(|mob| mob.clone().into_pyarray(py).unbind())
     }
 
     pub fn filter_top_n(&self, n: usize) -> PyRawSpectrum {
@@ -408,9 +574,17 @@ impl PyRawSpectrum {
                 })
                 .collect::<Vec<_>>();
 
-            peaks.sort_by(|a, b| b.intensity.partial_cmp(&a.intensity).unwrap_or(std::cmp::Ordering::Equal));
+            peaks.sort_by(|a, b| {
+                b.intensity
+                    .partial_cmp(&a.intensity)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
             let mut top_peaks = peaks.into_iter().take(n).collect::<Vec<_>>();
-            top_peaks.sort_by(|a, b| a.mass.partial_cmp(&b.mass).unwrap_or(std::cmp::Ordering::Equal));
+            top_peaks.sort_by(|a, b| {
+                a.mass
+                    .partial_cmp(&b.mass)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
 
             PyRawSpectrum {
                 inner: RawSpectrum {
@@ -435,14 +609,28 @@ impl PyRawSpectrum {
                 intensity: f32,
             }
 
-            let mut peaks = self.inner.mz.iter()
+            let mut peaks = self
+                .inner
+                .mz
+                .iter()
                 .zip(self.inner.intensity.iter())
-                .map(|(m, i)| Peak { mass: *m, intensity: *i })
+                .map(|(m, i)| Peak {
+                    mass: *m,
+                    intensity: *i,
+                })
                 .collect::<Vec<_>>();
 
-            peaks.sort_by(|a, b| b.intensity.partial_cmp(&a.intensity).unwrap_or(std::cmp::Ordering::Equal));
+            peaks.sort_by(|a, b| {
+                b.intensity
+                    .partial_cmp(&a.intensity)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
             let mut top_peaks = peaks.into_iter().take(n).collect::<Vec<_>>();
-            top_peaks.sort_by(|a, b| a.mass.partial_cmp(&b.mass).unwrap_or(std::cmp::Ordering::Equal));
+            top_peaks.sort_by(|a, b| {
+                a.mass
+                    .partial_cmp(&b.mass)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
 
             PyRawSpectrum {
                 inner: RawSpectrum {
@@ -513,18 +701,17 @@ impl PyIMPeak {
     pub fn mass(&self) -> f32 {
         self.inner.mass
     }
-    
+
     #[getter]
     pub fn intensity(&self) -> f32 {
         self.inner.intensity
     }
-    
+
     #[getter]
     pub fn mobility(&self) -> f32 {
         self.inner.mobility
     }
 }
-
 
 #[pyclass]
 #[derive(Clone)]
@@ -535,11 +722,7 @@ pub struct PySpectrumProcessor {
 #[pymethods]
 impl PySpectrumProcessor {
     #[new]
-    pub fn new(
-        take_top_n: usize,
-        min_deisotope_mz: f32,
-        deisotope: bool,
-    ) -> Self {
+    pub fn new(take_top_n: usize, min_deisotope_mz: f32, deisotope: bool) -> Self {
         PySpectrumProcessor {
             inner: SpectrumProcessor {
                 take_top_n,
@@ -695,6 +878,7 @@ impl PyPrecursor {
 
 #[pymodule]
 pub fn py_spectrum(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(read_spectra, m)?)?;
     m.add_class::<PyPeak>()?;
     m.add_class::<PyIMPeak>()?;
     m.add_class::<PyDeisotoped>()?;

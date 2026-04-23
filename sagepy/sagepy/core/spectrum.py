@@ -8,6 +8,23 @@ from numpy.typing import NDArray
 from sagepy.core.mass import Tolerance
 psc = sagepy_connector.py_spectrum
 
+
+def read_spectra(file_path: str, ms_level: Optional[int] = None, file_id: int = 0) -> List["RawSpectrum"]:
+    """Read spectra from a mass spectrometry file using the native Rust reader.
+
+    Args:
+        file_path: Path to the input file. `mzML` and `MGF` are supported.
+        ms_level: Optional MS level filter.
+        file_id: File identifier propagated to the loaded spectra.
+
+    Returns:
+        List[RawSpectrum]: The loaded spectra.
+    """
+    return [
+        RawSpectrum.from_py_raw_spectrum(spec)
+        for spec in psc.read_spectra(file_path, file_id=file_id, ms_level=ms_level)
+    ]
+
 class IMPeak:
     def __init__(self, mass: float, intensity: float, mobility: float):
         """IMPeak class

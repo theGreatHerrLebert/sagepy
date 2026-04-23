@@ -617,7 +617,10 @@ class Feature:
                  delta_rt_model: Optional[float] = None,
                  ims: Optional[float] = None,
                  predicted_ims: Optional[float] = None,
-                 delta_ims_model: Optional[float] = None):
+                 delta_ims_model: Optional[float] = None,
+                 protein_group_q: Optional[float] = None,
+                 protein_groups: Optional[str] = None,
+                 num_protein_groups: Optional[int] = None):
         """Feature class
 
         Args:
@@ -671,7 +674,10 @@ class Feature:
                                            delta_rt_model,
                                            ims,
                                            predicted_ims,
-                                           delta_ims_model, )
+                                           delta_ims_model,
+                                           protein_group_q,
+                                           protein_groups,
+                                           num_protein_groups)
 
     @classmethod
     def from_py_feature(cls, feature: psc.PyFeature):
@@ -820,6 +826,18 @@ class Feature:
         return self.__feature_ptr.protein_q
 
     @property
+    def protein_group_q(self) -> float:
+        return self.__feature_ptr.protein_group_q
+
+    @property
+    def protein_groups(self) -> Optional[str]:
+        return self.__feature_ptr.protein_groups
+
+    @property
+    def num_protein_groups(self) -> int:
+        return self.__feature_ptr.num_protein_groups
+
+    @property
     def ms2_intensity(self) -> float:
         return self.__feature_ptr.ms2_intensity
 
@@ -889,6 +907,9 @@ class Feature:
                 f"spectrum q: {self.spectrum_q}, "
                 f"peptide q: {self.peptide_q}, "
                 f"protein q: {self.protein_q}, "
+                f"protein group q: {self.protein_group_q}, "
+                f"protein groups: {self.protein_groups}, "
+                f"num protein groups: {self.num_protein_groups}, "
                 f"ms2 intensity: {self.ms2_intensity}), "
                 f"fragments: {self.fragments})")
 
@@ -1056,4 +1077,3 @@ def peptide_spectrum_match_list_to_intensity_feature_matrix(
         [p.get_py_ptr() for p in psm_list], epsilon, reduce_matched, num_threads
     )
     return np.array(features)
-

@@ -8,10 +8,10 @@ name = "sagepy_connector"
 crate-type = ["cdylib"]
 
 [dependencies]
-# sage-core = { path = "../../sage/crates/sage" }
 sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git" }
 qfdrust = { path  = "../qfdrust" }
 unimod = { path = "../unimod" }
+mzdata = { version = "0.63.4", default-features = false, features = ["mzml", "mgf", "zlib-ng-compat"] }
 pyo3 = { version = "0.27", features = ["extension-module"] }
 numpy = "0.27"
 rayon = "1.10.0"
