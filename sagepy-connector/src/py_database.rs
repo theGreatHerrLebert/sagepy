@@ -200,7 +200,8 @@ impl PyIndexedDatabase {
 
     #[getter]
     pub fn fragment_indices(&self, py: Python) -> Py<PyArray1<u32>> {
-        let data: Vec<_> = self.inner
+        let data: Vec<_> = self
+            .inner
             .fragments
             .iter()
             .map(|f| f.peptide_index.0)
@@ -210,11 +211,7 @@ impl PyIndexedDatabase {
 
     #[getter]
     pub fn fragment_mzs(&self, py: Python) -> Py<PyArray1<f32>> {
-        let data: Vec<_> = self.inner
-            .fragments
-            .iter()
-            .map(|f| f.fragment_mz)
-            .collect();
+        let data: Vec<_> = self.inner.fragments.iter().map(|f| f.fragment_mz).collect();
         data.into_pyarray(py).unbind()
     }
 
@@ -222,15 +219,19 @@ impl PyIndexedDatabase {
         let mut fragment_dict: HashMap<u32, Vec<f32>> = HashMap::new();
 
         for fragment in &self.inner.fragments {
-            fragment_dict.entry(fragment.peptide_index.0).or_insert(Vec::new()).push(fragment.fragment_mz);
+            fragment_dict
+                .entry(fragment.peptide_index.0)
+                .or_insert(Vec::new())
+                .push(fragment.fragment_mz);
         }
 
         // sort the fragment ions by m/z
-        fragment_dict.iter_mut().for_each(|(_, v)| v.sort_by(|a, b| a.partial_cmp(b).unwrap()));
+        fragment_dict
+            .iter_mut()
+            .for_each(|(_, v)| v.sort_by(|a, b| a.partial_cmp(b).unwrap()));
 
         fragment_dict
     }
-
 
     #[getter]
     pub fn num_fragments(&self) -> usize {
@@ -274,7 +275,6 @@ impl PyIndexedDatabase {
     pub fn decoy_tag(&self) -> String {
         self.inner.decoy_tag.clone()
     }
-
 }
 
 #[pyclass]
@@ -292,7 +292,7 @@ impl PyEnzymeBuilder {
         min_len: Option<usize>,
         max_len: Option<usize>,
         cleave_at: Option<String>,
-        restrict: Option<char>,
+        restrict: Option<String>,
         c_terminal: Option<bool>,
         semi_enzymatic: Option<bool>,
     ) -> PyResult<Self> {
@@ -343,8 +343,8 @@ impl PyEnzymeBuilder {
     }
 
     #[getter]
-    pub fn restrict(&self) -> Option<char> {
-        self.inner.restrict
+    pub fn restrict(&self) -> Option<String> {
+        self.inner.restrict.clone()
     }
 
     #[getter]

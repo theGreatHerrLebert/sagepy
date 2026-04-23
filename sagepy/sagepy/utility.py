@@ -3,49 +3,43 @@ from typing import Dict, Tuple, List, Optional, Union
 
 import re
 
-from numba import jit
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
 from sagepy.core.modification import process_variable_start_end_mods
 from sagepy.core.scoring import Psm
-from sagepy.core.spectrum import ProcessedSpectrum, RawSpectrum, Precursor, SpectrumProcessor, Representation
+from sagepy.core.spectrum import ProcessedSpectrum, RawSpectrum, Precursor, SpectrumProcessor, Representation, read_spectra
 from sagepy.core.mass import Tolerance
 from sagepy.core.database import IndexedDatabase, EnzymeBuilder, SageSearchConfiguration
 from sagepy.core.unimod import variable_unimod_mods_to_set, static_unimod_mods_to_set
 from sagepy.qfdr.tdc import target_decoy_competition_pandas
-
-from pyteomics import mzml
 
 import sagepy_connector
 psc = sagepy_connector.py_utility
 from typing import Iterator
 
 
-@jit(nopython=True)
 def calculate_ppm_error(measured_value, reference_value):
-    ppm_error = ((measured_value - reference_value) / reference_value) * 1_000_000
-    return ppm_error
+    return psc.calculate_ppm_error(float(measured_value), float(reference_value))
 
 
-@jit(nopython=True)
 def calculate_ppms(measured_values, reference_values):
-    n = len(measured_values)
-    ppm_errors = np.empty(n, dtype=np.float64)
-    for i in range(n):
-        ppm_errors[i] = calculate_ppm_error(measured_values[i], reference_values[i])
-    return ppm_errors
+    measured = np.asarray(measured_values, dtype=np.float64)
+    reference = np.asarray(reference_values, dtype=np.float64)
+    return np.asarray(psc.calculate_ppms(measured.tolist(), reference.tolist()), dtype=np.float64)
 
 
-@jit(nopython=True)
 def mean_ppm(mz_observed, mz_calculated) -> float:
-    return np.mean(calculate_ppms(mz_observed, mz_calculated))
+    observed = np.asarray(mz_observed, dtype=np.float64)
+    calculated = np.asarray(mz_calculated, dtype=np.float64)
+    return psc.mean_ppm(observed.tolist(), calculated.tolist())
 
 
-@jit(nopython=True)
 def median_ppm(mz_observed, mz_calculated) -> float:
-    return np.median(calculate_ppms(mz_observed, mz_calculated))
+    observed = np.asarray(mz_observed, dtype=np.float64)
+    calculated = np.asarray(mz_calculated, dtype=np.float64)
+    return psc.median_ppm(observed.tolist(), calculated.tolist())
 
 
 def prosit_intensities_to_fragments_map(intensities: NDArray) -> Dict[Tuple[int, int, int], float]:
@@ -302,80 +296,86 @@ def create_sage_database(
     return indexed_db
 
 
-def extract_mzml_data(file_path: str) -> pd.DataFrame:
-    """
-    Extract relevant data from an mzML file
+def _process_loaded_spectra(
+        spectra: List[RawSpectrum],
+        take_top_n_peaks: int = 150,
+        min_deisotope_mz: float = 0.0,
+        deisotope: bool = True,
+) -> pd.DataFrame:
+    processor = SpectrumProcessor(
+        take_top_n=take_top_n_peaks,
+        min_deisotope_mz=min_deisotope_mz,
+        deisotope=deisotope,
+    )
+
+    rows = []
+    for spectrum in spectra:
+        if not spectrum.precursors:
+            warnings.warn(
+                f"Skipping spectrum {spectrum.id!r} because no precursor metadata was found.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            continue
+
+        precursor = spectrum.precursors[0]
+        processed_spec = processor.process(spectrum)
+
+        rows.append(
+            {
+                "spec_id": spectrum.id,
+                "precursor_mz": precursor.mz,
+                "precursor_charge": precursor.charge,
+                "precursor_intensity": precursor.intensity,
+                "retention_time": spectrum.scan_start_time,
+                "injection_time": spectrum.ion_injection_time,
+                "collision_energy": precursor.collision_energy,
+                "total_ion_current": spectrum.total_ion_current,
+                "processed_spec": processed_spec,
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def extract_ms_data(
+        file_path: str,
+        ms_level: int = 2,
+        file_id: int = 0,
+        take_top_n_peaks: int = 150,
+        min_deisotope_mz: float = 0.0,
+        deisotope: bool = True,
+) -> pd.DataFrame:
+    """Extract relevant spectrum data from an MS data file.
+
     Args:
-        file_path: Path to the mzML file
+        file_path: Path to the input file. `mzML` and `MGF` are supported.
+        ms_level: Optional MS level filter, defaults to MS2 spectra.
+        file_id: File identifier propagated to the loaded spectra.
+        take_top_n_peaks: Number of peaks kept during spectrum processing.
+        min_deisotope_mz: Minimum m/z used by the spectrum processor.
+        deisotope: Whether to deisotope during processing.
 
     Returns:
-        pd.DataFrame: A pandas DataFrame with the extracted data
-
+        pd.DataFrame: A dataframe containing spectrum metadata and processed spectra.
     """
-    d = []
+    spectra = read_spectra(file_path=file_path, ms_level=ms_level, file_id=file_id)
+    return _process_loaded_spectra(
+        spectra,
+        take_top_n_peaks=take_top_n_peaks,
+        min_deisotope_mz=min_deisotope_mz,
+        deisotope=deisotope,
+    )
 
-    with mzml.read(file_path) as reader:
-        for i, spectrum in enumerate(reader):
-            # Check if the spectrum is an MS2 (DDA data usually has MS2 spectra)
-            if spectrum['ms level'] == 2:
-                precursor = spectrum['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]
 
-                spec_id = spectrum['id']
-                total_ion_current = spectrum['total ion current']
-                retention_time = spectrum['scanList']['scan'][0]['scan start time']
-                injection_time = spectrum['scanList']['scan'][0]['ion injection time']
-                collision_energy = spectrum['precursorList']['precursor'][0]['activation']['collision energy']
+def extract_mzml_data(file_path: str, **kwargs) -> pd.DataFrame:
+    """Extract relevant data from an `mzML` file."""
+    return extract_ms_data(file_path=file_path, **kwargs)
 
-                # Extract the relevant metadata
-                isolation_window = spectrum['precursorList']['precursor'][0]['isolationWindow']
 
-                lower = isolation_window['isolation window target m/z'] - isolation_window[
-                    'isolation window lower offset']
-                upper = isolation_window['isolation window target m/z'] + isolation_window[
-                    'isolation window upper offset']
-
-                precursor_mz = precursor['selected ion m/z']
-                precursor_charge = precursor['charge state']
-                precursor_intensity = precursor.get('peak intensity', None)
-
-                # Extract the fragment ion spectrum (m/z and intensity arrays)
-                fragment_mz = spectrum['m/z array']
-                fragment_intensity = spectrum['intensity array']
-
-                processed_spec = create_query(
-                    precursor_mz=precursor_mz,
-                    precursor_charge=precursor_charge,
-                    precursor_intensity=precursor_intensity,
-                    isolation_window_lower=lower,
-                    isolation_window_upper=upper,
-                    collision_energy=collision_energy,
-                    retention_time=retention_time,
-                    ion_injection_time=injection_time,
-                    total_ion_current=total_ion_current,
-                    fragment_mz=fragment_mz,
-                    fragment_intensity=fragment_intensity,
-                    spec_id=spec_id,
-                )
-
-                # Create a row dictionary with relevant data
-                row = {
-                    "spec_id": spec_id,
-                    "precursor_mz": precursor_mz,
-                    "precursor_charge": precursor_charge,
-                    "precursor_intensity": precursor_intensity,
-                    "retention_time": retention_time,
-                    "injection_time": injection_time,
-                    "collision_energy": collision_energy,
-                    "total_ion_current": total_ion_current,
-                    "processed_spec": processed_spec
-                }
-
-                # Append the row to the list
-                d.append(row)
-
-    # Convert the list of dictionaries to a pandas DataFrame
-    exp_data = pd.DataFrame(d)
-    return exp_data
+def extract_mgf_data(file_path: str, **kwargs) -> pd.DataFrame:
+    """Extract relevant data from an `MGF` file."""
+    return extract_ms_data(file_path=file_path, **kwargs)
 
 def psm_collection_to_feature_matrix(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], num_threads: int = 4) -> NDArray:
     """Convert a list of peptide spectrum matches to a dictionary

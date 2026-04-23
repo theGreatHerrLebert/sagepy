@@ -145,15 +145,29 @@ pub struct PyEnzyme {
     pub inner: Enzyme,
 }
 
+fn skip_suffix_to_string(skip_suffix: &[bool; 26]) -> String {
+    skip_suffix
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, value)| {
+            if *value {
+                Some((b'A' + idx as u8) as char)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 #[pymethods]
 impl PyEnzyme {
     #[new]
-    #[pyo3(signature = (cleave, c_terminal, semi_enzymatic, skip_suffix=None))]
+    #[pyo3(signature = (cleave, c_terminal, skip_suffix="", semi_enzymatic=false))]
     fn new(
         cleave: &str,
         c_terminal: bool,
+        skip_suffix: &str,
         semi_enzymatic: bool,
-        skip_suffix: Option<char>,
     ) -> PyResult<Self> {
         match Enzyme::new(cleave, skip_suffix, c_terminal, semi_enzymatic) {
             Some(enzyme) => Ok(PyEnzyme { inner: enzyme }),
@@ -167,8 +181,8 @@ impl PyEnzyme {
     }
 
     #[getter]
-    fn skip_suffix(&self) -> Option<char> {
-        self.inner.skip_suffix
+    fn skip_suffix(&self) -> String {
+        skip_suffix_to_string(&self.inner.skip_suffix)
     }
 
     #[getter]
@@ -187,10 +201,8 @@ impl PyEnzyme {
             .collect();
 
         let rows = sites_flat.len() / 2;
-        let np_array: Py<PyArray2<usize>> = sites_flat
-            .into_pyarray(py)
-            .reshape([rows, 2])?
-            .unbind();
+        let np_array: Py<PyArray2<usize>> =
+            sites_flat.into_pyarray(py).reshape([rows, 2])?.unbind();
 
         Ok(np_array)
     }
@@ -211,7 +223,7 @@ impl PyEnzymeParameters {
                 missed_cleavages,
                 min_len,
                 max_len,
-                enyzme: enzyme.map(|e| e.inner),
+                enzyme: enzyme.map(|e| e.inner),
             },
         }
     }
@@ -233,7 +245,7 @@ impl PyEnzymeParameters {
 
     #[getter]
     fn enzyme(&self, _py: Python) -> PyResult<Option<PyEnzyme>> {
-        match &self.inner.enyzme {
+        match &self.inner.enzyme {
             Some(enzyme) => Ok(Some(PyEnzyme {
                 inner: enzyme.clone(),
             })),

@@ -4,9 +4,14 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-from sklearn.linear_model import Ridge, Lasso
+try:
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import mean_squared_error
+    from sklearn.linear_model import Ridge, Lasso
+except ImportError as exc:
+    raise ImportError(
+        "sagepy.rescore requires scikit-learn. Install it separately to use rescoring utilities."
+    ) from exc
 
 from sagepy.core import Psm
 from sagepy.qfdr.tdc import target_decoy_competition_pandas

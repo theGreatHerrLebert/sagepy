@@ -1,6 +1,11 @@
 import numpy as np
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.preprocessing import StandardScaler
+try:
+    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+    from sklearn.preprocessing import StandardScaler
+except ImportError as exc:
+    raise ImportError(
+        "sagepy.rescore requires scikit-learn. Install it separately to use rescoring utilities."
+    ) from exc
 
 from tqdm import tqdm
 from typing import Union, List, Dict

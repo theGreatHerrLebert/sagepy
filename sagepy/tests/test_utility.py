@@ -1,40 +1,11 @@
 """Tests for sagepy utility functions."""
 import pytest
 import numpy as np
-from numba import jit
+from sagepy.utility import calculate_ppm_error, calculate_ppms, mean_ppm, median_ppm
 
 # Import directly from sagepy_connector for tests that don't need full utility module
 import sagepy_connector
 psc = sagepy_connector.py_utility
-
-
-@jit(nopython=True)
-def calculate_ppm_error(measured_value, reference_value):
-    """Calculate PPM error between two values."""
-    ppm_error = ((measured_value - reference_value) / reference_value) * 1_000_000
-    return ppm_error
-
-
-@jit(nopython=True)
-def calculate_ppms(measured_values, reference_values):
-    """Calculate PPM errors for arrays of values."""
-    n = len(measured_values)
-    ppm_errors = np.empty(n, dtype=np.float64)
-    for i in range(n):
-        ppm_errors[i] = calculate_ppm_error(measured_values[i], reference_values[i])
-    return ppm_errors
-
-
-@jit(nopython=True)
-def mean_ppm(mz_observed, mz_calculated):
-    """Calculate mean PPM error."""
-    return np.mean(calculate_ppms(mz_observed, mz_calculated))
-
-
-@jit(nopython=True)
-def median_ppm(mz_observed, mz_calculated):
-    """Calculate median PPM error."""
-    return np.median(calculate_ppms(mz_observed, mz_calculated))
 
 
 def prosit_intensities_to_fragments_map(intensities):
