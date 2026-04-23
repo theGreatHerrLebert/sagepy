@@ -10,6 +10,8 @@ The project is structured as follows:
 *	`qfdrust`: This crate implements basic false discovery rate (FDR) estimation using TDC, following the methods proposed by [Crema](https://github.com/Noble-Lab/crema).
 *	`unimod`: A work-in-progress crate that bridges Sage-style PSM annotation with the UNIMOD standard.
 
+Native mzML and MGF reading in `sagepy` is powered by the Rust crate [mzdata](https://github.com/mobiusklein/mzdata).
+
 ## Quickstart
 Get started quickly by installing sagepy via pip:
 ```
@@ -20,6 +22,8 @@ Check out the tutorial notebooks to dive into [DB generation, searching, and FDR
 ## Get involved
 Do you have any questions or want to contribute? Feel free to reach out at any time!
 
+## Acknowledgements
+`sagepy` builds on a number of open-source Rust and Python projects. In particular, the native mzML and MGF reader path is implemented using [mzdata](https://github.com/mobiusklein/mzdata).
 
 ## Cite
 
