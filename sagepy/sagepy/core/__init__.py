@@ -1,6 +1,6 @@
 from .scoring import Scorer, Fragments, IonType, Psm, Feature
 from .database import IndexedDatabase, EnzymeBuilder, SageSearchConfiguration
-from .spectrum import RawSpectrum, ProcessedSpectrum, ProcessedIMSpectrum, Precursor, SpectrumProcessor, Representation, read_spectra
+from .spectrum import RawSpectrum, ProcessedSpectrum, ProcessedIMSpectrum, Precursor, SpectrumProcessor, Representation, read_spectra, BrukerProcessingConfig
 from .mass import Tolerance
 from .ion_series import IonSeries
 from .peptide import Peptide
