@@ -9,6 +9,7 @@ use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 
 use crate::py_mass::PyTolerance;
+use crate::tdf::{BrukerMS1CentoidingConfig, BrukerProcessingConfig, TdfReader};
 use sage_core::mass::Tolerance as SageTolerance;
 use sage_core::spectrum::{
     Deisotoped, IMPeak, Peak, Precursor, ProcessedSpectrum, RawSpectrum, Representation,
@@ -137,14 +138,19 @@ fn to_raw_spectrum(spectrum: &MzDataSpectrum, file_id: usize) -> PyResult<PyRawS
 }
 
 #[pyfunction]
-#[pyo3(signature = (path, file_id=0, ms_level=None))]
+#[pyo3(signature = (path, file_id=0, ms_level=None, bruker_config=None, requires_ms1=false))]
 pub fn read_spectra(
     path: &str,
     file_id: usize,
     ms_level: Option<u8>,
+    bruker_config: Option<PyBrukerProcessingConfig>,
+    requires_ms1: bool,
 ) -> PyResult<Vec<PyRawSpectrum>> {
     if is_pmsms_path(path) {
         return read_pmsms_spectra(path, file_id, ms_level);
+    }
+    if is_d_path(path) {
+        return read_tdf_spectra(path, file_id, ms_level, bruker_config, requires_ms1);
     }
 
     let reader =
@@ -174,9 +180,30 @@ fn read_pmsms_spectra(
     let dir = std::path::Path::new(path);
     let raw = crate::pmsms::parse(dir, file_id)
         .map_err(|err| PyIOError::new_err(err.to_string()))?;
+    Ok(raw_to_py_raw_spectra(raw, ms_level))
+}
 
-    Ok(raw
-        .into_iter()
+fn is_d_path(path: &str) -> bool {
+    let trimmed = path.trim_end_matches('/');
+    trimmed.to_ascii_lowercase().ends_with(".d")
+}
+
+fn read_tdf_spectra(
+    path: &str,
+    file_id: usize,
+    ms_level: Option<u8>,
+    bruker_config: Option<PyBrukerProcessingConfig>,
+    requires_ms1: bool,
+) -> PyResult<Vec<PyRawSpectrum>> {
+    let cfg = bruker_config.map(|c| c.inner).unwrap_or_default();
+    let raw = TdfReader
+        .parse(path, file_id, cfg, requires_ms1)
+        .map_err(|err| PyIOError::new_err(err.to_string()))?;
+    Ok(raw_to_py_raw_spectra(raw, ms_level))
+}
+
+fn raw_to_py_raw_spectra(raw: Vec<RawSpectrum>, ms_level: Option<u8>) -> Vec<PyRawSpectrum> {
+    raw.into_iter()
         .filter(|spec| ms_level.map_or(true, |level| spec.ms_level == level))
         .map(|inner| {
             let collision_energies = vec![None; inner.precursors.len()];
@@ -185,7 +212,43 @@ fn read_pmsms_spectra(
                 collision_energies,
             }
         })
-        .collect())
+        .collect()
+}
+
+#[pyclass]
+#[derive(Clone)]
+pub struct PyBrukerProcessingConfig {
+    pub inner: BrukerProcessingConfig,
+}
+
+#[pymethods]
+impl PyBrukerProcessingConfig {
+    #[new]
+    #[pyo3(signature = (mz_ppm=5.0, ims_pct=3.0))]
+    pub fn new(mz_ppm: f32, ims_pct: f32) -> Self {
+        let inner = BrukerProcessingConfig {
+            ms2: Default::default(),
+            ms1: BrukerMS1CentoidingConfig { mz_ppm, ims_pct },
+        };
+        Self { inner }
+    }
+
+    #[getter]
+    pub fn mz_ppm(&self) -> f32 {
+        self.inner.ms1.mz_ppm
+    }
+
+    #[getter]
+    pub fn ims_pct(&self) -> f32 {
+        self.inner.ms1.ims_pct
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "BrukerProcessingConfig(mz_ppm={}, ims_pct={})",
+            self.inner.ms1.mz_ppm, self.inner.ms1.ims_pct
+        )
+    }
 }
 
 #[pyclass]
@@ -921,5 +984,6 @@ pub fn py_spectrum(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyRawSpectrum>()?;
     m.add_class::<PyProcessedSpectrum>()?;
     m.add_class::<PyProcessedIMSpectrum>()?;
+    m.add_class::<PyBrukerProcessingConfig>()?;
     Ok(())
 }

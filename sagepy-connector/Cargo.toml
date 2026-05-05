@@ -24,3 +24,4 @@ serde_json = "1.0.138"
 parquet = { version = "50.0.0", default-features = false, features = ["zstd", "snap"] }
 memmap2 = "0.9"
 thiserror = "1.0"
+timsrust = "0.4.2"
