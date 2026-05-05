@@ -13,7 +13,8 @@ def read_spectra(file_path: str, ms_level: Optional[int] = None, file_id: int = 
     """Read spectra from a mass spectrometry file using the native Rust reader.
 
     Args:
-        file_path: Path to the input file. `mzML` and `MGF` are supported.
+        file_path: Path to the input file. `mzML`, `MGF`, and `pmsms` directories
+            (ionmaiden binary format, recognized by the `.pmsms` suffix) are supported.
         ms_level: Optional MS level filter.
         file_id: File identifier propagated to the loaded spectra.
 
