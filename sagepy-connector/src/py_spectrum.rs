@@ -143,6 +143,10 @@ pub fn read_spectra(
     file_id: usize,
     ms_level: Option<u8>,
 ) -> PyResult<Vec<PyRawSpectrum>> {
+    if is_pmsms_path(path) {
+        return read_pmsms_spectra(path, file_id, ms_level);
+    }
+
     let reader =
         MzDataReader::open_path(path).map_err(|err| PyIOError::new_err(err.to_string()))?;
     let mut spectra = Vec::new();
@@ -155,6 +159,33 @@ pub fn read_spectra(
     }
 
     Ok(spectra)
+}
+
+fn is_pmsms_path(path: &str) -> bool {
+    let trimmed = path.trim_end_matches('/');
+    trimmed.to_ascii_lowercase().ends_with(".pmsms")
+}
+
+fn read_pmsms_spectra(
+    path: &str,
+    file_id: usize,
+    ms_level: Option<u8>,
+) -> PyResult<Vec<PyRawSpectrum>> {
+    let dir = std::path::Path::new(path);
+    let raw = crate::pmsms::parse(dir, file_id)
+        .map_err(|err| PyIOError::new_err(err.to_string()))?;
+
+    Ok(raw
+        .into_iter()
+        .filter(|spec| ms_level.map_or(true, |level| spec.ms_level == level))
+        .map(|inner| {
+            let collision_energies = vec![None; inner.precursors.len()];
+            PyRawSpectrum {
+                inner,
+                collision_energies,
+            }
+        })
+        .collect())
 }
 
 #[pyclass]
