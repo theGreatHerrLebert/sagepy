@@ -21,6 +21,7 @@ pub mod py_intensity;
 pub mod py_retention_model;
 pub mod py_retention_alignment;
 pub mod py_mobility_model;
+pub mod tdf;
 #[pymodule]
 fn sagepy_connector(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
