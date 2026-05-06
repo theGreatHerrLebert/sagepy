@@ -45,6 +45,37 @@ def read_spectra(
     ]
 
 
+def read_processed_spectra(
+    file_path: str,
+    take_top_n: int = 150,
+    min_deisotope_mz: float = 0.0,
+    deisotope: bool = True,
+    file_id: int = 0,
+    num_threads: int = 4,
+    bruker_config: Optional["BrukerProcessingConfig"] = None,
+    requires_ms1: bool = False,
+) -> List["ProcessedSpectrum"]:
+    """Read and process MS2 spectra in native Rust before returning to Python.
+
+    This avoids materializing Python RawSpectrum objects for large benchmark
+    runs. It currently returns processed MS2 spectra with precursors.
+    """
+    config_ptr = bruker_config.get_py_ptr() if bruker_config is not None else None
+    return [
+        ProcessedSpectrum.from_py_processed_spectrum(spec)
+        for spec in psc.read_processed_spectra(
+            file_path,
+            take_top_n=take_top_n,
+            min_deisotope_mz=min_deisotope_mz,
+            deisotope=deisotope,
+            file_id=file_id,
+            num_threads=num_threads,
+            bruker_config=config_ptr,
+            requires_ms1=requires_ms1,
+        )
+    ]
+
+
 class BrukerProcessingConfig:
     def __init__(self, mz_ppm: float = 5.0, ims_pct: float = 3.0):
         """Bruker MS1 centroiding configuration for `.d` reading.
@@ -634,6 +665,20 @@ class SpectrumProcessor:
 
     def process(self, raw_spectrum: RawSpectrum) -> ProcessedSpectrum:
         return ProcessedSpectrum.from_py_processed_spectrum(self.__spectrum_processor_ptr.process(raw_spectrum.get_py_ptr()))
+
+    def process_collection(
+            self,
+            raw_spectra: List[RawSpectrum],
+            num_threads: int = 4,
+    ) -> List[ProcessedSpectrum]:
+        processed = self.__spectrum_processor_ptr.process_collection(
+            [spectrum.get_py_ptr() for spectrum in raw_spectra],
+            num_threads,
+        )
+        return [
+            ProcessedSpectrum.from_py_processed_spectrum(spectrum)
+            for spectrum in processed
+        ]
 
     def process_with_mobility(self, raw_spectrum: RawSpectrum) -> ProcessedIMSpectrum:
         """Process a raw spectrum with ion mobility enabled (MS1 only)

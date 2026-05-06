@@ -202,11 +202,55 @@ pub fn py_lda_score_psms(
     Ok(fitted)
 }
 
+/// Assign initial spectrum q-values by sorting PSMs on their raw Poisson score.
+///
+/// Sage uses this pre-fit q-value pass to choose the 1% target set that trains
+/// the RT and mobility predictors when `predict_rt` is enabled.
+#[pyfunction]
+pub fn py_assign_initial_spectrum_q_psms(
+    _py: Python,
+    psm_collection: &Bound<'_, PyList>,
+) -> PyResult<()> {
+    let mut indexed_inner_collection: Vec<(usize, Psm)> = psm_collection
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            let psm: Bound<'_, PyPsm> = item.extract().expect("Failed to extract PyPsm");
+            (index, psm.borrow().inner.clone())
+        })
+        .collect();
+
+    indexed_inner_collection.par_sort_unstable_by(|(_, a), (_, b)| {
+        a.sage_feature.poisson.total_cmp(&b.sage_feature.poisson)
+    });
+
+    let mut inner_collection: Vec<Feature> = indexed_inner_collection
+        .iter()
+        .map(|(_, feat)| feat.sage_feature.clone())
+        .collect();
+    let _ = sage_core::ml::qvalue::spectrum_q_value(&mut inner_collection);
+
+    for (sorted_index, sorted_feature) in indexed_inner_collection
+        .iter()
+        .zip(inner_collection.iter())
+    {
+        let psm: Bound<'_, PyPsm> = psm_collection
+            .get_item(sorted_index.0)
+            .expect("Failed to get PyPsm")
+            .extract()?;
+        let mut feature_borrow = psm.borrow_mut();
+        feature_borrow.inner.sage_feature.spectrum_q = sorted_feature.spectrum_q;
+    }
+
+    Ok(())
+}
+
 #[pymodule]
 pub fn py_fdr(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyCompetitionPeptideIx>()?;
     m.add_function(wrap_pyfunction!(py_sage_fdr, m)?)?;
     m.add_function(wrap_pyfunction!(py_sage_fdr_psm, m)?)?;
     m.add_function(wrap_pyfunction!(py_lda_score_psms, m)?)?;
+    m.add_function(wrap_pyfunction!(py_assign_initial_spectrum_q_psms, m)?)?;
     Ok(())
 }

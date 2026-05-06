@@ -207,7 +207,7 @@ class SageSearchConfiguration:
             prefilter,
             prefilter_chunk_size,
             prefilter_low_memory,
-            ion_kinds,
+            [k.get_py_ptr() for k in ion_kinds] if ion_kinds is not None else None,
             shuffle_decoys,
             keep_ends
         )

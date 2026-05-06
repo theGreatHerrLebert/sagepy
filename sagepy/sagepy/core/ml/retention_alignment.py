@@ -1,13 +1,12 @@
 from typing import List, Union, Dict
 import sagepy_connector
-from imspy.simulation.annotation import RustWrapperObject
 
 from sagepy.core import Psm, Feature
 
 psc = sagepy_connector.py_retention_alignment
 
 
-class Alignment(RustWrapperObject):
+class Alignment:
     def __init__(self, file_id: int, max_rt: float, slope: float, intercept: float):
         self.__py_ptr = psc.PyAlignment(file_id, max_rt, slope, intercept)
 
