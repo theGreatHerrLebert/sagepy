@@ -86,6 +86,22 @@ def sage_fdr_psm(psm_collection: Union[List[Psm], Dict[str, List[Psm]]], indexed
     )
 
 
+def assign_initial_spectrum_q_psms(psm_collection: Union[List[Psm], Dict[str, List[Psm]]]) -> None:
+    """Assign the initial spectrum q-values sage uses before RT/IM predictor fitting.
+
+    This is the pre-LDA pass that trains on the best-scoring PSMs before the
+    retention-time and ion-mobility regressors are fit.
+    """
+    if isinstance(psm_collection, dict):
+        f_collection = [p for psms in psm_collection.values() for p in psms]
+    else:
+        f_collection = psm_collection
+
+    psc.py_assign_initial_spectrum_q_psms(
+        [p.get_py_ptr() for p in f_collection],
+    )
+
+
 def lda_rescore_psms(
     psm_collection: Union[List[Psm], Dict[str, List[Psm]]],
     precursor_tolerance: Tolerance,

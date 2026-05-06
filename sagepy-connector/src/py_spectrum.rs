@@ -7,6 +7,7 @@ use mzdata::spectrum::{
 use numpy::{IntoPyArray, PyArray1, PyArrayMethods};
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
+use rayon::prelude::*;
 
 use crate::py_mass::PyTolerance;
 use crate::tdf::{BrukerMS1CentoidingConfig, BrukerProcessingConfig, TdfReader};
@@ -165,6 +166,60 @@ pub fn read_spectra(
     }
 
     Ok(spectra)
+}
+
+#[pyfunction]
+#[pyo3(signature = (path, take_top_n=150, min_deisotope_mz=0.0, deisotope=true, file_id=0, num_threads=4, bruker_config=None, requires_ms1=false))]
+pub fn read_processed_spectra(
+    path: &str,
+    take_top_n: usize,
+    min_deisotope_mz: f32,
+    deisotope: bool,
+    file_id: usize,
+    num_threads: usize,
+    bruker_config: Option<PyBrukerProcessingConfig>,
+    requires_ms1: bool,
+) -> PyResult<Vec<PyProcessedSpectrum>> {
+    let raw = read_raw_spectra(path, file_id, bruker_config, requires_ms1)?;
+    let processor = SpectrumProcessor {
+        take_top_n,
+        min_deisotope_mz,
+        deisotope,
+    };
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build()
+        .unwrap();
+
+    Ok(pool.install(|| {
+        raw.into_par_iter()
+            .filter(|spectrum| spectrum.inner.ms_level == 2 && !spectrum.inner.precursors.is_empty())
+            .map(|spectrum| PyProcessedSpectrum {
+                inner: processor.process(spectrum.inner),
+                collision_energies: spectrum.collision_energies,
+            })
+            .collect()
+    }))
+}
+
+fn read_raw_spectra(
+    path: &str,
+    file_id: usize,
+    bruker_config: Option<PyBrukerProcessingConfig>,
+    requires_ms1: bool,
+) -> PyResult<Vec<PyRawSpectrum>> {
+    if is_pmsms_path(path) {
+        return read_pmsms_spectra(path, file_id, None);
+    }
+    if is_d_path(path) {
+        return read_tdf_spectra(path, file_id, None, bruker_config, requires_ms1);
+    }
+
+    let reader =
+        MzDataReader::open_path(path).map_err(|err| PyIOError::new_err(err.to_string()))?;
+    reader
+        .map(|spectrum| to_raw_spectrum(&spectrum, file_id))
+        .collect()
 }
 
 fn is_pmsms_path(path: &str) -> bool {
@@ -844,6 +899,29 @@ impl PySpectrumProcessor {
             collision_energies: spectrum.collision_energies.clone(),
         }
     }
+
+    pub fn process_collection(
+        &self,
+        spectra: Vec<PyRawSpectrum>,
+        num_threads: usize,
+    ) -> Vec<PyProcessedSpectrum> {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build()
+            .unwrap();
+        let processor = self.inner.clone();
+
+        pool.install(|| {
+            spectra
+                .into_par_iter()
+                .map(|spectrum| PyProcessedSpectrum {
+                    inner: processor.process(spectrum.inner),
+                    collision_energies: spectrum.collision_energies,
+                })
+                .collect()
+        })
+    }
+
     pub fn process_with_mobility(&self, spectrum: &PyRawSpectrum) -> PyProcessedIMSpectrum {
         PyProcessedIMSpectrum {
             inner: self.inner.process_with_mobility(spectrum.inner.clone()),
@@ -975,6 +1053,7 @@ impl PyPrecursor {
 #[pymodule]
 pub fn py_spectrum(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_spectra, m)?)?;
+    m.add_function(wrap_pyfunction!(read_processed_spectra, m)?)?;
     m.add_class::<PyPeak>()?;
     m.add_class::<PyIMPeak>()?;
     m.add_class::<PyDeisotoped>()?;
