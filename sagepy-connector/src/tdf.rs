@@ -38,7 +38,7 @@ impl TdfReader {
         file_id: usize,
         config: BrukerProcessingConfig,
         requires_ms1: bool,
-    ) -> Result<Vec<RawSpectrum>, timsrust::TimsRustError> {
+    ) -> Result<Vec<(RawSpectrum, Vec<Option<f32>>)>, timsrust::TimsRustError> {
         let spectrum_reader = timsrust::readers::SpectrumReader::build()
             .with_path(path_name.as_ref())
             .with_config(config.ms2)
@@ -46,7 +46,8 @@ impl TdfReader {
         let mut spectra = self.read_msn_spectra(file_id, &spectrum_reader)?;
         if requires_ms1 {
             let ms1s = self.read_ms1_spectra(&path_name, file_id, config.ms1)?;
-            spectra.extend(ms1s);
+            // MS1 spectra carry no precursor — empty CE vec.
+            spectra.extend(ms1s.into_iter().map(|s| (s, Vec::new())));
         }
 
         Ok(spectra)
@@ -120,8 +121,8 @@ impl TdfReader {
         &self,
         file_id: usize,
         spectrum_reader: &SpectrumReader,
-    ) -> Result<Vec<RawSpectrum>, timsrust::TimsRustError> {
-        let spectra: Vec<RawSpectrum> = (0..spectrum_reader.len())
+    ) -> Result<Vec<(RawSpectrum, Vec<Option<f32>>)>, timsrust::TimsRustError> {
+        let spectra: Vec<(RawSpectrum, Vec<Option<f32>>)> = (0..spectrum_reader.len())
             .into_par_iter()
             .filter_map(|index| match spectrum_reader.get(index) {
                 Ok(dda_spectrum) => match dda_spectrum.precursor {
@@ -131,6 +132,16 @@ impl TdfReader {
                             -dda_spectrum.isolation_width as f32 / 2.0,
                             dda_spectrum.isolation_width as f32 / 2.0,
                         ));
+                        // timsrust reads PasefFrameMsMsInfo.CollisionEnergy
+                        // and exposes it on the Spectrum struct. Carry it
+                        // alongside the RawSpectrum since sage_core's
+                        // Precursor type doesn't have a CE field; the
+                        // PyO3 wrapper stashes it on PyRawSpectrum.
+                        let ce = if dda_spectrum.collision_energy.is_finite() {
+                            Some(dda_spectrum.collision_energy as f32)
+                        } else {
+                            None
+                        };
                         let spectrum: RawSpectrum = RawSpectrum {
                             file_id,
                             precursors: vec![precursor],
@@ -144,7 +155,7 @@ impl TdfReader {
                             intensity: dda_spectrum.intensities.iter().map(|&x| x as f32).collect(),
                             mobility: None,
                         };
-                        Some(spectrum)
+                        Some((spectrum, vec![ce]))
                     }
                     None => None,
                 },

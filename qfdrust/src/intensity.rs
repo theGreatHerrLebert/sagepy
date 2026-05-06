@@ -250,10 +250,24 @@ impl FragmentIntensityPrediction {
             let kind = match self.fragments.kinds[i] {
                 Kind::B => 0,
                 Kind::Y => 1,
-                _ => panic!("Invalid kind"),
+                // Prosit-shaped buffer covers only b/y. Skip a/c/x/z if
+                // they ever appear (sage ion_kinds may be configured to
+                // emit them).
+                _ => continue,
             };
+            let charge = self.fragments.charges[i];
+            let ordinal = self.fragments.fragment_ordinals[i];
+            // Project onto the (kind=2, charge=3, ordinal=29) Prosit-shaped
+            // buffer used by `get_observed_intensities_re_indexed`.
+            // Fragments outside this domain (e.g. charge-4 ions, ordinal>29
+            // from peptides longer than 29 residues) cannot be compared
+            // against Prosit predictions and are skipped here. They still
+            // appear in the raw `Fragments` struct used by other code paths.
+            if !(1..=3).contains(&charge) || !(1..=29).contains(&ordinal) {
+                continue;
+            }
             let intensity = self.fragments.intensities[i] / max_intensity;
-            fragments.insert((kind, self.fragments.charges[i], self.fragments.fragment_ordinals[i]), intensity);
+            fragments.insert((kind, charge, ordinal), intensity);
         }
 
         fragments
