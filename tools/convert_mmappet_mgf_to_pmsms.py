@@ -188,33 +188,41 @@ def convert(args: argparse.Namespace) -> dict[str, int | str]:
     fragment_spectrum_start: list[int] = []
     fragment_event_cnt: list[int] = []
     manifest_rows: list[tuple[int, int, int, int, int, int]] = []
+    skipped_mgf_spectra = 0
+    dataindex_row = 0
 
     started = time.perf_counter()
-    for spectrum_0based, spectrum in enumerate(iter_mgf_spectra(mgf_path)):
-        if spectrum_0based >= n_expected:
+    for mgf_spectrum_0based, spectrum in enumerate(iter_mgf_spectra(mgf_path)):
+        if dataindex_row >= n_expected:
             break
 
-        idx = int(dataindex["idx"][spectrum_0based])
-        count = int(dataindex["size"][spectrum_0based])
-        pidx = int(dataindex["precursor_idx"][spectrum_0based])
+        idx = int(dataindex["idx"][dataindex_row])
+        count = int(dataindex["size"][dataindex_row])
+        pidx = int(dataindex["precursor_idx"][dataindex_row])
         mz_values = spectrum["mz_values"]
+        title_pidx_match = TITLE_PRECURSOR_RE.search(spectrum["title"])
+        title_pidx = int(title_pidx_match.group(1)) if title_pidx_match else None
+
+        if title_pidx != pidx:
+            if args.strict_order:
+                raise ValueError(
+                    f"Spectrum {mgf_spectrum_0based + 1} title precursor_idx="
+                    f"{title_pidx} but dataindex row {dataindex_row + 1} says {pidx}"
+                )
+            skipped_mgf_spectra += 1
+            continue
 
         if len(mz_values) != count:
             raise ValueError(
-                f"Spectrum {spectrum_0based + 1} has {len(mz_values)} MGF peaks "
-                f"but dataindex says {count}"
-            )
-
-        title_pidx_match = TITLE_PRECURSOR_RE.search(spectrum["title"])
-        if title_pidx_match and int(title_pidx_match.group(1)) != pidx:
-            raise ValueError(
-                f"Spectrum {spectrum_0based + 1} title precursor_idx="
-                f"{title_pidx_match.group(1)} but dataindex says {pidx}"
+                f"MGF spectrum {mgf_spectrum_0based + 1} precursor_idx={pidx} has "
+                f"{len(mz_values)} peaks but dataindex row {dataindex_row + 1} says {count}"
             )
 
         tofs = np.asarray(frag_tof[idx : idx + count], dtype=np.uint32)
         if len(tofs) != count:
-            raise ValueError(f"Fragment tof table ended early at spectrum {spectrum_0based + 1}")
+            raise ValueError(
+                f"Fragment tof table ended early at dataindex row {dataindex_row + 1}"
+            )
         if count:
             tof2mz = ensure_tof2mz_capacity(tof2mz, int(tofs.max()))
             tof2mz[tofs] = np.asarray(mz_values, dtype=np.float32)
@@ -226,18 +234,28 @@ def convert(args: argparse.Namespace) -> dict[str, int | str]:
         charges.append(int(spectrum["charge"]))
         fragment_spectrum_start.append(idx)
         fragment_event_cnt.append(count)
-        manifest_rows.append((spectrum_0based + 1, spectrum_0based, pidx, int(spectrum["charge"]), idx, count))
+        manifest_rows.append(
+            (
+                dataindex_row + 1,
+                mgf_spectrum_0based,
+                pidx,
+                int(spectrum["charge"]),
+                idx,
+                count,
+            )
+        )
+        dataindex_row += 1
 
-        if args.progress and (spectrum_0based + 1) % args.progress == 0:
+        if args.progress and dataindex_row % args.progress == 0:
             elapsed = time.perf_counter() - started
             print(
-                f"[convert] {spectrum_0based + 1}/{n_expected} spectra "
-                f"({elapsed:.1f}s)",
+                f"[convert] {dataindex_row}/{n_expected} spectra "
+                f"({skipped_mgf_spectra} skipped MGF entries, {elapsed:.1f}s)",
                 file=sys.stderr,
             )
 
-    if len(precursor_idx) != n_expected:
-        raise ValueError(f"MGF ended after {len(precursor_idx)} spectra; expected {n_expected}")
+    if dataindex_row != n_expected:
+        raise ValueError(f"MGF ended after {dataindex_row} matched spectra; expected {n_expected}")
 
     last_used_tof = int(np.flatnonzero(~np.isnan(tof2mz))[-1]) if np.any(~np.isnan(tof2mz)) else 0
     tof2mz = tof2mz[: last_used_tof + 1]
@@ -263,7 +281,7 @@ def convert(args: argparse.Namespace) -> dict[str, int | str]:
 
     with open(output / "manifest.tsv", "w") as handle:
         handle.write(
-            "spectrum_1based\tsource_parquet_row_0based\tprecursor_idx\tcharge\t"
+            "spectrum_1based\tsource_mgf_spectrum_0based\tprecursor_idx\tcharge\t"
             "fragment_spectrum_start\tfragment_event_cnt\n"
         )
         for row in manifest_rows:
@@ -272,6 +290,7 @@ def convert(args: argparse.Namespace) -> dict[str, int | str]:
     return {
         "output": str(output),
         "spectra": len(precursor_idx),
+        "skipped_mgf_spectra": skipped_mgf_spectra,
         "tof2mz_len": len(tof2mz),
         "pmsms_link": str((output / "pmsms.mmappet").resolve()),
     }
@@ -289,6 +308,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pmsms-mmappet", type=Path, help="Override pmsms.mmappet path.")
     parser.add_argument("--limit", type=int, help="Convert only the first N spectra.")
     parser.add_argument("--force", action="store_true", help="Reuse an existing output directory.")
+    parser.add_argument(
+        "--strict-order",
+        action="store_true",
+        help="Require every MGF spectrum to match the same dataindex row. By default "
+        "extra MGF entries are skipped until precursor_idx realigns.",
+    )
     parser.add_argument(
         "--copy-fragments",
         action="store_true",
