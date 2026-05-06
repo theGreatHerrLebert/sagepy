@@ -254,9 +254,30 @@ fn read_tdf_spectra(
     let raw = TdfReader
         .parse(path, file_id, cfg, requires_ms1)
         .map_err(|err| PyIOError::new_err(err.to_string()))?;
-    Ok(raw_to_py_raw_spectra(raw, ms_level))
+    Ok(tdf_to_py_raw_spectra(raw, ms_level))
 }
 
+fn tdf_to_py_raw_spectra(
+    raw: Vec<(RawSpectrum, Vec<Option<f32>>)>,
+    ms_level: Option<u8>,
+) -> Vec<PyRawSpectrum> {
+    raw.into_iter()
+        .filter(|(spec, _)| ms_level.map_or(true, |level| spec.ms_level == level))
+        .map(|(inner, mut collision_energies)| {
+            // Defensive: keep CE Vec length aligned with precursor count.
+            if collision_energies.len() != inner.precursors.len() {
+                collision_energies = vec![None; inner.precursors.len()];
+            }
+            PyRawSpectrum {
+                inner,
+                collision_energies,
+            }
+        })
+        .collect()
+}
+
+/// Wrap raw spectra that don't carry per-spectrum collision energy
+/// (.pmsms, plain MGF, etc.) — fills the CE vec with None.
 fn raw_to_py_raw_spectra(raw: Vec<RawSpectrum>, ms_level: Option<u8>) -> Vec<PyRawSpectrum> {
     raw.into_iter()
         .filter(|spec| ms_level.map_or(true, |level| spec.ms_level == level))
