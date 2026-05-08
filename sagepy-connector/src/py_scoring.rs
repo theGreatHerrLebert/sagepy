@@ -1411,6 +1411,10 @@ pub fn py_scoring(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(prosit_intensities_to_py_fragments, m)?)?;
     m.add_function(wrap_pyfunction!(prosit_intensities_to_py_fragments_par, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::sage_results::load_sage_psms_from_parquet,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(psm_from_json, m)?)?;
     m.add_function(wrap_pyfunction!(merge_psm_maps, m)?)?;
     m.add_function(wrap_pyfunction!(
