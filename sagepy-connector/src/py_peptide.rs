@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use std::sync::Arc;
 
 use crate::py_enzyme::{PyDigest, PyPosition};
-use sage_core::peptide::Peptide;
+use sage_core::peptide::{Mods, Peptide};
 
 #[pyclass]
 #[derive(Clone)]
@@ -38,7 +38,7 @@ impl PyPeptide {
             inner: Peptide {
                 decoy,
                 sequence: arc_sequence,
-                modifications: modifications,
+                modifications: Mods::from_dense(&modifications),
                 nterm: n_term,
                 cterm: c_term,
                 monoisotopic: mono_isotopic,
@@ -69,7 +69,7 @@ impl PyPeptide {
 
     #[getter]
     pub fn modifications(&self) -> Vec<f32> {
-        self.inner.modifications.clone()
+        self.inner.modifications.to_dense(self.inner.sequence.len())
     }
 
     #[getter]

@@ -8,7 +8,7 @@ name = "sagepy_connector"
 crate-type = ["cdylib"]
 
 [dependencies]
-sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git" }
+sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git", branch = "master" }
 qfdrust = { path  = "../qfdrust" }
 unimod = { path = "../unimod" }
 mzdata = { version = "0.63.4", default-features = false, features = ["mzml", "mgf", "zlib-ng-compat"] }
