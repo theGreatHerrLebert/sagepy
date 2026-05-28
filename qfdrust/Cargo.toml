@@ -10,7 +10,7 @@ rand = "0.9.0-beta.0"
 rustms = { git = "https://github.com/theGreatHerrLebert/rustims.git" }
 # rustms = { path = "../../rustims/rustms" }
 # sage-core = {path = "../../sage/crates/sage" }
-sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git" }
+sage-core = { git = "https://github.com/theGreatHerrLebert/sage.git", branch = "master" }
 itertools = "0.13.0"
 serde = { version = "1.0.217", features = ["derive"] }
 ndarray = "0.16.1"
