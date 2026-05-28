@@ -121,7 +121,7 @@ impl PyIonSeries {
 
         for idx in 0..seq_len.saturating_sub(1) {
             let r = self.peptide.inner.sequence[idx];
-            let m = self.peptide.inner.modifications.get(idx).unwrap_or(&0.0);
+            let m = self.peptide.inner.modifications.mass_at(idx);
 
             cm += match self.kind.inner {
                 Kind::A | Kind::B | Kind::C => monoisotopic(r) + m,
