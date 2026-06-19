@@ -7,8 +7,10 @@ use mzdata::spectrum::{
 use numpy::{IntoPyArray, PyArray1, PyArrayMethods};
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
+use rayon::prelude::*;
 
 use crate::py_mass::PyTolerance;
+use crate::tdf::{BrukerMS1CentoidingConfig, BrukerProcessingConfig, TdfReader};
 use sage_core::mass::Tolerance as SageTolerance;
 use sage_core::spectrum::{
     Deisotoped, IMPeak, Peak, Precursor, ProcessedSpectrum, RawSpectrum, Representation,
@@ -137,12 +139,21 @@ fn to_raw_spectrum(spectrum: &MzDataSpectrum, file_id: usize) -> PyResult<PyRawS
 }
 
 #[pyfunction]
-#[pyo3(signature = (path, file_id=0, ms_level=None))]
+#[pyo3(signature = (path, file_id=0, ms_level=None, bruker_config=None, requires_ms1=false))]
 pub fn read_spectra(
     path: &str,
     file_id: usize,
     ms_level: Option<u8>,
+    bruker_config: Option<PyBrukerProcessingConfig>,
+    requires_ms1: bool,
 ) -> PyResult<Vec<PyRawSpectrum>> {
+    if is_pmsms_path(path) {
+        return read_pmsms_spectra(path, file_id, ms_level);
+    }
+    if is_d_path(path) {
+        return read_tdf_spectra(path, file_id, ms_level, bruker_config, requires_ms1);
+    }
+
     let reader =
         MzDataReader::open_path(path).map_err(|err| PyIOError::new_err(err.to_string()))?;
     let mut spectra = Vec::new();
@@ -155,6 +166,165 @@ pub fn read_spectra(
     }
 
     Ok(spectra)
+}
+
+#[pyfunction]
+#[pyo3(signature = (path, take_top_n=150, min_deisotope_mz=0.0, deisotope=true, file_id=0, num_threads=4, bruker_config=None, requires_ms1=false))]
+pub fn read_processed_spectra(
+    path: &str,
+    take_top_n: usize,
+    min_deisotope_mz: f32,
+    deisotope: bool,
+    file_id: usize,
+    num_threads: usize,
+    bruker_config: Option<PyBrukerProcessingConfig>,
+    requires_ms1: bool,
+) -> PyResult<Vec<PyProcessedSpectrum>> {
+    let raw = read_raw_spectra(path, file_id, bruker_config, requires_ms1)?;
+    let processor = SpectrumProcessor {
+        take_top_n,
+        min_deisotope_mz,
+        deisotope,
+    };
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build()
+        .unwrap();
+
+    Ok(pool.install(|| {
+        raw.into_par_iter()
+            .filter(|spectrum| spectrum.inner.ms_level == 2 && !spectrum.inner.precursors.is_empty())
+            .map(|spectrum| PyProcessedSpectrum {
+                inner: processor.process(spectrum.inner),
+                collision_energies: spectrum.collision_energies,
+            })
+            .collect()
+    }))
+}
+
+fn read_raw_spectra(
+    path: &str,
+    file_id: usize,
+    bruker_config: Option<PyBrukerProcessingConfig>,
+    requires_ms1: bool,
+) -> PyResult<Vec<PyRawSpectrum>> {
+    if is_pmsms_path(path) {
+        return read_pmsms_spectra(path, file_id, None);
+    }
+    if is_d_path(path) {
+        return read_tdf_spectra(path, file_id, None, bruker_config, requires_ms1);
+    }
+
+    let reader =
+        MzDataReader::open_path(path).map_err(|err| PyIOError::new_err(err.to_string()))?;
+    reader
+        .map(|spectrum| to_raw_spectrum(&spectrum, file_id))
+        .collect()
+}
+
+fn is_pmsms_path(path: &str) -> bool {
+    let trimmed = path.trim_end_matches('/');
+    trimmed.to_ascii_lowercase().ends_with(".pmsms")
+}
+
+fn read_pmsms_spectra(
+    path: &str,
+    file_id: usize,
+    ms_level: Option<u8>,
+) -> PyResult<Vec<PyRawSpectrum>> {
+    let dir = std::path::Path::new(path);
+    let raw = crate::pmsms::parse(dir, file_id)
+        .map_err(|err| PyIOError::new_err(err.to_string()))?;
+    Ok(raw_to_py_raw_spectra(raw, ms_level))
+}
+
+fn is_d_path(path: &str) -> bool {
+    let trimmed = path.trim_end_matches('/');
+    trimmed.to_ascii_lowercase().ends_with(".d")
+}
+
+fn read_tdf_spectra(
+    path: &str,
+    file_id: usize,
+    ms_level: Option<u8>,
+    bruker_config: Option<PyBrukerProcessingConfig>,
+    requires_ms1: bool,
+) -> PyResult<Vec<PyRawSpectrum>> {
+    let cfg = bruker_config.map(|c| c.inner).unwrap_or_default();
+    let raw = TdfReader
+        .parse(path, file_id, cfg, requires_ms1)
+        .map_err(|err| PyIOError::new_err(err.to_string()))?;
+    Ok(tdf_to_py_raw_spectra(raw, ms_level))
+}
+
+fn tdf_to_py_raw_spectra(
+    raw: Vec<(RawSpectrum, Vec<Option<f32>>)>,
+    ms_level: Option<u8>,
+) -> Vec<PyRawSpectrum> {
+    raw.into_iter()
+        .filter(|(spec, _)| ms_level.map_or(true, |level| spec.ms_level == level))
+        .map(|(inner, mut collision_energies)| {
+            // Defensive: keep CE Vec length aligned with precursor count.
+            if collision_energies.len() != inner.precursors.len() {
+                collision_energies = vec![None; inner.precursors.len()];
+            }
+            PyRawSpectrum {
+                inner,
+                collision_energies,
+            }
+        })
+        .collect()
+}
+
+/// Wrap raw spectra that don't carry per-spectrum collision energy
+/// (.pmsms, plain MGF, etc.) — fills the CE vec with None.
+fn raw_to_py_raw_spectra(raw: Vec<RawSpectrum>, ms_level: Option<u8>) -> Vec<PyRawSpectrum> {
+    raw.into_iter()
+        .filter(|spec| ms_level.map_or(true, |level| spec.ms_level == level))
+        .map(|inner| {
+            let collision_energies = vec![None; inner.precursors.len()];
+            PyRawSpectrum {
+                inner,
+                collision_energies,
+            }
+        })
+        .collect()
+}
+
+#[pyclass]
+#[derive(Clone)]
+pub struct PyBrukerProcessingConfig {
+    pub inner: BrukerProcessingConfig,
+}
+
+#[pymethods]
+impl PyBrukerProcessingConfig {
+    #[new]
+    #[pyo3(signature = (mz_ppm=5.0, ims_pct=3.0))]
+    pub fn new(mz_ppm: f32, ims_pct: f32) -> Self {
+        let inner = BrukerProcessingConfig {
+            ms2: Default::default(),
+            ms1: BrukerMS1CentoidingConfig { mz_ppm, ims_pct },
+        };
+        Self { inner }
+    }
+
+    #[getter]
+    pub fn mz_ppm(&self) -> f32 {
+        self.inner.ms1.mz_ppm
+    }
+
+    #[getter]
+    pub fn ims_pct(&self) -> f32 {
+        self.inner.ms1.ims_pct
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "BrukerProcessingConfig(mz_ppm={}, ims_pct={})",
+            self.inner.ms1.mz_ppm, self.inner.ms1.ims_pct
+        )
+    }
 }
 
 #[pyclass]
@@ -750,6 +920,29 @@ impl PySpectrumProcessor {
             collision_energies: spectrum.collision_energies.clone(),
         }
     }
+
+    pub fn process_collection(
+        &self,
+        spectra: Vec<PyRawSpectrum>,
+        num_threads: usize,
+    ) -> Vec<PyProcessedSpectrum> {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build()
+            .unwrap();
+        let processor = self.inner.clone();
+
+        pool.install(|| {
+            spectra
+                .into_par_iter()
+                .map(|spectrum| PyProcessedSpectrum {
+                    inner: processor.process(spectrum.inner),
+                    collision_energies: spectrum.collision_energies,
+                })
+                .collect()
+        })
+    }
+
     pub fn process_with_mobility(&self, spectrum: &PyRawSpectrum) -> PyProcessedIMSpectrum {
         PyProcessedIMSpectrum {
             inner: self.inner.process_with_mobility(spectrum.inner.clone()),
@@ -881,6 +1074,7 @@ impl PyPrecursor {
 #[pymodule]
 pub fn py_spectrum(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_spectra, m)?)?;
+    m.add_function(wrap_pyfunction!(read_processed_spectra, m)?)?;
     m.add_class::<PyPeak>()?;
     m.add_class::<PyIMPeak>()?;
     m.add_class::<PyDeisotoped>()?;
@@ -890,5 +1084,6 @@ pub fn py_spectrum(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyRawSpectrum>()?;
     m.add_class::<PyProcessedSpectrum>()?;
     m.add_class::<PyProcessedIMSpectrum>()?;
+    m.add_class::<PyBrukerProcessingConfig>()?;
     Ok(())
 }

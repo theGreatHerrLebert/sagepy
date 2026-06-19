@@ -1,3 +1,4 @@
+import os
 import warnings
 from typing import Optional, List, Union, Dict, Tuple
 
@@ -344,6 +345,32 @@ class Psm:
                 f"retention_time_projected: {self.retention_time_projected}, "
                 f"inverse_ion_mobility: {self.inverse_ion_mobility}, "
                 f"prosit_predicted_intensities: {self.prosit_predicted_intensities}, re_score: {self.re_score})")
+
+
+def load_sage_psms_from_parquet(
+        results_path: str,
+        matched_fragments_path: Optional[str] = None,
+        default_collision_energy: float = 30.0,
+        max_rank: Optional[int] = None,
+        num_threads: Optional[int] = None,
+) -> List[Psm]:
+    """Load sage CLI parquet output directly into sagepy PSM objects.
+
+    This is the native fast path for ``results.sage.parquet`` plus the
+    optional ``matched_fragments.sage.parquet`` file written by sage
+    with ``--annotate-matches``. PSM construction happens in Rust and
+    preserves the order of the results parquet.
+    """
+    if num_threads is None:
+        num_threads = os.cpu_count() or 1
+    py_psms = psc.load_sage_psms_from_parquet(
+        str(results_path),
+        None if matched_fragments_path is None else str(matched_fragments_path),
+        float(default_collision_energy),
+        max_rank,
+        int(num_threads),
+    )
+    return [Psm.from_py_ptr(psm) for psm in py_psms]
 
 
 class ScoreType:

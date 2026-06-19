@@ -1,7 +1,16 @@
 """Tests for native spectrum I/O helpers."""
+import re
+from pathlib import Path
+
+import numpy as np
 import pandas as pd
+import pytest
 
 from sagepy import utility
+from sagepy.core.spectrum import read_spectra
+
+
+DATA_DIR = Path(__file__).resolve().parent / "data"
 
 
 class _FakePrecursor:
@@ -64,3 +73,32 @@ def test_extract_mgf_data_delegates_to_generic_loader(monkeypatch):
         "file_path": "example.mgf",
         "kwargs": {"take_top_n_peaks": 50},
     }
+
+
+def test_matteo_first10_mgf_and_pmsms_are_equivalent():
+    fixture_dir = DATA_DIR / "matteo_first10"
+    mgf_spectra = read_spectra(str(fixture_dir / "first10_corresponding.mgf"))
+    pmsms_spectra = read_spectra(
+        str(fixture_dir / "first10_sage_input_mgf_equivalent.pmsms")
+    )
+
+    assert len(mgf_spectra) == 10
+    assert len(pmsms_spectra) == len(mgf_spectra)
+
+    for mgf, pmsms in zip(mgf_spectra, pmsms_spectra):
+        mgf_precursor_idx = re.search(r"precursor_idx=(\d+)", mgf.id).group(1)
+        assert pmsms.id == f"precursor_idx={mgf_precursor_idx}"
+        assert mgf.ms_level == pmsms.ms_level == 2
+        assert mgf.total_ion_current == pmsms.total_ion_current
+        assert mgf.scan_start_time == pytest.approx(pmsms.scan_start_time, abs=1e-5)
+
+        assert len(mgf.precursors) == len(pmsms.precursors) == 1
+        mgf_precursor = mgf.precursors[0]
+        pmsms_precursor = pmsms.precursors[0]
+        assert mgf_precursor.charge == pmsms_precursor.charge
+        assert mgf_precursor.mz == pytest.approx(pmsms_precursor.mz, abs=5e-4)
+
+        assert len(mgf.mz) == len(pmsms.mz)
+        assert len(mgf.intensity) == len(pmsms.intensity)
+        np.testing.assert_allclose(mgf.mz, pmsms.mz, rtol=0, atol=1e-6)
+        np.testing.assert_allclose(mgf.intensity, pmsms.intensity, rtol=0, atol=1e-6)

@@ -67,9 +67,15 @@ fn pearson_correlation(observed_intensities: &[f32], predicted_intensities: &[f3
     let observed_filtered: Vec<f32> = observed_intensities.iter().zip(&valid_ion_mask).filter_map(|(&x, &valid)| if valid { Some(x) } else { None }).collect();
     let predicted_filtered: Vec<f32> = predicted_intensities.iter().zip(&valid_ion_mask).filter_map(|(&x, &valid)| if valid { Some(x) } else { None }).collect();
 
-    // Remove NaN values
-    let observed_filtered: Vec<f32> = observed_filtered.into_iter().filter(|&x| !x.is_nan()).collect();
-    let predicted_filtered: Vec<f32> = predicted_filtered.into_iter().filter(|&x| !x.is_nan()).collect();
+    // Remove NaN values JOINTLY so observed/predicted stay index-aligned. Filtering
+    // each independently diverges their lengths when only one side is NaN (e.g. an
+    // all-zero-intensity match -> 0/0 = NaN on the observed side), which then trips
+    // the ndarray Zip `equal_dim` assertion in the covariance/rank step below.
+    let (observed_filtered, predicted_filtered): (Vec<f32>, Vec<f32>) = observed_filtered
+        .into_iter()
+        .zip(predicted_filtered)
+        .filter(|(o, p)| !o.is_nan() && !p.is_nan())
+        .unzip();
 
     if observed_filtered.len() <= 2 || predicted_filtered.len() <= 2 {
         return 0.0;
@@ -107,9 +113,15 @@ fn spearman_correlation(observed_intensities: &[f32], predicted_intensities: &[f
     let observed_filtered: Vec<f32> = observed_intensities.iter().zip(&valid_ion_mask).filter_map(|(&x, &valid)| if valid { Some(x) } else { None }).collect();
     let predicted_filtered: Vec<f32> = predicted_intensities.iter().zip(&valid_ion_mask).filter_map(|(&x, &valid)| if valid { Some(x) } else { None }).collect();
 
-    // Remove NaN values
-    let observed_filtered: Vec<f32> = observed_filtered.into_iter().filter(|&x| !x.is_nan()).collect();
-    let predicted_filtered: Vec<f32> = predicted_filtered.into_iter().filter(|&x| !x.is_nan()).collect();
+    // Remove NaN values JOINTLY so observed/predicted stay index-aligned. Filtering
+    // each independently diverges their lengths when only one side is NaN (e.g. an
+    // all-zero-intensity match -> 0/0 = NaN on the observed side), which then trips
+    // the ndarray Zip `equal_dim` assertion in the covariance/rank step below.
+    let (observed_filtered, predicted_filtered): (Vec<f32>, Vec<f32>) = observed_filtered
+        .into_iter()
+        .zip(predicted_filtered)
+        .filter(|(o, p)| !o.is_nan() && !p.is_nan())
+        .unzip();
 
     if observed_filtered.len() <= 2 || predicted_filtered.len() <= 2 {
         return 0.0;
@@ -250,10 +262,24 @@ impl FragmentIntensityPrediction {
             let kind = match self.fragments.kinds[i] {
                 Kind::B => 0,
                 Kind::Y => 1,
-                _ => panic!("Invalid kind"),
+                // Prosit-shaped buffer covers only b/y. Skip a/c/x/z if
+                // they ever appear (sage ion_kinds may be configured to
+                // emit them).
+                _ => continue,
             };
+            let charge = self.fragments.charges[i];
+            let ordinal = self.fragments.fragment_ordinals[i];
+            // Project onto the (kind=2, charge=3, ordinal=29) Prosit-shaped
+            // buffer used by `get_observed_intensities_re_indexed`.
+            // Fragments outside this domain (e.g. charge-4 ions, ordinal>29
+            // from peptides longer than 29 residues) cannot be compared
+            // against Prosit predictions and are skipped here. They still
+            // appear in the raw `Fragments` struct used by other code paths.
+            if !(1..=3).contains(&charge) || !(1..=29).contains(&ordinal) {
+                continue;
+            }
             let intensity = self.fragments.intensities[i] / max_intensity;
-            fragments.insert((kind, self.fragments.charges[i], self.fragments.fragment_ordinals[i]), intensity);
+            fragments.insert((kind, charge, ordinal), intensity);
         }
 
         fragments
