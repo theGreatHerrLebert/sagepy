@@ -993,7 +993,7 @@ impl PyScorer {
                         let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
                         let sequence_with_mods = sage_sequence_to_unimod_sequence(
                             sequence.clone(),
-                            &peptide.modifications,
+                            &peptide.modifications.to_dense(peptide.sequence.len()),
                             &self.expected_mods,
                         );
 
@@ -1003,7 +1003,7 @@ impl PyScorer {
                             .to_string();
                         let sequence_decoy_with_mods = sage_sequence_to_unimod_sequence(
                             sequence_decoy.clone(),
-                            &peptide_reversed.modifications,
+                            &peptide_reversed.modifications.to_dense(peptide_reversed.sequence.len()),
                             &self.expected_mods,
                         );
 

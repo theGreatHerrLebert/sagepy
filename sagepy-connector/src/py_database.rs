@@ -177,8 +177,8 @@ impl PyIndexedDatabase {
 
         for (i, p) in self.inner.peptides.iter().enumerate() {
             // only add if there are modifications based on non-zero entries in the modifications vector
-            if p.modifications.iter().any(|m| *m != 0.0) {
-                mods.push((i, p.modifications.clone()));
+            if !p.modifications.is_empty() {
+                mods.push((i, p.modifications.to_dense(p.sequence.len())));
             }
         }
         mods
