@@ -991,9 +991,11 @@ impl PyScorer {
                             .collect();
 
                         let sequence = std::str::from_utf8(&peptide.sequence).unwrap().to_string();
+                        let peptide_mods_dense =
+                            peptide.modifications.to_dense(peptide.sequence.len());
                         let sequence_with_mods = sage_sequence_to_unimod_sequence(
                             sequence.clone(),
-                            &peptide.modifications.to_dense(peptide.sequence.len()),
+                            &peptide_mods_dense,
                             &self.expected_mods,
                         );
 
@@ -1001,9 +1003,12 @@ impl PyScorer {
                         let sequence_decoy = std::str::from_utf8(&peptide_reversed.sequence)
                             .unwrap()
                             .to_string();
+                        let peptide_reversed_mods_dense = peptide_reversed
+                            .modifications
+                            .to_dense(peptide_reversed.sequence.len());
                         let sequence_decoy_with_mods = sage_sequence_to_unimod_sequence(
                             sequence_decoy.clone(),
-                            &peptide_reversed.modifications.to_dense(peptide_reversed.sequence.len()),
+                            &peptide_reversed_mods_dense,
                             &self.expected_mods,
                         );
 
@@ -1411,10 +1416,6 @@ pub fn py_scoring(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(prosit_intensities_to_py_fragments, m)?)?;
     m.add_function(wrap_pyfunction!(prosit_intensities_to_py_fragments_par, m)?)?;
-    m.add_function(wrap_pyfunction!(
-        crate::sage_results::load_sage_psms_from_parquet,
-        m
-    )?)?;
     m.add_function(wrap_pyfunction!(psm_from_json, m)?)?;
     m.add_function(wrap_pyfunction!(merge_psm_maps, m)?)?;
     m.add_function(wrap_pyfunction!(
