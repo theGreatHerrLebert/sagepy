@@ -38,7 +38,7 @@ fn py_monoisotopic(aa: &str) -> PyResult<f32> {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyComposition {
     inner: Composition,
@@ -98,7 +98,7 @@ impl PyComposition {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Copy)]
 pub struct PyTolerance {
     pub inner: Tolerance,

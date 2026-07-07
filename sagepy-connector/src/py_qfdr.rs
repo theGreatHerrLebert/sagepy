@@ -5,7 +5,7 @@ use qfdrust::picked::{protein_id_from_psm, spectrum_q_value, picked_peptide, pic
 use qfdrust::psm::Psm;
 use crate::py_scoring::PyPsm;
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyTDCMethod {
     pub inner: TDCMethod,

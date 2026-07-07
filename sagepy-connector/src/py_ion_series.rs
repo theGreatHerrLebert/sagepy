@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use sage_core::ion_series::{Ion, Kind};
 use sage_core::mass::monoisotopic;
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Copy)]
 pub struct PyKind {
     pub inner: Kind,

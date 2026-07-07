@@ -5,7 +5,7 @@ use sage_core::ml::retention_alignment::{Alignment, global_alignment};
 use sage_core::scoring::Feature;
 use crate::py_scoring::{PyFeature, PyPsm};
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyAlignment {
     pub inner: Alignment,

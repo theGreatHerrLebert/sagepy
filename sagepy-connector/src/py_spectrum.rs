@@ -291,7 +291,7 @@ fn raw_to_py_raw_spectra(raw: Vec<RawSpectrum>, ms_level: Option<u8>) -> Vec<PyR
         .collect()
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyBrukerProcessingConfig {
     pub inner: BrukerProcessingConfig,
@@ -327,7 +327,7 @@ impl PyBrukerProcessingConfig {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyRepresentation {
     pub inner: Representation,
@@ -360,7 +360,7 @@ impl PyRepresentation {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyProcessedSpectrum {
     pub inner: ProcessedSpectrum<Peak>,
@@ -491,7 +491,7 @@ impl PyProcessedSpectrum {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyProcessedIMSpectrum {
     pub inner: ProcessedSpectrum<IMPeak>,
@@ -606,7 +606,7 @@ impl PyProcessedIMSpectrum {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyRawSpectrum {
     pub inner: RawSpectrum,
@@ -824,7 +824,7 @@ impl PyRawSpectrum {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(PartialEq, Copy, Clone, Default, Debug)]
 pub struct PyPeak {
     pub inner: Peak,
@@ -850,7 +850,7 @@ impl PyPeak {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(PartialEq, Copy, Clone, Default, Debug)]
 pub struct PyIMPeak {
     pub inner: IMPeak,
@@ -885,7 +885,7 @@ impl PyIMPeak {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PySpectrumProcessor {
     pub inner: SpectrumProcessor,
@@ -951,7 +951,7 @@ impl PySpectrumProcessor {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
 pub struct PyDeisotoped {
     pub inner: Deisotoped,
@@ -993,7 +993,7 @@ impl PyDeisotoped {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Default, Clone, Debug)]
 pub struct PyPrecursor {
     pub inner: Precursor,

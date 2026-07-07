@@ -5,7 +5,7 @@ use sage_core::modification::{validate_mods, InvalidModification, ModificationSp
 use std::collections::HashMap;
 use std::str::FromStr;
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub struct PyModificationSpecificity {
     pub inner: ModificationSpecificity,

@@ -42,7 +42,7 @@ impl PyIsobaric {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyPurity {
     pub inner: Purity,
@@ -77,7 +77,7 @@ impl PyPurity {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyQuant {
     pub hit: PyFeature,
@@ -141,7 +141,7 @@ impl PyQuant {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyTmtQuant {
     pub inner: TmtQuant,
