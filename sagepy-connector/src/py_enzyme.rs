@@ -10,7 +10,7 @@ use sage_core::enzyme::{Digest, Enzyme, EnzymeParameters, Position};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyPosition {
     pub inner: Position,
@@ -63,7 +63,7 @@ impl PyPosition {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyDigest {
     pub inner: Digest,
@@ -139,7 +139,7 @@ impl PyDigest {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyEnzyme {
     pub inner: Enzyme,

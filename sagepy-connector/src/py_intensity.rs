@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use qfdrust::intensity::FragmentIntensityPrediction;
 use crate::py_scoring::PyFragments;
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyFragmentIntensityPrediction {
     pub inner: FragmentIntensityPrediction,

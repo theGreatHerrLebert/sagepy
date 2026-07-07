@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::py_enzyme::{PyDigest, PyPosition};
 use sage_core::peptide::{Mods, Peptide};
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyPeptide {
     pub inner: Peptide,

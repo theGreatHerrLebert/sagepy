@@ -57,7 +57,7 @@ impl PyPeak {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Copy)]
 pub struct PyPeakScoringStrategy {
     pub inner: PeakScoringStrategy,
@@ -90,7 +90,7 @@ impl PyPeakScoringStrategy {
 }
 
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Copy)]
 pub struct PyIntegrationStrategy {
     pub inner: IntegrationStrategy,
@@ -118,7 +118,7 @@ impl PyIntegrationStrategy {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct PyPrecursorId {
     pub inner: PrecursorId,
@@ -190,7 +190,7 @@ impl PyPrecursorId {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyLfqSettings {
     pub inner: LfqSettings,
@@ -257,7 +257,7 @@ impl PyLfqSettings {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyPrecursorRange {
     pub inner: PrecursorRange,

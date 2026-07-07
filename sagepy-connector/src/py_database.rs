@@ -15,7 +15,7 @@ use sage_core::database::{
 use sage_core::fasta::Fasta;
 use sage_core::ion_series::Kind;
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyIndexedQuery {
     pub precursor_mass: f32,
@@ -277,7 +277,7 @@ impl PyIndexedDatabase {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyEnzymeBuilder {
     pub inner: EnzymeBuilder,
@@ -358,7 +358,7 @@ impl PyEnzymeBuilder {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyPeptideIx {
     pub inner: PeptideIx,
@@ -379,7 +379,7 @@ impl PyPeptideIx {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyTheoretical {
     pub inner: Theoretical,
@@ -410,7 +410,7 @@ impl PyTheoretical {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyParameters {
     pub inner: Parameters,

@@ -17,7 +17,7 @@ use sage_core::scoring::ScoreType::{OpenMSHyperScore, SageHyperScore};
 use sage_core::scoring::{Feature, Fragments, ScoreType, Scorer};
 use serde::{Deserialize, Serialize};
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Serialize)]
 pub struct PyPsm {
     pub inner: Psm,
@@ -380,7 +380,7 @@ impl PyPsm {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct PyScoreType {
     pub inner: ScoreType,
@@ -407,7 +407,7 @@ impl PyScoreType {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Serialize)]
 pub struct PyFragments {
     pub inner: Fragments,
@@ -471,7 +471,7 @@ impl PyFragments {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyFeature {
     pub inner: Feature,
