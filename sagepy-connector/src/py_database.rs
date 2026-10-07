@@ -5,7 +5,7 @@ use crate::py_enzyme::PyEnzymeParameters;
 use crate::py_fasta::PyFasta;
 use crate::py_ion_series::PyKind;
 use crate::py_mass::PyTolerance;
-use crate::py_modification::PyModificationSpecificity;
+use crate::py_modification::{PyModificationSpecificity, PyVarModEntry};
 use crate::py_peptide::PyPeptide;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -419,7 +419,7 @@ pub struct PyParameters {
 #[pymethods]
 impl PyParameters {
     #[new]
-    #[pyo3(signature = (bucket_size, py_enzyme_builder, peptide_min_mass, peptide_max_mass, min_ion_index, static_mods, variable_mods, max_variable_mods, decoy_tag, generate_decoys, fasta, prefilter=None, prefilter_chunk_size=None, prefilter_low_memory=None, ion_kinds=None, _shuffle_decoys=None, _keep_ends=None))]
+    #[pyo3(signature = (bucket_size, py_enzyme_builder, peptide_min_mass, peptide_max_mass, min_ion_index, static_mods, variable_mods, max_variable_mods, decoy_tag, generate_decoys, fasta, prefilter=None, prefilter_chunk_size=None, prefilter_low_memory=None, ion_kinds=None, _shuffle_decoys=None, _keep_ends=None, max_combinations=None))]
     pub fn new(
         bucket_size: usize,
         py_enzyme_builder: PyEnzymeBuilder,
@@ -438,6 +438,7 @@ impl PyParameters {
         ion_kinds: Option<Vec<PyKind>>,
         _shuffle_decoys: Option<bool>,
         _keep_ends: Option<bool>,
+        max_combinations: Option<usize>,
     ) -> PyResult<Self> {
         Ok(PyParameters {
             inner: Parameters {
@@ -455,11 +456,13 @@ impl PyParameters {
                     .map(|(k, v)| (k.inner.clone(), *v))
                     .collect(),
                 variable_mods: variable_mods
-                    .extract::<HashMap<PyModificationSpecificity, Vec<f32>>>()?
-                    .iter()
-                    .map(|(k, v)| (k.inner.clone(), v.clone()))
+                    .extract::<HashMap<PyModificationSpecificity, Vec<PyVarModEntry>>>()?
+                    .into_iter()
+                    .map(|(k, v)| (k.inner, v.into_iter().map(Into::into).collect()))
                     .collect(),
                 max_variable_mods,
+                // Same normalisation as sage's Builder: values below 1 mean 1.
+                max_combinations: max_combinations.map(|x| x.max(1)),
                 decoy_tag,
                 generate_decoys,
                 fasta,
@@ -553,17 +556,27 @@ impl PyParameters {
     }
 
     #[getter]
-    pub fn variable_mods(&self) -> HashMap<PyModificationSpecificity, Vec<f32>> {
+    pub fn variable_mods(&self) -> HashMap<PyModificationSpecificity, Vec<PyVarModEntry>> {
         self.inner
             .variable_mods
             .iter()
-            .map(|(k, v)| (PyModificationSpecificity { inner: k.clone() }, v.clone()))
-            .collect::<HashMap<PyModificationSpecificity, Vec<f32>>>()
+            .map(|(k, v)| {
+                (
+                    PyModificationSpecificity { inner: k.clone() },
+                    v.iter().map(PyVarModEntry::from).collect(),
+                )
+            })
+            .collect()
     }
 
     #[getter]
     pub fn max_variable_mods(&self) -> usize {
         self.inner.max_variable_mods
+    }
+
+    #[getter]
+    pub fn max_combinations(&self) -> Option<usize> {
+        self.inner.max_combinations
     }
 
     #[getter]

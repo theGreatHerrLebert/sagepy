@@ -154,6 +154,7 @@ class SageSearchConfiguration:
                  static_mods: Union[Dict[str, str], Dict[str, int]] = None,
                  variable_mods: Union[Dict[str, List[str]], Dict[str, List[int]]] = None,
                  max_variable_mods: int = 2,
+                 max_combinations: Union[int, None] = None,
                  decoy_tag: str = 'rev_',
                  generate_decoys: bool = True,
                  shuffle_decoys: Union[bool, None] = None,
@@ -174,7 +175,11 @@ class SageSearchConfiguration:
             min_ion_index (int, optional): The minimum ion index. Defaults to 2.
             static_mods (Dict[str, str] | Dict[str, int], optional): The static modifications given in UNIMOD notation. Defaults to None.
             variable_mods (Dict[str, List[str]] | Dict[str, List[int]], optional): The variable modifications given in UNIMOD notation. Defaults to None.
+                An entry may also limit how often it occurs per peptide, as ``("[UNIMOD:21]", 1)`` or
+                ``{"mod": "[UNIMOD:21]", "max_count": 1}``.
             max_variable_mods (int, optional): The maximum number of variable modifications. Defaults to 2.
+            max_combinations (Union[int, None], optional): Hard cap on the variants generated per peptide, including the
+                unmodified form; variants with fewer modifications are kept first. Defaults to None (unlimited).
             decoy_tag (str, optional): The decoy tag. Defaults to 'rev_'.
             generate_decoys (bool, optional): Whether to generate decoys. Defaults to True.
             shuffle_decoys (Union[bool, None], optional): Whether to shuffle decoys. Defaults to None.
@@ -209,7 +214,8 @@ class SageSearchConfiguration:
             prefilter_low_memory,
             [k.get_py_ptr() for k in ion_kinds] if ion_kinds is not None else None,
             shuffle_decoys,
-            keep_ends
+            keep_ends,
+            max_combinations,
         )
 
     @classmethod
@@ -269,6 +275,10 @@ class SageSearchConfiguration:
         return self.__py_parameter_ptr.max_variable_mods
 
     @property
+    def max_combinations(self):
+        return self.__py_parameter_ptr.max_combinations
+
+    @property
     def decoy_tag(self):
         return self.__py_parameter_ptr.decoy_tag
 
@@ -284,7 +294,7 @@ class SageSearchConfiguration:
         return f"SageSearchConfiguration(bucket_size: {self.bucket_size}, enzyme_builder: {self.enzyme_builder}, " \
                f"peptide_min_mass: {self.peptide_min_mass}, peptide_max_mass: {self.peptide_max_mass}, " \
                f"ion_kinds: {self.ion_kinds}, min_ion_index: {self.min_ion_index}, " \
-               f"max_variable_mods: {self.max_variable_mods}, decoy_tag: {self.decoy_tag}, " \
+               f"max_variable_mods: {self.max_variable_mods}, max_combinations: {self.max_combinations}, decoy_tag: {self.decoy_tag}, " \
                f"generate_decoys: {self.generate_decoys})"
 
 

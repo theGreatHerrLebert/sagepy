@@ -1,9 +1,40 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use sage_core::modification::{validate_mods, InvalidModification, ModificationSpecificity};
+use sage_core::modification::{
+    validate_mods, InvalidModification, ModificationSpecificity, VarModEntry, VariableModification,
+};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+/// A variable modification entry as exchanged with Python: either a bare mass
+/// (unrestricted except by `max_variable_mods`) or a `(mass, max_count)` tuple
+/// limiting how often this modification may occur on one peptide.
+#[derive(Clone, Debug, PartialEq, FromPyObject, IntoPyObject)]
+pub enum PyVarModEntry {
+    Mass(f32),
+    Limited((f32, Option<usize>)),
+}
+
+impl From<PyVarModEntry> for VarModEntry {
+    fn from(entry: PyVarModEntry) -> Self {
+        match entry {
+            PyVarModEntry::Mass(mass) | PyVarModEntry::Limited((mass, None)) => VarModEntry::Mass(mass),
+            PyVarModEntry::Limited((mass, max_count)) => {
+                VarModEntry::Detailed(VariableModification { mass, max_count })
+            }
+        }
+    }
+}
+
+impl From<&VarModEntry> for PyVarModEntry {
+    fn from(entry: &VarModEntry) -> Self {
+        match entry.max_count() {
+            None => PyVarModEntry::Mass(entry.mass()),
+            Some(max_count) => PyVarModEntry::Limited((entry.mass(), Some(max_count))),
+        }
+    }
+}
 
 #[pyclass(from_py_object)]
 #[derive(Clone, Debug, PartialEq, Hash)]
@@ -59,10 +90,10 @@ pub fn py_validate_mods(input: Option<&Bound<'_, PyDict>>) -> HashMap<PyModifica
 #[pyo3(signature = (input=None))]
 pub fn py_validate_var_mods(
     input: Option<&Bound<'_, PyDict>>,
-) -> HashMap<PyModificationSpecificity, Vec<f32>> {
+) -> HashMap<PyModificationSpecificity, Vec<PyVarModEntry>> {
     // unwrap the input
-    let input = input.map(|d| d.extract::<HashMap<String, Vec<f32>>>().unwrap());
-    let mut output: HashMap<PyModificationSpecificity, Vec<f32>> = HashMap::new();
+    let input = input.map(|d| d.extract::<HashMap<String, Vec<PyVarModEntry>>>().unwrap());
+    let mut output: HashMap<PyModificationSpecificity, Vec<PyVarModEntry>> = HashMap::new();
 
     if let Some(input) = input {
         for (s, mass) in input {
