@@ -1,8 +1,42 @@
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple, Union
 
 import sagepy_connector
 
 psc = sagepy_connector.py_modification
+
+
+VarModEntry = Union[float, Tuple[float, Optional[int]]]
+
+
+def split_variable_mod_entry(entry) -> Tuple[Union[str, int, float], Optional[int]]:
+    """Split a variable modification entry into the modification and its per-peptide limit.
+
+    An entry is either a bare modification (UNIMOD id/name or mass), a ``(mod, max_count)`` tuple,
+    or a ``{"mod": mod, "max_count": max_count}`` dict. ``max_count`` limits how often this
+    modification may occur on a single peptide; ``None`` means unrestricted (except by
+    ``max_variable_mods``).
+
+    Args:
+        entry: The variable modification entry
+
+    Returns:
+        Tuple[Union[str, int, float], Optional[int]]: The modification and its max_count
+    """
+    if isinstance(entry, dict):
+        unknown = set(entry) - {"mod", "max_count"}
+        if "mod" not in entry or unknown:
+            raise ValueError(f"Variable modification dict needs a 'mod' and optional 'max_count' key, got {entry}")
+        mod, max_count = entry["mod"], entry.get("max_count")
+    elif isinstance(entry, (tuple, list)):
+        if len(entry) != 2:
+            raise ValueError(f"Variable modification tuple must be (mod, max_count), got {entry}")
+        mod, max_count = entry
+    else:
+        return entry, None
+
+    if max_count is not None and (isinstance(max_count, bool) or not isinstance(max_count, int) or max_count < 0):
+        raise ValueError(f"max_count must be a non-negative int or None, got {max_count!r}")
+    return mod, max_count
 
 
 def process_variable_start_end_mods(variable_modifications):
@@ -130,7 +164,8 @@ def validate_mods(mods: Dict[str, float]) -> Dict[ModificationSpecificity, float
     return {ModificationSpecificity.from_py_modification_specificity(k): v for k, v in py_validate_dict.items()}
 
 
-def validate_var_mods(mods: Dict[str, List[float]]) -> Dict[ModificationSpecificity, List[float]]:
+def validate_var_mods(mods: Dict[str, List[VarModEntry]]) -> Dict[ModificationSpecificity, List[VarModEntry]]:
+    """Validate variable modifications. Each entry is a mass, or a ``(mass, max_count)`` tuple."""
 
     py_validate_dict = psc.py_validate_var_mods(mods)
 
